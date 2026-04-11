@@ -59,6 +59,7 @@ Valor stores its working state under `~/.valor/`:
 - `career_framework.md`: your career ladder and company values
 - `evidence.sqlite`: structured evidence store
 - `backups/`: local database backups
+- `carry-forward/`: local wrap-up notes and next-day pickup files
 
 Installed prompts and rules live in your assistant's local directories:
 

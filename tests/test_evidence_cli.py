@@ -2,6 +2,7 @@ import argparse
 import json
 import sqlite3
 import sys
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -13,6 +14,7 @@ from src.evidence_cli import (
     cmd_stats,
     cmd_backup,
     cmd_schema_version,
+    iso_week_bounds,
 )
 
 
@@ -135,6 +137,32 @@ def test_cmd_add_default_agent(cli_db, capsys):
     assert output["status"] == "ok"
 
 
+def test_cmd_add_invalid_competency_raises(cli_db):
+    args = argparse.Namespace(
+        activity="ticket_completed",
+        competency="not_a_valid_competency",
+        statement="Completed ticket",
+        agent="manual",
+        metadata=None,
+        date=None,
+    )
+    with pytest.raises(ValueError):
+        cmd_add(args)
+
+
+def test_cmd_add_invalid_date_raises(cli_db):
+    args = argparse.Namespace(
+        activity="ticket_completed",
+        competency="subject_matter",
+        statement="Completed ticket",
+        agent="manual",
+        metadata=None,
+        date="2026-02-30",
+    )
+    with pytest.raises(argparse.ArgumentTypeError):
+        cli_module.parse_ymd_date(args.date)
+
+
 # --- cmd_list ---
 
 def test_cmd_list_returns_all_entries(cli_db, capsys):
@@ -201,6 +229,37 @@ def test_cmd_stats_with_data(cli_db, capsys):
     assert len(result["recent"]) == 2
 
 
+def test_cmd_stats_this_week_uses_iso_monday_boundary(cli_db, capsys):
+    week_start, _ = iso_week_bounds()
+    week_start_date = datetime.strptime(week_start, "%Y-%m-%d").date()
+    previous_day = (week_start_date - timedelta(days=1)).strftime("%Y-%m-%d")
+
+    args_in_week = argparse.Namespace(
+        activity="code_written",
+        competency="subject_matter",
+        statement="In reflected week",
+        agent="test-agent",
+        metadata=None,
+        date=week_start,
+    )
+    args_before_week = argparse.Namespace(
+        activity="pr_review_cross_scope",
+        competency="collaboration",
+        statement="Before reflected week",
+        agent="test-agent",
+        metadata=None,
+        date=previous_day,
+    )
+    cmd_add(args_in_week)
+    capsys.readouterr()
+    cmd_add(args_before_week)
+    capsys.readouterr()
+
+    cmd_stats(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["this_week"] == {"subject_matter": 1}
+
+
 # --- cmd_backup ---
 
 def test_cmd_backup_creates_backup_file(cli_db, capsys):
@@ -259,5 +318,24 @@ def test_main_no_command_exits(monkeypatch):
 
 def test_main_missing_required_arg_exits(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["evidence_cli", "add", "--competency", "collaboration"])
+    with pytest.raises(SystemExit):
+        cli_module.main()
+
+
+def test_main_invalid_competency_exits(monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "evidence_cli",
+            "add",
+            "--activity",
+            "code_written",
+            "--competency",
+            "not_a_valid_competency",
+            "--statement",
+            "bad row",
+        ],
+    )
     with pytest.raises(SystemExit):
         cli_module.main()

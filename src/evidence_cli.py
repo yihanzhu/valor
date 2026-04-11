@@ -22,11 +22,19 @@ import shutil
 import sqlite3
 import sys
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 DB_PATH = Path.home() / ".valor" / "evidence.sqlite"
 BACKUP_DIR = Path.home() / ".valor" / "backups"
+
+VALID_COMPETENCIES = (
+    "subject_matter",
+    "industry_knowledge",
+    "collaboration",
+    "autonomy_scope",
+    "leadership",
+)
 
 CURRENT_SCHEMA_VERSION = 1
 
@@ -109,11 +117,43 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
             print(f"Applied migration v{version}")
 
 
+def parse_competency(value: str) -> str:
+    if value not in VALID_COMPETENCIES:
+        valid = ", ".join(VALID_COMPETENCIES)
+        raise argparse.ArgumentTypeError(
+            f"invalid competency '{value}' (choose from: {valid})"
+        )
+    return value
+
+
+def parse_ymd_date(value: str) -> str:
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").strftime("%Y-%m-%d")
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("date must be in YYYY-MM-DD format") from exc
+
+
+def iso_week_bounds(day: date | None = None) -> tuple[str, str]:
+    current_day = day or datetime.now().date()
+    week_start = current_day - timedelta(days=current_day.weekday())
+    week_end = week_start + timedelta(days=7)
+    return week_start.isoformat(), week_end.isoformat()
+
+
+def validate_add_args(args: argparse.Namespace) -> None:
+    if args.competency not in VALID_COMPETENCIES:
+        valid = ", ".join(VALID_COMPETENCIES)
+        raise ValueError(f"invalid competency '{args.competency}' (choose from: {valid})")
+    if args.date is not None:
+        parse_ymd_date(args.date)
+
+
 def cmd_add(args: argparse.Namespace) -> None:
+    validate_add_args(args)
     conn = get_conn()
     ensure_schema(conn)
     now = datetime.now(timezone.utc)
-    target_date = args.date if args.date else now.strftime("%Y-%m-%d")
+    target_date = parse_ymd_date(args.date) if args.date else now.strftime("%Y-%m-%d")
 
     existing = conn.execute(
         "SELECT id FROM evidence WHERE date = ? AND activity = ? "
@@ -173,6 +213,7 @@ def cmd_list(args: argparse.Namespace) -> None:
 def cmd_stats(args: argparse.Namespace) -> None:
     conn = get_conn()
     ensure_schema(conn)
+    week_start, week_end = iso_week_bounds()
 
     total = conn.execute("SELECT COUNT(*) as c FROM evidence").fetchone()["c"]
 
@@ -183,8 +224,10 @@ def cmd_stats(args: argparse.Namespace) -> None:
 
     this_week = conn.execute(
         "SELECT competency, COUNT(*) as cnt FROM evidence "
-        "WHERE date >= date('now', 'weekday 0', '-7 days') "
+        "WHERE date >= ? AND date < ? "
         "GROUP BY competency ORDER BY cnt DESC"
+        ,
+        (week_start, week_end),
     ).fetchall()
 
     by_agent = conn.execute(
@@ -243,16 +286,16 @@ def main() -> None:
 
     p_add = sub.add_parser("add", help="Record an evidence entry")
     p_add.add_argument("--activity", required=True)
-    p_add.add_argument("--competency", required=True)
+    p_add.add_argument("--competency", required=True, type=parse_competency)
     p_add.add_argument("--statement", required=True)
     p_add.add_argument("--agent", default="manual")
-    p_add.add_argument("--date", default=None,
+    p_add.add_argument("--date", default=None, type=parse_ymd_date,
                        help="Override date (YYYY-MM-DD) for backdating entries")
     p_add.add_argument("--metadata", type=json.loads, default=None)
 
     p_list = sub.add_parser("list", help="List evidence entries")
     p_list.add_argument("--days", type=int, default=None)
-    p_list.add_argument("--competency", default=None)
+    p_list.add_argument("--competency", default=None, type=parse_competency)
     p_list.add_argument("--limit", type=int, default=50)
 
     sub.add_parser("stats", help="Show evidence statistics")

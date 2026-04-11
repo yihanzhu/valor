@@ -12,6 +12,7 @@ By default, Valor stores data under `~/.valor/`:
 - `career_framework.md`: your career ladder and company values
 - `evidence.sqlite`: structured evidence entries and summaries
 - `backups/`: local SQLite backups created by the CLI
+- `carry-forward/`: local wrap-up notes and next-day pickup files
 
 Installed prompts and rules live in assistant-specific local directories:
 

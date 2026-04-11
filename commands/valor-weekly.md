@@ -12,33 +12,64 @@ produces a concise 1:1 narrative for their manager.
 - **Friday (auto-suggested):** Generate the reflection while the week is
   fresh. The valor-agent rule auto-suggests on Friday if not done this week.
 - **Monday (re-read):** If the user missed Friday, generate it Monday
-  morning using last week's data. The reflection covers the same ISO week
-  regardless of when it runs.
+  morning using the previous ISO week's data rather than the new week that
+  just started.
 - Before a 1:1 meeting to prepare talking points
 
 ## 1. Gather Data
 
 Run all data sources in parallel. If a source is unavailable, skip that section gracefully — never error out or block the reflection.
 
+### 1.0 Define the Reflection Week
+
+Before gathering any data, compute one explicit ISO week window and reuse it
+for every source:
+
+- If today is Monday and the user is catching up on a missed Friday reflection,
+  reflect on the **previous** ISO week.
+- Otherwise, reflect on the **current** ISO week.
+
+Set these values once:
+
+- `reflection_week_start`: Monday of the week being reflected (`YYYY-MM-DD`)
+- `reflection_week_end_exclusive`: the following Monday (`YYYY-MM-DD`)
+- `previous_week_start`: `reflection_week_start - 7 days`
+
+When a source cannot express the exclusive end date directly, fetch from
+`reflection_week_start` and discard any result with a timestamp on or after
+`reflection_week_end_exclusive`.
+
 ### 1.1 Evidence Store
 
 ```bash
-# This week's evidence entries (reflection_window_days from state.json, default 7)
-python3 ~/.valor/evidence_cli.py list --days 7
+# Fetch enough evidence to cover both the reflection week and the previous week
+python3 ~/.valor/evidence_cli.py list --days 14
 
-# Overall stats including this week's competency breakdown
+# Overall stats, including the current ISO week's competency breakdown
 python3 ~/.valor/evidence_cli.py stats
 ```
+
+Use the `list --days 14` output as the source of truth for weekly reflection
+data:
+
+- Reflection week entries: `date >= reflection_week_start` and
+  `date < reflection_week_end_exclusive`
+- Previous week entries: `date >= previous_week_start` and
+  `date < reflection_week_start`
+
+Use `stats` as supplemental context only. If the reflection week is not the
+current ISO week (for example, a Monday catch-up run), derive the counts from
+the filtered `list` output instead of from `stats.this_week`.
 
 ### 1.2 Jira — Atlassian MCP
 
 1. Call `getAccessibleAtlassianResources` to obtain `cloudId`.
-2. Compute the start of this week (Monday) as `YYYY-MM-DD` in the user's local timezone.
+2. Reuse `reflection_week_start` and `reflection_week_end_exclusive`.
 3. Call `searchJiraIssuesUsingJql` with:
 
-**JQL for tickets completed or moved this week:**
+**JQL for tickets completed or moved during the reflection week:**
 ```
-assignee = currentUser() AND status changed DURING (startOfWeek(), now())
+assignee = currentUser() AND status changed >= "REFLECTION_WEEK_START" AND status changed < "REFLECTION_WEEK_END_EXCLUSIVE"
 ```
 
 Use `maxResults: 50` and include fields: `summary`, `status`, `issuetype`, `updated`, `resolution`.
@@ -47,26 +78,30 @@ Use `maxResults: 50` and include fields: `summary`, `status`, `issuetype`, `upda
 
 ### 1.3 GitHub
 
-Compute `YYYY-MM-DD` as the Monday of the current week.
+Reuse `reflection_week_start` and `reflection_week_end_exclusive`.
 
 ```bash
-# PRs merged by the user this week
-gh pr list --author @me --state merged --search "merged:>=YYYY-MM-DD" --json number,title,mergedAt,repository --limit 20
+# PRs merged by the user during or after the reflection week start
+gh pr list --author @me --state merged --search "merged:>=REFLECTION_WEEK_START" --json number,title,mergedAt,repository --limit 20
 
-# PRs the user reviewed (merged this week)
-gh pr list --search "reviewed-by:@me merged:>=YYYY-MM-DD" --state merged --json number,title,author,mergedAt --limit 15
+# PRs the user reviewed during or after the reflection week start
+gh pr list --search "reviewed-by:@me merged:>=REFLECTION_WEEK_START" --state merged --json number,title,author,mergedAt --limit 15
 ```
+
+After fetching, discard any PR whose `mergedAt` is on or after
+`reflection_week_end_exclusive`. This keeps Friday runs and Monday catch-up
+runs aligned to the same reflected week.
 
 If `gh` is not authenticated, skip and note: "GitHub data unavailable — run `gh auth login`."
 
 ### 1.4 Previous Weeks (for trend comparison)
 
-```bash
-# Last 14 days to compare this week vs last week
-python3 ~/.valor/evidence_cli.py list --days 14
-```
+Use the same evidence pull from section 1.1 and partition it into:
 
-Partition entries by ISO week (from `date` field). Compare this week's counts per competency to last week's.
+- Reflection week: `[reflection_week_start, reflection_week_end_exclusive)`
+- Previous week: `[previous_week_start, reflection_week_start)`
+
+Compare competency counts across those two explicit windows.
 
 ## 2. Map to Competencies
 
@@ -92,12 +127,12 @@ constitutes "cross-team" -- repos or topics outside those areas.
 - Design docs, tech debt proposals → `autonomy_scope`, `subject_matter`
 - Cross-team alignment, mentoring → `collaboration`, `leadership`
 
-Count activities per competency for the current week. If you have last week's data, compute deltas (e.g., "up from 2 to 4").
+Count activities per competency for the reflection week. If you have previous-week data, compute deltas (e.g., "up from 2 to 4").
 
 ## 3. Compare to Previous Weeks
 
-If `list --days 14` returned data, group entries by ISO week and compare:
-- This week's competency counts vs last week
+If the evidence pull returned data for both windows, compare:
+- Reflection week competency counts vs previous week
 - Highlight trends: "Cross-team reviews up from 1 to 3 this week."
 - Note consistency: "Subject matter entries steady at 5."
 
@@ -174,17 +209,21 @@ Focus next week: review cross-team PR and propose pipeline improvement."
 
 ## 8. Update State
 
-Set `last_reflection_week` in `~/.valor/state.json` to the current ISO week number (1–53):
+Set `last_reflection_week` in `~/.valor/state.json` to the ISO week that was
+actually reflected:
 
 ```bash
 python3 -c "
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 p = Path.home() / '.valor' / 'state.json'
 p.parent.mkdir(parents=True, exist_ok=True)
 state = json.loads(p.read_text()) if p.exists() else {}
-iso_year, iso_week, _ = datetime.now().isocalendar()
+today = datetime.now().date()
+current_week_start = today - timedelta(days=today.weekday())
+reflection_week_start = current_week_start - timedelta(days=7) if today.weekday() == 0 else current_week_start
+iso_year, iso_week, _ = reflection_week_start.isocalendar()
 state['last_reflection_week'] = f'{iso_year}-W{iso_week:02d}'
 state['last_reflection_date'] = datetime.now().strftime('%Y-%m-%d')
 p.write_text(json.dumps(state, indent=2))

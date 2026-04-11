@@ -46,10 +46,11 @@ Use today's evidence entries to ensure nothing is missed.
 
 Check if there were carry-forward items from a previous session:
 
-Read the project's `MEMORY.md` file (in the project root or `.claude/`
-directory). Look for entries tagged with `tomorrow` or `carry-forward` that
-were saved by a previous `/valor-wrapup` invocation. If found, read the
-linked memory file to recall the carry-forward items.
+Read `~/.valor/carry-forward/latest.md` if it exists. If not, look for the
+newest file matching `~/.valor/carry-forward/carry-forward-*.md`.
+
+These files are written by previous `/valor-wrapup` runs and contain the
+carry-forward items that should be recalled the next time the user starts work.
 
 If no carry-forward memory files exist, skip this step.
 Note which carry-forward items were addressed and which remain open.
@@ -141,14 +142,14 @@ After presenting the wrap-up, save carry-forward items as a memory file so
 the next session recalls them automatically.
 
 Use the Write tool to create a markdown file at
-`.claude/memories/carry-forward-[DATE].md` (where `[DATE]` is today's date
-in `YYYY-MM-DD` format) with the following structure:
+`~/.valor/carry-forward/carry-forward-[DATE].md` (where `[DATE]` is today's
+date in `YYYY-MM-DD` format) with the following structure:
 
 ```markdown
 ---
 name: carry-forward-[DATE]
 description: "Evening wrap-up carry-forward items for [TOMORROW_DATE]"
-type: project
+type: local
 tags: [tomorrow, wrap-up, carry-forward]
 ---
 
@@ -158,15 +159,10 @@ tags: [tomorrow, wrap-up, carry-forward]
 matching the "Tomorrow's Pickup" section from the wrap-up output]
 ```
 
-Then update (or create) `MEMORY.md` in the project root to include a pointer
-to the new file:
+Then overwrite `~/.valor/carry-forward/latest.md` with the same content so the
+next session has a stable path for recall without touching the active repo.
 
-```markdown
-- [carry-forward-[DATE]](.claude/memories/carry-forward-[DATE].md) — Evening wrap-up carry-forward items for [TOMORROW_DATE]
-```
-
-If `MEMORY.md` already exists, append the new entry. If a previous
-carry-forward entry exists for the same date, replace it.
+If a carry-forward file already exists for the same date, replace it.
 
 ## 5. Update State
 
