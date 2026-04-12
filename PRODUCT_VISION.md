@@ -1,114 +1,157 @@
 # Valor Vision
 
-Valor is a local-first ambient career coach for developers.
-
-The core idea is simple:
-
-- developers already spend a meaningful part of the workday in assistant and
-  agent conversations
-- a lot of high-value engineering work never shows up clearly in commits alone
-- career growth tools are more useful when they work with the user's real
-  workflow instead of asking for extra manual bookkeeping
-
-## The Problem
-
-Performance reviews are often retrospective and recency-biased. Engineers end up
-reconstructing months of work from memory, scattered notes, and merge history.
-
-That misses a lot of important work:
-
-- debugging and root-cause analysis
-- design decisions and tradeoffs
-- cross-team alignment
-- mentoring and knowledge sharing
-- operational ownership
-- drafting, planning, and investigative work that happens before anything ships
-
-## Why Developers First
-
-Valor is intentionally aimed at developers before broader knowledge-worker use.
-
-Developers already interact heavily with assistants, code review systems,
-tickets, design docs, and other machine-readable artifacts. That makes it
-possible to provide coaching in the flow of work instead of only during review
-season.
+Valor is a local-first, device-local career-growth layer for developers.
+It lives inside the coding agents users already prefer, helps turn daily work
+into visible growth, and keeps the core memory, evidence, and context on the
+machine where that work happens.
 
 ## Core Thesis
 
-The best version of Valor should feel closer to "Obsidian for career evidence
-and coaching" than "another HR platform."
+The coding agent is where the work happens.
+Valor is where that work becomes growth.
 
-That implies a few non-negotiable properties:
+Valor is designed around a simple belief: developers should not have to
+reconstruct their growth from memory, commits, and scattered notes after the
+fact. The work already happens in conversations with coding agents, in
+implementation sessions, design discussions, reviews, planning, and wrap-ups.
 
-- **local-first**: the user's raw data should remain on their machine by default
-- **inspectable**: prompts, storage, and decision logic should be auditable
-- **user-owned**: the user controls their framework, evidence, and exports
-- **optional integrations**: external systems are useful, but not the center of
-  trust
+Because Valor lives inside that workflow, it can interpret the real context of
+the work as it happens. That makes it more accurate and far lower-friction than
+tools that depend on manual logging, retrospective summaries, or commit history
+alone.
 
-## What Makes Valor Different
+## The Developer Loop
 
-Valor is not trying to be:
+Valor is built around the natural rhythm of developer work:
 
-- a generic performance-management suite
+1. Start the day with a morning briefing.
+2. Do the work with in-flow coaching.
+3. Use focused skills for things like design docs and PR reviews.
+4. End the day with a wrap-up and carry-forward context.
+5. Reflect at the end of the week to improve intentionally.
+
+So Valor is not just a set of commands, and not just a coach. It is a
+continuous layer that helps developers plan, execute, interpret, remember, and
+reflect.
+
+## Product Principles
+
+### 1. Agent-Integrated
+
+Valor lives inside the coding agent the user already uses instead of asking
+them to switch to a separate app or assistant.
+
+### 2. Context-Native and Low-Friction
+
+Because Valor is embedded in the workflow, it can capture and interpret work
+more accurately without depending on manual tracking.
+
+### 3. Tool-Portable
+
+Users should be able to move across supported coding agents, such as Claude
+Code and Codex, without resetting the Valor layer, as long as those tools share
+the same local setup.
+
+### 4. Local-First and Device-Local
+
+Memory, evidence, framework, and sensitive context stay local to the machine
+where the work happens by default.
+
+### 5. Career-Aware
+
+Valor does not just help finish tasks. It helps developers understand work
+through the lens of growth, evidence, and promotion readiness.
+
+## Continuity Model
+
+Valor should provide continuity across:
+
+- conversations
+- sessions
+- projects
+- supported coding agents on the same machine or trust domain
+
+That means a user can switch from one supported agent to another and still have
+a coherent Valor experience if they are using the same local Valor setup.
+
+But Valor should not promise silent continuity across every device everywhere.
+A work laptop and a personal laptop are separate trust domains by default. That
+separation is intentional.
+
+## Privacy and Trust Model
+
+Privacy and security are first-order product requirements for Valor.
+
+All sensitive memory, evidence, framework data, and local context should stay
+on the machine where the work happens unless the user explicitly moves it
+elsewhere.
+
+Work captured on a work laptop should remain on the work laptop by default.
+A personal laptop should remain separate by default. Valor should not silently
+sync or centralize sensitive work context across devices.
+
+This makes Valor more private, but it also means the user carries
+responsibility for device security and backup hygiene. Because the data is
+local and user-controlled, poor local data management can lead to data loss.
+Valor should be explicit about that tradeoff rather than hiding it.
+
+So the trust promise is:
+
+- the core stays local by default
+- the trust boundary is explicit
+- the user remains in control
+- the user also remains responsible for securing and backing up that local data
+
+Valor should also be honest that the surrounding agent environment still
+matters. If a host coding agent sends prompts or workspace context to a hosted
+model provider, that behavior is governed outside Valor itself. Valor’s job is
+to make the local core and its own trust boundary inspectable and clear.
+
+## What Valor Is Not
+
+Valor is not:
+
+- a generic AI career coach
+- a manual brag-doc tool
+- a performance-management suite
+- an HR platform
 - a manager dashboard
 - a commit-only brag doc generator
-- an HRIS add-on
+- a mandatory cloud product
+- a hidden employer-facing system
 
-The current direction is narrower and more developer-native:
+It should feel much closer to a local, inspectable evidence and coaching layer
+for developer growth than to another SaaS career platform.
 
-- ambient coaching during daily assistant interactions
-- local storage of career evidence and summaries
-- mapping work to a user-supplied career framework
-- prompts that help with reviews, design docs, prioritization, and reflection
+## Product Outcome
 
-## Current Shape of the Project
+Valor helps developers make daily work legible as career growth.
 
-Today the repo is a working local core that provides:
+Not by asking them to do more administrative work, but by living inside the
+work they are already doing.
 
-- a local evidence store and CLI
-- a configurable career framework template
-- assistant commands for daily and weekly workflows
-- ambient coaching rules that connect completed work to career signals
+That is the point:
 
-It currently targets Claude Code by default and Cursor as a legacy install path.
+- less manual tracking
+- more accurate context
+- stronger continuity
+- clearer reflection
+- better growth awareness over time
 
-## Trust Boundary
+## Messaging Implication
 
-The hardest product problem in Valor is trust, not prompt quality.
+If this vision is reflected in the homepage and public docs, they should make
+these ideas clear:
 
-If Valor can see confidential code, internal tickets, planning notes, and daily
-assistant conversations, then users need very strong reasons to believe:
+- Valor lives inside the coding agent the user already uses.
+- It helps plan, coach, wrap up, and reflect.
+- It captures work more accurately because it sees the workflow itself.
+- It stays consistent across supported tools sharing the same local setup.
+- Core memory and evidence stay local to the device where the work happens.
+- Privacy and trust are central, with an explicit boundary.
 
-- what is stored locally
-- what can leave the machine
-- what external tools are being used
-- what is merely suggested by the repo versus enforced by the host assistant
+## Short Version
 
-That is why the local-first and inspectable design matters so much.
-
-## Non-Goals for the Core Project
-
-The open core should not require:
-
-- a mandatory cloud account
-- a central hosted data plane
-- employer-managed access
-- hidden telemetry
-
-Optional hosted or team-oriented layers might exist in the future, but they are
-not the identity of the core project.
-
-## Future Directions
-
-Promising directions that still fit the local-first model:
-
-- stronger local exports and plain-text evidence views
-- better workspace separation and trust controls
-- standalone local packaging beyond prompt installation
-- local daemon support for reminders and summaries
-- optional local-model support
-- optional self-hosted or encrypted sync for users who want it
-
-The key constraint is that convenience features should not erase the trust
-advantages of a local-first system.
+Valor is a local-first, device-local career-growth layer that lives inside the
+coding agents developers already use, turning daily work into visible growth
+without forcing users to manually reconstruct what happened later.
