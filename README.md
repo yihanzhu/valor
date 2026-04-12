@@ -209,6 +209,7 @@ valor/
 ├── src/                    # Local evidence and competency logic
 ├── tests/                  # Test suite
 ├── docs/                   # Optional contributor and design docs
+├── website/                # Static landing page for the public project
 ├── install.sh              # Installer for Claude Code and Cursor
 ├── README.md
 ├── ROADMAP.md

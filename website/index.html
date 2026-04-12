@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Valor | Local-First Ambient Career Coach for Developers</title>
+    <meta
+      name="description"
+      content="Valor is a local-first, privacy-first, developer-first ambient career coach for developers. Open-source local core."
+    >
+    <meta name="theme-color" content="#0f1412">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="#top" aria-label="Valor home">
+          <span class="brand-mark">V</span>
+          <span class="brand-text">Valor</span>
+        </a>
+        <nav class="site-nav" aria-label="Primary">
+          <a href="#how-it-works">How It Works</a>
+          <a href="#trust">Trust</a>
+          <a href="#open-source">Open Source</a>
+        </nav>
+      </header>
+
+      <main id="top">
+        <section class="hero">
+          <div class="hero-copy">
+            <div class="eyebrow-row">
+              <span class="eyebrow">Open-source local core</span>
+              <span class="status-pill">Alpha</span>
+            </div>
+
+            <h1>Career evidence and coaching, without handing your story to a cloud platform.</h1>
+
+            <p class="hero-lede">
+              Valor is a local-first, privacy-first ambient career coach for
+              developers. It works through your assistant-driven workflow,
+              captures high-value work that commits miss, and keeps the core
+              evidence loop on your machine.
+            </p>
+
+            <div class="hero-actions">
+              <a class="button button-primary" href="https://github.com/yihanzhu/valor" target="_blank" rel="noreferrer">View on GitHub</a>
+              <a class="button button-secondary" href="https://github.com/yihanzhu/valor/blob/main/README.md" target="_blank" rel="noreferrer">Read the README</a>
+            </div>
+
+            <dl class="hero-facts" aria-label="Valor highlights">
+              <div>
+                <dt>Storage</dt>
+                <dd>Local by default</dd>
+              </div>
+              <div>
+                <dt>Runtime</dt>
+                <dd>Inspectable prompts + Python</dd>
+              </div>
+              <div>
+                <dt>Backend</dt>
+                <dd>No hosted backend in this repo</dd>
+              </div>
+            </dl>
+          </div>
+
+          <aside class="hero-panel" aria-label="Valor system overview">
+            <div class="panel-glow"></div>
+            <div class="stack-card terminal-card">
+              <div class="terminal-top">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <div class="terminal-body">
+                <p><span class="prompt">$</span> /valor-briefing</p>
+                <p class="terminal-accent">Morning Briefing</p>
+                <p>Tasks, PRs, calendar, news, priorities.</p>
+                <p><span class="prompt">$</span> /valor-weekly</p>
+                <p class="terminal-accent">Weekly Reflection</p>
+                <p>Evidence, gaps, narrative, next-level moves.</p>
+              </div>
+            </div>
+
+            <div class="stack-grid">
+              <article class="stack-card">
+                <p class="card-label">Local State</p>
+                <h2>~/.valor/</h2>
+                <ul>
+                  <li><code>state.json</code></li>
+                  <li><code>career_framework.md</code></li>
+                  <li><code>evidence.sqlite</code></li>
+                </ul>
+              </article>
+
+              <article class="stack-card accent-card">
+                <p class="card-label">Ambient Loop</p>
+                <h2>Work → evidence → coaching</h2>
+                <p>Capture meaningful work, map it to your framework, then get concrete next-step coaching.</p>
+              </article>
+            </div>
+          </aside>
+        </section>
+
+        <section class="problem-strip" aria-label="Why Valor exists">
+          <div class="strip-intro">
+            <p class="section-tag">Why Valor exists</p>
+            <h2>Most career tooling sees only the visible artifacts.</h2>
+          </div>
+          <div class="problem-grid">
+            <article>
+              <h3>Commits miss the real work</h3>
+              <p>Debugging, design thinking, mentoring, cross-team alignment, and operational ownership rarely show up cleanly in merge history.</p>
+            </article>
+            <article>
+              <h3>Manual brag docs decay fast</h3>
+              <p>By review season, developers are reconstructing months of work from memory instead of building evidence as the work happens.</p>
+            </article>
+            <article>
+              <h3>Hosted career tools create trust drag</h3>
+              <p>When a tool sits near your code, tickets, and assistant conversations, privacy and inspectability matter as much as features.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section-layout" id="how-it-works">
+          <div class="section-heading">
+            <p class="section-tag">How it works</p>
+            <h2>A local core that fits the way developers already work.</h2>
+          </div>
+
+          <div class="workflow-grid">
+            <article class="workflow-card">
+              <span class="workflow-step">01</span>
+              <h3>Work through your assistant</h3>
+              <p>Valor rides alongside assistant-led developer workflows instead of asking for a second system of record.</p>
+            </article>
+            <article class="workflow-card">
+              <span class="workflow-step">02</span>
+              <h3>Store evidence locally</h3>
+              <p>State, framework, evidence, and carry-forward notes live in local files under <code>~/.valor/</code>.</p>
+            </article>
+            <article class="workflow-card">
+              <span class="workflow-step">03</span>
+              <h3>Map work to your ladder</h3>
+              <p>Valor uses your own career framework instead of imposing a generic ladder or HR taxonomy.</p>
+            </article>
+            <article class="workflow-card">
+              <span class="workflow-step">04</span>
+              <h3>Nudge the next-level move</h3>
+              <p>After meaningful work, Valor can connect what happened to target-level behaviors and suggest one concrete way to go further.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section-layout">
+          <div class="section-heading">
+            <p class="section-tag">What ships today</p>
+            <h2>A focused local core, not a bloated platform.</h2>
+          </div>
+
+          <div class="feature-board">
+            <article class="feature-card">
+              <h3>Morning Briefing</h3>
+              <p>Jira, PRs, calendar, news, coaching, priorities.</p>
+            </article>
+            <article class="feature-card">
+              <h3>PR Review Coach</h3>
+              <p>Senior-level review guidance with architecture, testing, and tone coaching.</p>
+            </article>
+            <article class="feature-card">
+              <h3>Design Doc Coach</h3>
+              <p>Structured design guidance with options, trade-offs, and recommendation framing.</p>
+            </article>
+            <article class="feature-card">
+              <h3>Weekly Reflection</h3>
+              <p>Weekly evidence, competency gaps, and a usable 1:1 narrative.</p>
+            </article>
+            <article class="feature-card">
+              <h3>Task Identifier</h3>
+              <p>High-impact work suggestions ranked by team need and growth signal.</p>
+            </article>
+            <article class="feature-card">
+              <h3>Evening Wrap-up</h3>
+              <p>Day summary, carry-forward items, and local next-day pickup notes.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section-layout trust-section" id="trust">
+          <div class="section-heading">
+            <p class="section-tag">Privacy and trust</p>
+            <h2>Local-first is a product choice, not just a tagline.</h2>
+          </div>
+
+          <div class="trust-grid">
+            <article class="trust-card trust-card-primary">
+              <h3>What this repo does</h3>
+              <ul>
+                <li>Stores local core state under <code>~/.valor/</code></li>
+                <li>Keeps prompts, rules, and logic inspectable</li>
+                <li>Runs without built-in telemetry or cloud sync</li>
+                <li>Lets users bring their own career framework</li>
+              </ul>
+            </article>
+
+            <article class="trust-card">
+              <h3>What this repo does not do</h3>
+              <ul>
+                <li>No hosted backend</li>
+                <li>No mandatory account</li>
+                <li>No built-in analytics pipeline</li>
+                <li>No hidden employer-facing dashboard</li>
+              </ul>
+            </article>
+
+            <article class="trust-card boundary-card">
+              <h3>Trust boundary</h3>
+              <p>
+                Valor’s local core is inspectable, but the surrounding assistant,
+                model provider, and integrations still matter. If your host
+                assistant sends prompts or workspace context to a hosted model,
+                that behavior is governed outside this repo.
+              </p>
+              <div class="boundary-links">
+                <a href="https://github.com/yihanzhu/valor/blob/main/PRIVACY.md" target="_blank" rel="noreferrer">Privacy Model</a>
+                <a href="https://github.com/yihanzhu/valor/blob/main/SECURITY.md" target="_blank" rel="noreferrer">Security</a>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="section-layout open-source-section" id="open-source">
+          <div class="section-heading">
+            <p class="section-tag">Open source</p>
+            <h2>Public repo, local core, clear boundaries.</h2>
+          </div>
+
+          <div class="open-source-grid">
+            <article class="manifest-card">
+              <p class="card-label">Valor OSS v1</p>
+              <h3>What you get</h3>
+              <p>
+                A clean open-source repo for the local core: installer, prompts,
+                rules, evidence CLI, tests, privacy docs, and contributor docs.
+              </p>
+            </article>
+
+            <article class="manifest-card">
+              <p class="card-label">Not the goal</p>
+              <h3>Not another HR platform</h3>
+              <p>
+                Valor is not trying to become a generic performance-management
+                suite. The identity of the project is local, inspectable, and
+                developer-native.
+              </p>
+            </article>
+          </div>
+
+          <div class="code-snippet" aria-label="Install snippet">
+            <p class="card-label">Install</p>
+            <pre><code>git clone https://github.com/yihanzhu/valor.git ~/valor
+cd ~/valor
+bash install.sh</code></pre>
+          </div>
+        </section>
+
+        <section class="cta-section">
+          <div class="cta-copy">
+            <p class="section-tag">Next step</p>
+            <h2>Read the code. Check the trust boundary. Try the local core.</h2>
+            <p>
+              The fastest way to understand Valor is to inspect the repo and see
+              what it actually stores, installs, and runs.
+            </p>
+          </div>
+
+          <div class="cta-actions">
+            <a class="button button-primary" href="https://github.com/yihanzhu/valor" target="_blank" rel="noreferrer">Open the repo</a>
+            <a class="button button-secondary" href="https://github.com/yihanzhu/valor/blob/main/README.md" target="_blank" rel="noreferrer">Installation guide</a>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <p>Valor is an open-source local core for a local-first ambient career coach for developers.</p>
+        <div class="footer-links">
+          <a href="https://github.com/yihanzhu/valor" target="_blank" rel="noreferrer">GitHub</a>
+          <a href="https://github.com/yihanzhu/valor/blob/main/README.md" target="_blank" rel="noreferrer">README</a>
+          <a href="https://github.com/yihanzhu/valor/blob/main/PRIVACY.md" target="_blank" rel="noreferrer">Privacy</a>
+          <a href="https://github.com/yihanzhu/valor/blob/main/SECURITY.md" target="_blank" rel="noreferrer">Security</a>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>
