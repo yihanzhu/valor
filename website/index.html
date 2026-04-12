@@ -3,156 +3,115 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Valor | Local-First Ambient Career Coach</title>
+    <title>Valor | Local-First Career-Growth Layer for Developers</title>
     <meta
       name="description"
-      content="Valor is a local-first, privacy-first, developer-first ambient career coach for developers. Open-source local core."
+      content="Valor is a local-first, device-local career-growth layer for developers. It lives inside the coding agents users already prefer."
     >
-    <meta name="theme-color" content="#07111f">
+    <meta name="theme-color" content="#07101d">
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
     <div class="shell">
       <header class="header">
         <a class="brand" href="#top" aria-label="Valor home">
-          <span class="brand-mark"></span>
-          <span>Valor</span>
+          <span class="brand-text">Valor</span>
         </a>
-        <div class="header-actions">
-          <a class="text-link" href="#trust">Trust</a>
-          <a class="button button-secondary" href="https://github.com/yihanzhu/valor" target="_blank" rel="noreferrer">GitHub</a>
-        </div>
+        <nav class="header-nav" aria-label="Primary">
+          <a href="https://github.com/yihanzhu/valor" target="_blank" rel="noreferrer">GitHub</a>
+        </nav>
       </header>
 
       <main id="top">
         <section class="hero">
           <div class="hero-copy">
-            <p class="eyebrow">Open-source local core</p>
-            <h1>Ambient career coaching for developers, with the core kept local.</h1>
+            <p class="eyebrow">Local-first · Device-local · Agent-integrated</p>
+            <h1>Build your career with Valor</h1>
             <p class="lede">
-              Valor helps developers capture meaningful work, map it to their
-              own career framework, and get concrete next-level coaching
-              without turning that loop into a generic cloud platform.
+              A local-first growth layer inside your coding agent. Plan the day,
+              coach the work, carry context forward, and reflect over time.
             </p>
+            <p class="support-note">Built for work use. Core memory and evidence stay on your machine, not in a Valor backend.</p>
+            <div class="install-wrap hero-install">
+              <pre class="install-snippet" id="install-command"><code>git clone https://github.com/yihanzhu/valor.git ~/valor && cd ~/valor && bash install.sh</code></pre>
+              <button class="copy-button" type="button" data-copy-target="install-command" aria-label="Copy install command" title="Copy install command">
+                <span class="copy-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" focusable="false">
+                    <path d="M9 9h9v11H9z"></path>
+                    <path d="M6 4h9v2H8v9H6z"></path>
+                  </svg>
+                </span>
+              </button>
+            </div>
+            <p class="support-note">Works with Claude Code and Cursor today. Codex support is planned.</p>
             <div class="hero-actions">
-              <a class="button button-primary" href="https://github.com/yihanzhu/valor" target="_blank" rel="noreferrer">View on GitHub</a>
-              <a class="button button-secondary" href="https://github.com/yihanzhu/valor/blob/main/README.md" target="_blank" rel="noreferrer">Read the README</a>
-            </div>
-          </div>
-
-          <div class="hero-art" aria-hidden="true">
-            <div class="halo"></div>
-            <div class="sigil">
-              <span class="sigil-core"></span>
-              <span class="wing wing-left"></span>
-              <span class="wing wing-right"></span>
+              <a class="button button-primary" href="https://github.com/yihanzhu/valor" target="_blank" rel="noreferrer">GitHub</a>
+              <a class="button button-secondary" href="https://github.com/yihanzhu/valor/blob/main/README.md" target="_blank" rel="noreferrer">README</a>
             </div>
           </div>
         </section>
 
-        <section class="signal-bar" aria-label="Key properties">
-          <div>
-            <span class="signal-label">Local-first</span>
-            <p>Core state and evidence live under <code>~/.valor/</code>.</p>
-          </div>
-          <div>
-            <span class="signal-label">Privacy-first</span>
-            <p>No built-in telemetry, no hosted backend, no mandatory account.</p>
-          </div>
-          <div>
-            <span class="signal-label">Developer-first</span>
-            <p>Built around assistant-driven developer workflows, not HR workflows.</p>
-          </div>
-        </section>
-
-        <section class="section">
+        <section class="section" id="workday">
           <div class="section-head">
-            <p class="section-tag">What Valor is</p>
-            <h2>A local core for capturing the work that commits miss.</h2>
+            <p class="section-tag">Across the workday</p>
+            <h2>A simple loop.</h2>
           </div>
-          <div class="copy-grid">
-            <p>
-              Debugging, design trade-offs, mentoring, operational ownership,
-              cross-team alignment, and investigative work rarely show up
-              clearly in merge history.
-            </p>
-            <p>
-              Valor is designed around a different assumption: developers
-              already spend a meaningful part of their day working through
-              assistants and agents. That interaction layer can become a
-              useful, inspectable coaching loop instead of a black box.
-            </p>
-          </div>
-        </section>
 
-        <section class="section">
-          <div class="section-head">
-            <p class="section-tag">What ships today</p>
-            <h2>A focused starting point, not a platform sprawl.</h2>
-          </div>
-          <div class="list-card">
-            <ul>
-              <li>Morning briefing, weekly reflection, evening wrap-up</li>
-              <li>PR review coach, design doc coach, task identifier</li>
-              <li>Local evidence CLI and local storage model</li>
-              <li>Bring-your-own career framework</li>
-              <li>Inspectable prompts, rules, and Python logic</li>
-            </ul>
-          </div>
-        </section>
-
-        <section class="section trust-section" id="trust">
-          <div class="section-head">
-            <p class="section-tag">Trust boundary</p>
-            <h2>Local-first, with explicit limits.</h2>
-          </div>
-          <div class="trust-grid">
-            <article class="trust-card">
-              <h3>This repo does</h3>
-              <ul>
-                <li>Store local core data on your machine</li>
-                <li>Keep the core inspectable</li>
-                <li>Avoid built-in telemetry and cloud sync</li>
-              </ul>
+          <div class="workday-flow" aria-label="Valor loop">
+            <article class="flow-step">
+              <p class="panel-label">01</p>
+              <h3>Morning briefing</h3>
+              <p>Tasks, meetings, news.</p>
             </article>
-            <article class="trust-card">
-              <h3>This repo does not</h3>
-              <ul>
-                <li>Promise an air-gapped workflow by itself</li>
-                <li>Override your host assistant’s model or network behavior</li>
-                <li>Act as an employer-facing dashboard</li>
-              </ul>
+            <div class="flow-arrow" aria-hidden="true">→</div>
+            <article class="flow-step">
+              <p class="panel-label">02</p>
+              <h3>In-flow coaching</h3>
+              <p>Turn work into growth signals.</p>
             </article>
-          </div>
-          <div class="trust-links">
-            <a href="https://github.com/yihanzhu/valor/blob/main/PRIVACY.md" target="_blank" rel="noreferrer">Privacy model</a>
-            <a href="https://github.com/yihanzhu/valor/blob/main/SECURITY.md" target="_blank" rel="noreferrer">Security</a>
-          </div>
-        </section>
-
-        <section class="section install-section">
-          <div class="section-head">
-            <p class="section-tag">Install</p>
-            <h2>Read the code, inspect the boundary, try the local core.</h2>
-          </div>
-          <pre class="install-snippet"><code>git clone https://github.com/yihanzhu/valor.git ~/valor
-cd ~/valor
-bash install.sh</code></pre>
-          <div class="hero-actions">
-            <a class="button button-primary" href="https://github.com/yihanzhu/valor" target="_blank" rel="noreferrer">Open the repo</a>
-            <a class="button button-secondary" href="https://github.com/yihanzhu/valor/blob/main/PRIVACY.md" target="_blank" rel="noreferrer">Read privacy docs</a>
+            <div class="flow-arrow" aria-hidden="true">→</div>
+            <article class="flow-step">
+              <p class="panel-label">03</p>
+              <h3>Wrap-up</h3>
+              <p>Carry context forward.</p>
+            </article>
+            <div class="flow-arrow" aria-hidden="true">→</div>
+            <article class="flow-step">
+              <p class="panel-label">04</p>
+              <h3>Weekly reflection</h3>
+              <p>Review and improve.</p>
+            </article>
           </div>
         </section>
       </main>
 
       <footer class="footer">
-        <p>Named in part after Valor, the azurite eagle.</p>
-        <div class="footer-links">
-          <a href="https://github.com/yihanzhu/valor" target="_blank" rel="noreferrer">GitHub</a>
-          <a href="https://github.com/yihanzhu/valor/blob/main/README.md" target="_blank" rel="noreferrer">README</a>
-          <a href="https://github.com/yihanzhu/valor/blob/main/PRIVACY.md" target="_blank" rel="noreferrer">Privacy</a>
-        </div>
+        <p>&copy; 2026 Yihan Zhu</p>
+        <a href="https://github.com/yihanzhu/valor" target="_blank" rel="noreferrer">GitHub</a>
       </footer>
     </div>
+    <script>
+      for (const button of document.querySelectorAll("[data-copy-target]")) {
+        button.addEventListener("click", async () => {
+          const target = document.getElementById(button.dataset.copyTarget);
+          if (!target) return;
+
+          const text = target.innerText.trim();
+          const original = button.innerHTML;
+
+          try {
+            await navigator.clipboard.writeText(text);
+            button.classList.add("copied");
+          } catch {
+            button.classList.add("failed");
+          }
+
+          window.setTimeout(() => {
+            button.classList.remove("copied", "failed");
+            button.innerHTML = original;
+          }, 1600);
+        });
+      }
+    </script>
   </body>
 </html>
