@@ -8,8 +8,9 @@ adding entries, querying, stats, and backup.
 Usage:
     python3 src/evidence_cli.py add --activity pr_review --competency collaboration \
         --statement "Reviewed cross-team PR #892" --agent valor-morning-briefing
-    python3 src/evidence_cli.py stats
     python3 src/evidence_cli.py list --days 7
+    python3 src/evidence_cli.py search "PR review"
+    python3 src/evidence_cli.py stats
     python3 src/evidence_cli.py backup
     python3 src/evidence_cli.py schema-version
 """
@@ -268,6 +269,25 @@ def cmd_backup(args: argparse.Namespace) -> None:
             print(f"Removed old backup: {old.name}")
 
 
+def cmd_search(args: argparse.Namespace) -> None:
+    conn = get_conn()
+    ensure_schema(conn)
+    pattern = f"%{args.query}%"
+    query = (
+        "SELECT * FROM evidence "
+        "WHERE evidence_statement LIKE ? "
+        "ORDER BY date DESC, created_at DESC"
+    )
+    params: list = [pattern]
+    if args.limit:
+        query += " LIMIT ?"
+        params.append(args.limit)
+    rows = conn.execute(query, params).fetchall()
+    conn.close()
+    entries = [dict(r) for r in rows]
+    print(json.dumps(entries, indent=2))
+
+
 def cmd_schema_version(args: argparse.Namespace) -> None:
     conn = get_conn()
     ensure_schema(conn)
@@ -297,6 +317,10 @@ def main() -> None:
     p_list.add_argument("--competency", default=None, type=parse_competency)
     p_list.add_argument("--limit", type=int, default=50)
 
+    p_search = sub.add_parser("search", help="Full-text search on evidence statements")
+    p_search.add_argument("query", help="Text to search for (case-insensitive LIKE)")
+    p_search.add_argument("--limit", type=int, default=50)
+
     sub.add_parser("stats", help="Show evidence statistics")
     sub.add_parser("backup", help="Backup the database")
     sub.add_parser("schema-version", help="Show schema version history")
@@ -305,6 +329,7 @@ def main() -> None:
     commands = {
         "add": cmd_add,
         "list": cmd_list,
+        "search": cmd_search,
         "stats": cmd_stats,
         "backup": cmd_backup,
         "schema-version": cmd_schema_version,

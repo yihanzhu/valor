@@ -11,6 +11,7 @@ from src.evidence_cli import (
     ensure_schema,
     cmd_add,
     cmd_list,
+    cmd_search,
     cmd_stats,
     cmd_backup,
     cmd_schema_version,
@@ -205,6 +206,43 @@ def test_cmd_list_empty_db(cli_db, capsys):
     cmd_list(argparse.Namespace(days=None, competency=None, limit=50))
     entries = json.loads(capsys.readouterr().out)
     assert entries == []
+
+
+# --- cmd_search ---
+
+def test_cmd_search_finds_matching_entries(cli_db, capsys):
+    _add_entry("pr_review", "collaboration", "Reviewed cross-team PR #42")
+    _add_entry("code_written", "subject_matter", "Wrote caching layer")
+    capsys.readouterr()
+    cmd_search(argparse.Namespace(query="PR", limit=50))
+    entries = json.loads(capsys.readouterr().out)
+    assert len(entries) == 1
+    assert "PR #42" in entries[0]["evidence_statement"]
+
+
+def test_cmd_search_case_insensitive(cli_db, capsys):
+    _add_entry("code_written", "subject_matter", "Wrote CACHING layer")
+    capsys.readouterr()
+    cmd_search(argparse.Namespace(query="caching", limit=50))
+    entries = json.loads(capsys.readouterr().out)
+    assert len(entries) == 1
+
+
+def test_cmd_search_no_results(cli_db, capsys):
+    _add_entry("code_written", "subject_matter", "Wrote some code")
+    capsys.readouterr()
+    cmd_search(argparse.Namespace(query="nonexistent", limit=50))
+    entries = json.loads(capsys.readouterr().out)
+    assert entries == []
+
+
+def test_cmd_search_respects_limit(cli_db, capsys):
+    for i in range(5):
+        _add_entry(f"activity_{i}", "subject_matter", f"PR review {i}", agent=f"agent_{i}")
+    capsys.readouterr()
+    cmd_search(argparse.Namespace(query="PR review", limit=2))
+    entries = json.loads(capsys.readouterr().out)
+    assert len(entries) == 2
 
 
 # --- cmd_stats ---
