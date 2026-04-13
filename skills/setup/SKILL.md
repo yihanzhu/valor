@@ -30,6 +30,7 @@ Create `~/.valor/state.json` with initial content:
 ```bash
 cat > ~/.valor/state.json <<'JSON'
 {
+  "state_schema_version": 2,
   "current_level": "",
   "target_level": "",
   "ceiling_level": "",
@@ -112,6 +113,6 @@ the plugin -- run `install.sh` from the Valor repo for ambient coaching:
 cd ~/valor && bash install.sh
 ```
 
-Without this step, the 6 Valor commands (`/valor:briefing`,
-`/valor:weekly`, etc.) work normally, but you won't get automatic coaching
-annotations after tasks.
+Without this step, the 7 Valor commands (`/valor:briefing`,
+`/valor:weekly`, `/valor:prep`, etc.) work normally, but you won't get
+automatic coaching annotations after tasks.
