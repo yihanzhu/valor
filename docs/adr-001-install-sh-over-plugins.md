@@ -63,9 +63,6 @@ inline approach via `CLAUDE.md` instructions.
   `install.sh` for the full experience.
 - Future contributors should not invest in making the plugin a full delivery
   channel unless the plugin system gains a mechanism for always-on instructions.
-- The `SessionStart` hook lives in both the plugin (`hooks/hooks.json`) and the
-  installer (`install.sh` writes to `~/.claude/settings.json`).
-
 ## Alternatives considered
 
 1. **Remove plugins entirely** -- simpler, but loses marketplace discoverability.
@@ -75,3 +72,8 @@ inline approach via `CLAUDE.md` instructions.
 3. **Plugin agents** -- Claude Code plugins can define agents that Claude
    invokes "automatically based on task context." Less reliable than rule-based
    enforcement and still doesn't cover always-on coaching.
+4. **SessionStart hook for auto-triggers** -- prototyped and tested. The hook
+   injected suggestions into conversation context before Claude processed.
+   Removed because the ambient rule in `CLAUDE.md` already handles auto-trigger
+   checks for all targets (Codex and Cursor don't support hooks), making the
+   hook a redundant, single-platform optimization.

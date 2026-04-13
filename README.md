@@ -34,19 +34,21 @@ that helps with both daily execution and long-term growth.
 - **Privacy-first**: no built-in telemetry, analytics, or cloud sync in this repo.
 - **Inspectable**: most of the system is plain Markdown and Python.
 - **Bring your own framework**: Valor adapts to your company's ladder instead of
-  hardcoding one.
+hardcoding one.
 
 ## What Valor Does Today
 
-| Agent | Trigger | What it does |
-|-------|---------|--------------|
-| **Morning Briefing** | Auto before 11am, or `/valor-briefing` | Jira tickets, PRs, calendar, news, coaching, priorities |
-| **PR Review Coach** | `/valor-pr-review` or "help me review" | Senior-level code review guidance with architecture, testing, and tone coaching |
-| **Design Doc Coach** | `/valor-design-doc` or "how should I approach" | Structured design guidance with options, trade-offs, and recommendations |
-| **Weekly Reflection** | Auto Friday, or `/valor-weekly` | Week summary mapped to competencies, gap analysis, and 1:1 narrative |
-| **Task Identifier** | `/valor-tasks` or "what should I work on" | High-impact work prioritized by career growth potential |
-| **Evening Wrap-up** | Auto after 5pm, or `/valor-wrapup` | Day summary, carry-forward items, and career reflection |
-| **1:1 Prep** | `/valor-prep` or "prep for 1:1" | Evidence-grounded prep document for manager 1:1s |
+
+| Agent                 | Trigger                                        | What it does                                                                    |
+| --------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------- |
+| **Morning Briefing**  | Auto before 11am, or `/valor-briefing`         | Jira tickets, PRs, calendar, news, coaching, priorities                         |
+| **PR Review Coach**   | `/valor-pr-review` or "help me review"         | Senior-level code review guidance with architecture, testing, and tone coaching |
+| **Design Doc Coach**  | `/valor-design-doc` or "how should I approach" | Structured design guidance with options, trade-offs, and recommendations        |
+| **Weekly Reflection** | Auto Friday, or `/valor-weekly`                | Week summary mapped to competencies, gap analysis, and 1:1 narrative            |
+| **Task Identifier**   | `/valor-tasks` or "what should I work on"      | High-impact work prioritized by career growth potential                         |
+| **Evening Wrap-up**   | Auto after 5pm, or `/valor-wrapup`             | Day summary, carry-forward items, and career reflection                         |
+| **1:1 Prep**          | `/valor-prep` or "prep for 1:1"                | Evidence-grounded prep document for manager 1:1s                                |
+
 
 Beyond the discrete commands, Valor also supports **ambient coaching**. After a
 meaningful task, it can classify the work, connect it to target-level
@@ -163,11 +165,13 @@ stay the same.
 
 Valor works best when these tools are already available in your environment:
 
-| Tool | What for | Required? |
-|------|----------|-----------|
-| `gh` CLI | GitHub PR and issue data | Recommended |
-| Jira / Atlassian integration | Ticket discovery | Recommended |
-| Calendar integration | Meetings and schedule context | Optional |
+
+| Tool                         | What for                      | Required?   |
+| ---------------------------- | ----------------------------- | ----------- |
+| `gh` CLI                     | GitHub PR and issue data      | Recommended |
+| Jira / Atlassian integration | Ticket discovery              | Recommended |
+| Calendar integration         | Meetings and schedule context | Optional    |
+
 
 If one of these is unavailable, the affected command should skip that section
 and continue with the other available signals.
@@ -236,9 +240,7 @@ valor/
 ├── .codex-plugin/          # Codex CLI plugin manifest (discovery only)
 ├── bin/                    # CLI wrappers (valor-evidence)
 ├── commands/               # User-invoked assistant commands
-├── hooks/                  # Plugin hook definitions (SessionStart)
 ├── rules/                  # Always-applied Valor rule
-├── scripts/                # Hook scripts (session-check.sh)
 ├── skills/                 # Plugin skills (setup)
 ├── src/                    # Local evidence and competency logic
 ├── tests/                  # Test suite
