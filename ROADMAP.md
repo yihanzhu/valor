@@ -53,15 +53,14 @@ What shipped:
 
 ## Phase 4: Agent-Native Extensions
 
-**Status:** Planned
+**Status:** Complete
 
-Valor lives inside LLM coding agents -- it is not standalone software.
-Phase 4 extends Valor's capabilities within agent sessions:
+What shipped:
 
-- richer exports for promotion packets and review prep
-- plugin adapters for more agent platforms
-- deeper integration with agent memory and context systems
-- evidence-driven career narrative generation
+- Codex CLI support (`--target codex`) with AGENTS.md rule and skills adapter
+- `.codex-plugin/plugin.json` for Codex plugin system
+- three install targets: Claude Code (default), Codex CLI, Cursor (legacy)
+- docs updated across README, architecture, and getting-started
 
 ## Future Considerations
 
