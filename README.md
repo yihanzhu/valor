@@ -107,6 +107,10 @@ For Cursor (legacy):
 bash install.sh --target cursor
 ```
 
+For a complete walkthrough including career framework setup, level
+configuration, and integration options, see
+[docs/getting-started.md](docs/getting-started.md).
+
 ## First-Time Setup
 
 After install, configure two local files:
