@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Wrapper for the Valor evidence CLI.
+# Available on PATH when the Valor plugin is enabled in Claude Code.
+exec python3 "$HOME/.valor/evidence_cli.py" "$@"

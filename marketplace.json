@@ -1,0 +1,13 @@
+{
+  "name": "valor-marketplace",
+  "owner": {
+    "name": "Yihan Zhu"
+  },
+  "plugins": [
+    {
+      "name": "valor",
+      "source": ".",
+      "description": "Ambient career coach for developers -- evidence tracking, coaching, briefings, reflections."
+    }
+  ]
+}
