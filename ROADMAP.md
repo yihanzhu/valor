@@ -25,27 +25,31 @@ What shipped:
 
 ## Phase 2: Open-Source Hardening
 
-**Status:** In progress
+**Status:** Complete
 
-Focus areas:
+What shipped:
 
-- privacy and security documentation
-- clearer public-facing README and project framing
-- contributor workflow and CI
-- tighter separation between local core and optional integrations
-- improved docs around the trust boundary
+- integration portability model (state.json flags, auto-detection, graceful skip)
+- contributor workflow (PR/issue templates, Ruff linter in CI)
+- getting-started guide and integrations documentation
+- expanded test coverage (87 -> 106 tests)
 
 ## Phase 3: Better Local Packaging
 
-**Status:** Planned
+**Status:** Complete
 
-Possible work:
+What shipped:
 
-- more transparent local exports beyond SQLite
-- improved workspace separation
-- friendlier install and upgrade flows
-- better local state introspection
-- standalone local packaging beyond assistant-specific installation
+- VERSION file and `--version` flag for traceability
+- `--upgrade` flag (git pull + re-install) and version tracking in state.json
+- Claude Code plugin packaging (plugin.json, marketplace.json, bin/, setup skill)
+- command files renamed for plugin namespace (`/valor:briefing` etc.)
+- evidence CLI enhancements: `search`, `export`, `status` subcommands
+- improved `list` filtering: `--from`, `--to`, `--activity` date/type filters
+- state_schema_version for forward-only state.json migrations
+- architecture documentation (docs/architecture.md)
+- `--clone` flag and curl one-liner for quick install
+- test coverage: 106 -> 120 tests
 
 ## Phase 4: Local Background Assistance
 
