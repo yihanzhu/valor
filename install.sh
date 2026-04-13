@@ -137,6 +137,32 @@ detect_integrations() {
     echo "{\"github\": $github, \"jira\": $jira, \"calendar\": $calendar, \"news\": $news}"
 }
 
+# --- Shared sed transforms for non-Claude-Code targets (stdin -> stdout) ---
+# Adding a new command? Update COMMAND_MAP above and add one line here.
+apply_shared_transforms() {
+    sed \
+        -e 's|/valor-briefing|valor-morning-briefing skill|g' \
+        -e 's|/valor-pr-review|valor-pr-review-coach skill|g' \
+        -e 's|/valor-design-doc|valor-design-doc-coach skill|g' \
+        -e 's|/valor-weekly|valor-weekly-reflection skill|g' \
+        -e 's|/valor-tasks|valor-task-identifier skill|g' \
+        -e 's|/valor-wrapup|valor-evening-wrapup skill|g' \
+        -e 's|Bash tool|Shell tool|g'
+}
+
+# --- Backtick command references -> skill paths for a target dir (stdin -> stdout) ---
+# Run BEFORE apply_shared_transforms so the more specific patterns match first.
+apply_rule_transforms() {
+    local target_dir="$1"
+    sed \
+        -e "s|\`/valor-briefing\` command|\`~/$target_dir/skills/valor-morning-briefing/SKILL.md\`|g" \
+        -e "s|\`/valor-pr-review\` command|\`~/$target_dir/skills/valor-pr-review-coach/SKILL.md\`|g" \
+        -e "s|\`/valor-design-doc\` command|\`~/$target_dir/skills/valor-design-doc-coach/SKILL.md\`|g" \
+        -e "s|\`/valor-weekly\` command|\`~/$target_dir/skills/valor-weekly-reflection/SKILL.md\`|g" \
+        -e "s|\`/valor-tasks\` command|\`~/$target_dir/skills/valor-task-identifier/SKILL.md\`|g" \
+        -e "s|\`/valor-wrapup\` command|\`~/$target_dir/skills/valor-evening-wrapup/SKILL.md\`|g"
+}
+
 # --- Generate Cursor .mdc from the universal agent rule ---
 generate_cursor_rule() {
     local src="$1"
@@ -147,73 +173,18 @@ generate_cursor_rule() {
         echo 'alwaysApply: true'
         echo '---'
         echo ""
-        # Transform Claude Code references to Cursor equivalents
-        sed \
-            -e 's|`/valor-briefing` command|`~/.cursor/skills/valor-morning-briefing/SKILL.md`|g' \
-            -e 's|`/valor-pr-review` command|`~/.cursor/skills/valor-pr-review-coach/SKILL.md`|g' \
-            -e 's|`/valor-design-doc` command|`~/.cursor/skills/valor-design-doc-coach/SKILL.md`|g' \
-            -e 's|`/valor-weekly` command|`~/.cursor/skills/valor-weekly-reflection/SKILL.md`|g' \
-            -e 's|`/valor-tasks` command|`~/.cursor/skills/valor-task-identifier/SKILL.md`|g' \
-            -e 's|`/valor-wrapup` command|`~/.cursor/skills/valor-evening-wrapup/SKILL.md`|g' \
-            -e 's|/valor-briefing|valor-morning-briefing skill|g' \
-            -e 's|/valor-pr-review|valor-pr-review-coach skill|g' \
-            -e 's|/valor-design-doc|valor-design-doc-coach skill|g' \
-            -e 's|/valor-weekly|valor-weekly-reflection skill|g' \
-            -e 's|/valor-tasks|valor-task-identifier skill|g' \
-            -e 's|/valor-wrapup|valor-evening-wrapup skill|g' \
-            -e 's|Bash tool|Shell tool|g' \
-            "$src"
+        apply_rule_transforms ".cursor" < "$src" | apply_shared_transforms
     } > "$dst"
 }
 
-# --- Generate Cursor SKILL.md from a command file ---
-generate_cursor_skill() {
-    local src="$1"
-    local dst="$2"
-    local skill_name="$3"
-    local description="$4"
-    {
-        echo '---'
-        echo "name: $skill_name"
-        echo "description: \"$description\""
-        echo '---'
-        echo ""
-        # Transform Claude Code references to Cursor equivalents
-        sed \
-            -e 's|/valor-briefing|valor-morning-briefing skill|g' \
-            -e 's|/valor-pr-review|valor-pr-review-coach skill|g' \
-            -e 's|/valor-design-doc|valor-design-doc-coach skill|g' \
-            -e 's|/valor-weekly|valor-weekly-reflection skill|g' \
-            -e 's|/valor-tasks|valor-task-identifier skill|g' \
-            -e 's|/valor-wrapup|valor-evening-wrapup skill|g' \
-            -e 's|Bash tool|Shell tool|g' \
-            "$src"
-    } > "$dst"
-}
-
-# --- Generate Codex AGENTS.md content from the universal agent rule ---
+# --- Generate Codex AGENTS.md content from the universal agent rule (stdout) ---
 generate_codex_rule_content() {
     local src="$1"
-    # Transform Claude Code references to Codex equivalents
-    sed \
-        -e 's|`/valor-briefing` command|`~/.codex/skills/valor-morning-briefing/SKILL.md`|g' \
-        -e 's|`/valor-pr-review` command|`~/.codex/skills/valor-pr-review-coach/SKILL.md`|g' \
-        -e 's|`/valor-design-doc` command|`~/.codex/skills/valor-design-doc-coach/SKILL.md`|g' \
-        -e 's|`/valor-weekly` command|`~/.codex/skills/valor-weekly-reflection/SKILL.md`|g' \
-        -e 's|`/valor-tasks` command|`~/.codex/skills/valor-task-identifier/SKILL.md`|g' \
-        -e 's|`/valor-wrapup` command|`~/.codex/skills/valor-evening-wrapup/SKILL.md`|g' \
-        -e 's|/valor-briefing|valor-morning-briefing skill|g' \
-        -e 's|/valor-pr-review|valor-pr-review-coach skill|g' \
-        -e 's|/valor-design-doc|valor-design-doc-coach skill|g' \
-        -e 's|/valor-weekly|valor-weekly-reflection skill|g' \
-        -e 's|/valor-tasks|valor-task-identifier skill|g' \
-        -e 's|/valor-wrapup|valor-evening-wrapup skill|g' \
-        -e 's|Bash tool|Shell tool|g' \
-        "$src"
+    apply_rule_transforms ".codex" < "$src" | apply_shared_transforms
 }
 
-# --- Generate Codex SKILL.md from a command file ---
-generate_codex_skill() {
+# --- Generate SKILL.md from a command file (shared by Cursor and Codex) ---
+generate_skill() {
     local src="$1"
     local dst="$2"
     local skill_name="$3"
@@ -224,15 +195,7 @@ generate_codex_skill() {
         echo "description: \"$description\""
         echo '---'
         echo ""
-        sed \
-            -e 's|/valor-briefing|valor-morning-briefing skill|g' \
-            -e 's|/valor-pr-review|valor-pr-review-coach skill|g' \
-            -e 's|/valor-design-doc|valor-design-doc-coach skill|g' \
-            -e 's|/valor-weekly|valor-weekly-reflection skill|g' \
-            -e 's|/valor-tasks|valor-task-identifier skill|g' \
-            -e 's|/valor-wrapup|valor-evening-wrapup skill|g' \
-            -e 's|Bash tool|Shell tool|g' \
-            "$src"
+        apply_shared_transforms < "$src"
     } > "$dst"
 }
 
@@ -371,7 +334,7 @@ check_drift() {
             else
                 local tmp_generated
                 tmp_generated=$(mktemp)
-                generate_codex_skill "$src" "$tmp_generated" "$skill_name" "$description"
+                generate_skill "$src" "$tmp_generated" "$skill_name" "$description"
                 if ! diff -q "$tmp_generated" "$dst" > /dev/null 2>&1; then
                     echo "[DRIFT]   $dst"
                     drift_count=$((drift_count + 1))
@@ -388,7 +351,7 @@ check_drift() {
             else
                 local tmp_generated
                 tmp_generated=$(mktemp)
-                generate_cursor_skill "$src" "$tmp_generated" "$skill_name" "$description" "$cc_name"
+                generate_skill "$src" "$tmp_generated" "$skill_name" "$description"
                 if ! diff -q "$tmp_generated" "$dst" > /dev/null 2>&1; then
                     echo "[DRIFT]   $dst"
                     drift_count=$((drift_count + 1))
@@ -496,7 +459,7 @@ if [ "$TARGET" = "cursor" ]; then
     for entry in "${COMMAND_MAP[@]}"; do
         IFS=':' read -r src_name cc_name skill_name description <<< "$entry"
         mkdir -p "$AGENT_SKILLS/$skill_name"
-        generate_cursor_skill "$SCRIPT_DIR/commands/$src_name.md" \
+        generate_skill "$SCRIPT_DIR/commands/$src_name.md" \
             "$AGENT_SKILLS/$skill_name/SKILL.md" "$skill_name" "$description"
         echo "[OK] Generated skill -> $AGENT_SKILLS/$skill_name/"
     done
@@ -527,7 +490,7 @@ elif [ "$TARGET" = "codex" ]; then
     for entry in "${COMMAND_MAP[@]}"; do
         IFS=':' read -r src_name cc_name skill_name description <<< "$entry"
         mkdir -p "$CODEX_SKILLS/$skill_name"
-        generate_codex_skill "$SCRIPT_DIR/commands/$src_name.md" \
+        generate_skill "$SCRIPT_DIR/commands/$src_name.md" \
             "$CODEX_SKILLS/$skill_name/SKILL.md" "$skill_name" "$description"
         echo "[OK] Generated skill -> $CODEX_SKILLS/$skill_name/"
     done
