@@ -9,11 +9,11 @@ required.
 ```bash
 git clone https://github.com/yihanzhu/valor.git ~/valor
 cd ~/valor
-bash install.sh                    # Claude Code (default)
-# or
-bash install.sh --target codex     # Codex CLI
-# or
-bash install.sh --target cursor    # Cursor
+bash install.sh                           # All targets (default)
+# or install for a specific target:
+bash install.sh --target claude-code      # Claude Code only
+bash install.sh --target codex            # Codex CLI only
+bash install.sh --target cursor           # Cursor only
 ```
 
 This creates `~/.valor/` for local state and evidence, and installs Valor's

@@ -1,15 +1,15 @@
 #!/bin/bash
-# Valor installer -- deploys agent rule + commands to Claude Code, Codex, or Cursor.
+# Valor installer -- deploys agent rule + commands to Claude Code, Codex, and Cursor.
 #
 # Source of truth: rules/valor-agent.md + commands/*.md (Claude Code format)
 # For Cursor/Codex: install.sh generates SKILL.md wrappers with frontmatter.
 #
 # Usage:
-#   ./install.sh                              Install for Claude Code (default)
-#   ./install.sh --target claude-code         Install for Claude Code
-#   ./install.sh --target codex               Install for Codex CLI
-#   ./install.sh --target cursor              Install for Cursor
-#   ./install.sh --target all                 Install for all three
+#   ./install.sh                              Install for all targets (default)
+#   ./install.sh --target all                 Same as above
+#   ./install.sh --target claude-code         Install for Claude Code only
+#   ./install.sh --target codex               Install for Codex CLI only
+#   ./install.sh --target cursor              Install for Cursor only
 #   ./install.sh --check                      Check for drift (uses current target)
 #   ./install.sh --target codex --check       Check drift for Codex
 #   ./install.sh --version                    Print version and exit
@@ -61,7 +61,7 @@ COMMAND_MAP=(
 VALOR_VERSION="$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "unknown")"
 
 # --- Parse arguments ---
-TARGET="claude-code"
+TARGET="all"
 CHECK_ONLY=false
 
 while [ "$#" -gt 0 ]; do

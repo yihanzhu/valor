@@ -103,7 +103,8 @@ curl -fsSL https://raw.githubusercontent.com/yihanzhu/valor/main/install.sh | ba
 ```
 
 This clones the repo to `~/valor`, creates `~/.valor/` for local state and
-evidence, and installs Valor's rule and commands for Claude Code.
+evidence, and installs Valor for all supported agents (Claude Code, Codex CLI,
+and Cursor).
 
 **Manual install:**
 
@@ -113,17 +114,12 @@ cd ~/valor
 bash install.sh
 ```
 
-**For all three (Claude Code + Codex CLI + Cursor):**
+**Install for a specific target only:**
 
 ```bash
-bash install.sh --target all
-```
-
-**Or individually:**
-
-```bash
-bash install.sh --target codex    # Codex CLI only
-bash install.sh --target cursor   # Cursor only
+bash install.sh --target claude-code   # Claude Code only
+bash install.sh --target codex         # Codex CLI only
+bash install.sh --target cursor        # Cursor only
 ```
 
 **Upgrade to latest:**
@@ -229,8 +225,8 @@ If you are editing installed artifacts locally, you can verify they still match
 the repo source:
 
 ```bash
-./install.sh --check                    # Claude Code (default)
-./install.sh --target all --check       # All targets
+./install.sh --check                          # All targets (default)
+./install.sh --target claude-code --check     # Claude Code only
 ```
 
 ## Project Layout
