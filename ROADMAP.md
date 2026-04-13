@@ -19,7 +19,7 @@ What shipped:
 
 - local evidence store and CLI
 - configurable career framework template
-- six assistant workflows
+- six assistant workflows (expanded to seven in Phase 5)
 - ambient coaching rules
 - install flow for Claude Code, with Cursor kept as a legacy target
 

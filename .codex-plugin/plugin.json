@@ -1,6 +1,6 @@
 {
   "name": "valor",
-  "description": "Ambient career coach for developers -- morning briefings, PR review coaching, design doc guidance, weekly reflections, task identification, and evening wrap-ups with evidence tracking.",
+  "description": "Career coach commands for developers -- morning briefings, PR review coaching, design doc guidance, weekly reflections, task identification, evening wrap-ups, and 1:1 prep with evidence tracking. For ambient coaching, install with install.sh.",
   "version": "0.3.0",
   "author": {
     "name": "Yihan Zhu"

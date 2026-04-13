@@ -259,10 +259,13 @@ Evidence CLI: `python3 ~/.valor/evidence_cli.py`
 - `today_priorities` (morning briefing -> evening wrapup reconciliation)
 - `user_work_areas`, `user_work_areas_pinned`, `user_work_areas_retired` (work area lifecycle)
 - `coaching_mode` (quiet mode toggle)
+- `integrations` (boolean flags: github, jira, calendar, news)
 - `github_owner` (GitHub org for PR search)
 - `jira_projects` (list of Jira project keys for task discovery)
 - `briefing_suggest_before` (default 11), `wrapup_suggest_after` (default 17) (trigger hours)
 - `work_area_refresh_interval` (default 5), `staleness_suppress_interval` (default 10)
+- `state_schema_version` (integer for installer migrations)
+- `installed_version`, `installed_at` (install tracking)
 
 ## Behavior Rules
 

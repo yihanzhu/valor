@@ -242,7 +242,7 @@ valor/
 ├── tests/                  # Test suite
 ├── docs/                   # Architecture, integrations, getting started
 ├── website/                # Minimal static landing page
-├── install.sh              # Installer for Claude Code and Cursor
+├── install.sh              # Installer for Claude Code, Codex CLI, and Cursor
 ├── marketplace.json        # Plugin catalog
 ├── VERSION                 # Version (single source of truth)
 └── ...                     # LICENSE, ROADMAP, CONTRIBUTING, etc.

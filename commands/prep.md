@@ -45,7 +45,7 @@ python3 ~/.valor/evidence_cli.py weekly-summary-list --limit 4
 
 If available, use these to show trends across weeks (e.g., "collaboration
 has been growing over the last 3 weeks"). If none exist, skip the trend
-section -- weekly-summary persistence is new.
+section if none are available yet.
 
 ### 2.3 Career Framework
 

@@ -31,8 +31,8 @@ valor repo (github.com/yihanzhu/valor)
 | Claude Code    | `~/.claude/CLAUDE.md`        | `~/.claude/commands/` | `~/.valor/`  |
 | Codex CLI      | `~/.codex/AGENTS.md`         | `~/.codex/skills/`    | `~/.valor/`  |
 | Cursor         | `~/.cursor/rules/`           | `~/.cursor/skills/`   | `~/.valor/`  |
-| Plugin (CC)    | Not supported (ambient only) | Plugin `commands/`    | `~/.valor/`  |
-| Plugin (Codex) | Not supported (ambient only) | Plugin `skills/`      | `~/.valor/`  |
+| Plugin (CC)    | -- (commands only)           | Plugin `commands/`    | `~/.valor/`  |
+| Plugin (Codex) | -- (commands only)           | Plugin `skills/`      | `~/.valor/`  |
 
 
 ## Local State (`~/.valor/`)
