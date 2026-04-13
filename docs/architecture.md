@@ -3,7 +3,7 @@
 ## Overview
 
 Valor is a local-first ambient career coach for developers. It runs entirely
-inside AI coding assistants (Claude Code, Cursor) as a set of prompts and a
+inside AI coding assistants (Claude Code, Codex CLI, Cursor) as a set of prompts and a
 lightweight Python evidence store. Valor is not standalone software -- it has
 no daemon, no background process, and no runtime outside of agent sessions.
 All data stays on the user's machine.
@@ -56,14 +56,15 @@ and `utilities.md`).
 ### state.json schema
 
 The `installed_version` and `installed_at` fields track when the last install
-happened. A future `state_schema_version` field will allow state.json
-migrations similar to how `evidence.sqlite` handles schema versions.
+happened. The `state_schema_version` field enables forward-only migrations
+when the installer adds new fields (currently at version 2).
 
 Key fields:
 
 - `current_level`, `target_level`, `ceiling_level` -- career level config
 - `coaching_mode` -- `"ambient"` (default), `"quiet"`, or `"off"`
 - `integrations` -- boolean flags for github, jira, calendar, news
+- `state_schema_version` -- integer for installer migrations
 - `installed_version`, `installed_at` -- install tracking
 
 ### evidence.sqlite schema
@@ -108,7 +109,10 @@ User completes a task
   └─> Agent annotates response with coaching
         └─> evidence_cli.py add --activity ... --competency ... --statement ...
               └─> evidence.sqlite (local)
-                    └─> evidence_cli.py stats / search / export (introspection)
+                    ├─> evidence_cli.py stats / search / export (introspection)
+                    ├─> evidence_cli.py weekly-summary-save (weekly reflection persistence)
+                    ├─> evidence_cli.py feedback-add (feedback tracking)
+                    └─> /valor-prep reads evidence + weekly summaries for 1:1 prep
 ```
 
 Evidence is append-only. Deduplication prevents duplicate entries (same date +

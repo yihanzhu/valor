@@ -39,6 +39,7 @@ Which integrations each command uses:
 | Weekly Reflection | Merged PRs, reviewed PRs | Tickets completed this week | -- | -- | Competency breakdown, trends |
 | Task Identifier | Open issues, PRs to review | Unassigned, stale, high-priority tickets | -- | -- | Competency gaps for ranking |
 | Evening Wrap-up | -- | -- | -- | -- | Today's entries, carry-forward |
+| 1:1 Prep | Merged/reviewed PRs (optional) | Completed tickets (optional) | -- | -- | Primary source: evidence + weekly summaries |
 
 **Legend:** "Required" means the command cannot function without it. "--"
 means the command does not use that integration. All other entries are
@@ -104,6 +105,7 @@ If all integrations are set to `false`, Valor still works:
 - **Weekly Reflection:** Evidence-based competency breakdown and trends.
 - **Task Identifier:** Competency gap analysis with suggestions.
 - **Design Doc Coach:** Fully functional -- asks user for context directly.
+- **1:1 Prep:** Fully functional from evidence store and weekly summaries.
 - **PR Review Coach:** Requires GitHub (cannot function without it).
 
 This is a valid workflow for users who want career coaching without

@@ -107,6 +107,8 @@ python3 ~/.valor/evidence_cli.py add \
 
 ```bash
 python3 ~/.valor/evidence_cli.py stats
+python3 ~/.valor/evidence_cli.py export --days 7 --format markdown
+python3 ~/.valor/evidence_cli.py weekly-summary-list --limit 4
 ```
 
 ## 6. Add Integrations Later
@@ -126,6 +128,7 @@ career coaching loop.
 ## What's Next
 
 - Run a few briefings and wrap-ups to build evidence
-- Try `valor-weekly` at the end of the week for a 1:1 prep narrative
+- Try `/valor-weekly` at the end of the week for a weekly reflection
+- Say "prep for 1:1" or use `/valor-prep` before your manager sync
 - Say "what should I work on" to find high-impact tasks
 - Say "valor quiet" to suppress coaching for a conversation

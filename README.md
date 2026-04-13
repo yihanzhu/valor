@@ -46,6 +46,7 @@ that helps with both daily execution and long-term growth.
 | **Weekly Reflection** | Auto Friday, or `/valor-weekly` | Week summary mapped to competencies, gap analysis, and 1:1 narrative |
 | **Task Identifier** | `/valor-tasks` or "what should I work on" | High-impact work prioritized by career growth potential |
 | **Evening Wrap-up** | Auto after 5pm, or `/valor-wrapup` | Day summary, carry-forward items, and career reflection |
+| **1:1 Prep** | `/valor-prep` or "prep for 1:1" | Evidence-grounded prep document for manager 1:1s |
 
 Beyond the discrete commands, Valor also supports **ambient coaching**. After a
 meaningful task, it can classify the work, connect it to target-level
@@ -187,6 +188,7 @@ Commands:
 - `/valor-weekly`
 - `/valor-tasks`
 - `/valor-wrapup`
+- `/valor-prep`
 
 Natural language also works:
 
@@ -196,6 +198,7 @@ Natural language also works:
 - "what did I do this week"
 - "what should I work on"
 - "wrap up"
+- "prep for 1:1"
 
 Ambient coaching controls:
 

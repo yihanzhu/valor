@@ -63,6 +63,24 @@ When an integration is enabled (`true`), discover the specific tool to use:
 1. Use `python3 ~/.valor/evidence_cli.py` if available
 2. Fall back to direct `sqlite3` queries on `~/.valor/evidence.sqlite`
 
+### Evidence CLI subcommands
+
+| Subcommand | Purpose |
+|------------|---------|
+| `add` | Record evidence (`--activity`, `--competency`, `--statement`, `--agent`, `--date`, `--metadata`) |
+| `list` | List entries (`--days`, `--from`, `--to`, `--competency`, `--activity`, `--limit`) |
+| `search` | Full-text search on statements (`query`, `--limit`) |
+| `export` | Export entries (`--format json/markdown`, `--days`, `--from`, `--to`, `--competency`) |
+| `stats` | Totals, by-competency, this-week, by-agent, recent entries |
+| `status` | Valor home, version, levels, coaching mode, integrations, evidence counts |
+| `backup` | Copy DB to `~/.valor/backups/` (keeps last 10) |
+| `schema-version` | Show schema migration history |
+| `feedback-add` | Record feedback (`--agent`, `--type`, `--evidence-id`) |
+| `feedback-stats` | Feedback counts by type (`--agent` filter) |
+| `weekly-summary-save` | Persist weekly reflection (`--week-start`, `--week-end`, `--summary`, `--gaps`, `--narrative`) |
+| `weekly-summary-list` | List recent summaries (`--limit`) |
+| `weekly-summary-get` | Get summary by week (`--week-start`) |
+
 ## State Management
 
 State file: `~/.valor/state.json`
