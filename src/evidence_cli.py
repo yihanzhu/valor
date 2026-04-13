@@ -10,11 +10,15 @@ Usage:
         --statement "Reviewed cross-team PR #892" --agent valor-morning-briefing
     python3 src/evidence_cli.py list --days 7
     python3 src/evidence_cli.py search "PR review"
-    python3 src/evidence_cli.py export --format markdown
+    python3 src/evidence_cli.py export --format markdown --days 7
     python3 src/evidence_cli.py stats
     python3 src/evidence_cli.py status
     python3 src/evidence_cli.py backup
     python3 src/evidence_cli.py schema-version
+    python3 src/evidence_cli.py weekly-summary-save --week-start 2026-04-06 \
+        --week-end 2026-04-12 --summary '{"subject_matter": 3}' --narrative "Good week"
+    python3 src/evidence_cli.py weekly-summary-list --limit 4
+    python3 src/evidence_cli.py weekly-summary-get --week-start 2026-04-06
 """
 
 from __future__ import annotations
@@ -402,6 +406,59 @@ def cmd_status(args: argparse.Namespace) -> None:
     print(json.dumps(status, indent=2))
 
 
+def cmd_weekly_summary_save(args: argparse.Namespace) -> None:
+    conn = get_conn()
+    ensure_schema(conn)
+    entry_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    summary_data = args.summary if isinstance(args.summary, str) else json.dumps(args.summary)
+    gaps_data = args.gaps if isinstance(args.gaps, str) else json.dumps(args.gaps)
+    conn.execute(
+        "INSERT OR REPLACE INTO weekly_summary "
+        "(id, week_start, week_end, summary, gaps, narrative, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (entry_id, args.week_start, args.week_end, summary_data, gaps_data,
+         args.narrative or "", now),
+    )
+    conn.commit()
+    conn.close()
+    print(json.dumps({"status": "ok", "id": entry_id, "week_start": args.week_start}))
+
+
+def cmd_weekly_summary_list(args: argparse.Namespace) -> None:
+    conn = get_conn()
+    ensure_schema(conn)
+    rows = conn.execute(
+        "SELECT * FROM weekly_summary ORDER BY week_start DESC LIMIT ?",
+        (args.limit,),
+    ).fetchall()
+    conn.close()
+    entries = []
+    for r in rows:
+        entry = dict(r)
+        entry["summary"] = json.loads(entry["summary"])
+        entry["gaps"] = json.loads(entry["gaps"])
+        entries.append(entry)
+    print(json.dumps(entries, indent=2))
+
+
+def cmd_weekly_summary_get(args: argparse.Namespace) -> None:
+    conn = get_conn()
+    ensure_schema(conn)
+    row = conn.execute(
+        "SELECT * FROM weekly_summary WHERE week_start = ?",
+        (args.week_start,),
+    ).fetchone()
+    conn.close()
+    if not row:
+        print(json.dumps({"status": "not_found", "week_start": args.week_start}))
+        return
+    entry = dict(row)
+    entry["summary"] = json.loads(entry["summary"])
+    entry["gaps"] = json.loads(entry["gaps"])
+    print(json.dumps(entry, indent=2))
+
+
 def cmd_schema_version(args: argparse.Namespace) -> None:
     conn = get_conn()
     ensure_schema(conn)
@@ -457,6 +514,28 @@ def main() -> None:
     sub.add_parser("backup", help="Backup the database")
     sub.add_parser("schema-version", help="Show schema version history")
 
+    p_ws_save = sub.add_parser("weekly-summary-save",
+                               help="Save a weekly reflection summary")
+    p_ws_save.add_argument("--week-start", required=True, type=parse_ymd_date,
+                           help="Monday of the reflection week (YYYY-MM-DD)")
+    p_ws_save.add_argument("--week-end", required=True, type=parse_ymd_date,
+                           help="Sunday of the reflection week (YYYY-MM-DD)")
+    p_ws_save.add_argument("--summary", required=True, type=json.loads,
+                           help="JSON object with competency counts/notes")
+    p_ws_save.add_argument("--gaps", type=json.loads, default=[],
+                           help="JSON array of gap descriptions")
+    p_ws_save.add_argument("--narrative", default="",
+                           help="Free-text reflection narrative")
+
+    p_ws_list = sub.add_parser("weekly-summary-list",
+                               help="List recent weekly summaries")
+    p_ws_list.add_argument("--limit", type=int, default=8)
+
+    p_ws_get = sub.add_parser("weekly-summary-get",
+                              help="Get a single weekly summary by week start date")
+    p_ws_get.add_argument("--week-start", required=True, type=parse_ymd_date,
+                          help="Monday of the week (YYYY-MM-DD)")
+
     args = parser.parse_args()
     commands = {
         "add": cmd_add,
@@ -467,6 +546,9 @@ def main() -> None:
         "status": cmd_status,
         "backup": cmd_backup,
         "schema-version": cmd_schema_version,
+        "weekly-summary-save": cmd_weekly_summary_save,
+        "weekly-summary-list": cmd_weekly_summary_list,
+        "weekly-summary-get": cmd_weekly_summary_get,
     }
     commands[args.command](args)
 

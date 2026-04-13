@@ -17,6 +17,9 @@ from src.evidence_cli import (
     cmd_status,
     cmd_backup,
     cmd_schema_version,
+    cmd_weekly_summary_save,
+    cmd_weekly_summary_list,
+    cmd_weekly_summary_get,
     iso_week_bounds,
 )
 
@@ -563,3 +566,50 @@ def test_main_invalid_competency_exits(monkeypatch):
     )
     with pytest.raises(SystemExit):
         cli_module.main()
+
+
+# --- weekly-summary ---
+
+def test_weekly_summary_save_and_get(cli_db, capsys):
+    cmd_weekly_summary_save(argparse.Namespace(
+        week_start="2026-04-06", week_end="2026-04-12",
+        summary={"subject_matter": 3, "collaboration": 1},
+        gaps=["leadership"], narrative="Good week overall.",
+    ))
+    result = json.loads(capsys.readouterr().out)
+    assert result["status"] == "ok"
+
+    cmd_weekly_summary_get(argparse.Namespace(week_start="2026-04-06"))
+    entry = json.loads(capsys.readouterr().out)
+    assert entry["week_start"] == "2026-04-06"
+    assert entry["summary"]["subject_matter"] == 3
+    assert entry["gaps"] == ["leadership"]
+    assert entry["narrative"] == "Good week overall."
+
+
+def test_weekly_summary_list(cli_db, capsys):
+    for i in range(3):
+        ws = f"2026-04-{6 + i * 7:02d}"
+        we = f"2026-04-{12 + i * 7:02d}"
+        cmd_weekly_summary_save(argparse.Namespace(
+            week_start=ws, week_end=we,
+            summary={"count": i}, gaps=[], narrative=f"Week {i}",
+        ))
+    capsys.readouterr()
+
+    cmd_weekly_summary_list(argparse.Namespace(limit=2))
+    entries = json.loads(capsys.readouterr().out)
+    assert len(entries) == 2
+    assert entries[0]["week_start"] > entries[1]["week_start"]
+
+
+def test_weekly_summary_get_not_found(cli_db, capsys):
+    cmd_weekly_summary_get(argparse.Namespace(week_start="2020-01-01"))
+    result = json.loads(capsys.readouterr().out)
+    assert result["status"] == "not_found"
+
+
+def test_weekly_summary_list_empty(cli_db, capsys):
+    cmd_weekly_summary_list(argparse.Namespace(limit=8))
+    entries = json.loads(capsys.readouterr().out)
+    assert entries == []
