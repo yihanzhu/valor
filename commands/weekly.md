@@ -225,7 +225,25 @@ Focus next week: review cross-team PR and propose pipeline improvement."
 
 **Bad example:** "Completed weekly reflection for week of 2026-03-24"
 
-## 8. Update State
+## 8. Persist Weekly Summary
+
+After presenting the reflection, save the structured output so the prep
+command and future reflections can reference past weeks:
+
+```bash
+python3 ~/.valor/evidence_cli.py weekly-summary-save \
+  --week-start "[reflection_week_start, YYYY-MM-DD]" \
+  --week-end "[reflection_week_end, YYYY-MM-DD]" \
+  --summary '{"subject_matter": N, "industry_knowledge": N, "collaboration": N, "autonomy_scope": N, "leadership": N}' \
+  --gaps '["gap competency 1", "gap competency 2"]' \
+  --narrative "[The 3-4 sentence narrative from the For Your 1:1 section]"
+```
+
+Fill in the actual competency counts from the reflection, the identified
+gaps, and the narrative text. If the CLI is unavailable, skip silently --
+the reflection itself is the primary output.
+
+## 9. Update State
 
 Set `last_reflection_week` in `~/.valor/state.json` to the ISO week that was
 actually reflected:
@@ -248,7 +266,7 @@ p.write_text(json.dumps(state, indent=2))
 "
 ```
 
-## 9. Fallbacks
+## 10. Fallbacks
 
 | Scenario | Action |
 |----------|--------|
