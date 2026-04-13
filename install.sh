@@ -66,6 +66,22 @@ fi
 
 RULE_SOURCE="$SCRIPT_DIR/rules/valor-agent.md"
 
+# --- Auto-detect available integrations ---
+detect_integrations() {
+    local github="true"
+    local jira="true"
+    local calendar="true"
+    local news="true"
+
+    if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+        github="true"
+    else
+        github="false"
+    fi
+
+    echo "{\"github\": $github, \"jira\": $jira, \"calendar\": $calendar, \"news\": $news}"
+}
+
 # --- Generate Cursor .mdc from the universal agent rule ---
 generate_cursor_rule() {
     local src="$1"
@@ -259,8 +275,12 @@ echo ""
 
 # 1. Create ~/.valor/ for state and evidence storage
 mkdir -p "$VALOR_HOME"
+mkdir -p "$VALOR_HOME/carry-forward"
+
+DETECTED_INTEGRATIONS=$(detect_integrations)
+
 if [ ! -f "$VALOR_HOME/state.json" ]; then
-    cat > "$VALOR_HOME/state.json" <<'STATEJSON'
+    cat > "$VALOR_HOME/state.json" <<STATEJSON
 {
   "current_level": "",
   "target_level": "",
@@ -272,14 +292,30 @@ if [ ! -f "$VALOR_HOME/state.json" ]; then
   "user_work_areas": [],
   "user_work_areas_pinned": [],
   "github_owner": "",
-  "jira_projects": []
+  "jira_projects": [],
+  "integrations": $DETECTED_INTEGRATIONS
 }
 STATEJSON
-    echo "[OK] Created $VALOR_HOME/state.json"
+    echo "[OK] Created $VALOR_HOME/state.json (integrations auto-detected)"
     echo "     ⚠️  Edit this file to set current_level, target_level, ceiling_level,"
     echo "        github_owner, and jira_projects for your setup."
 else
-    echo "[OK] $VALOR_HOME/state.json already exists"
+    # Migrate: add integrations key if missing from existing state.json
+    if ! python3 -c "
+import json, sys
+state = json.loads(open(sys.argv[1]).read())
+sys.exit(0 if 'integrations' in state else 1)
+" "$VALOR_HOME/state.json" 2>/dev/null; then
+        python3 -c "
+import json, sys
+state = json.loads(open(sys.argv[1]).read())
+state['integrations'] = json.loads(sys.argv[2])
+open(sys.argv[1], 'w').write(json.dumps(state, indent=2))
+" "$VALOR_HOME/state.json" "$DETECTED_INTEGRATIONS"
+        echo "[OK] $VALOR_HOME/state.json migrated (added integrations)"
+    else
+        echo "[OK] $VALOR_HOME/state.json already exists"
+    fi
 fi
 
 # 2. Copy evidence CLI and career framework to ~/.valor/
@@ -379,10 +415,19 @@ echo "First-time setup (edit these files):"
 echo "  1. $VALOR_HOME/career_framework.md  -- your company's levels, competencies, and values"
 echo "  2. $VALOR_HOME/state.json           -- set github_owner and jira_projects"
 echo ""
-echo "Prerequisites for full functionality:"
-echo "  - gh CLI authenticated (run: gh auth login)"
-echo "  - Jira MCP or Atlassian plugin (optional, for ticket integration)"
-echo "  - Google Calendar plugin (optional, for calendar)"
+echo "Integrations (edit integrations in state.json to enable/disable):"
+# Parse detected integrations for display
+python3 -c "
+import json
+from pathlib import Path
+state = json.loads((Path.home() / '.valor' / 'state.json').read_text())
+intg = state.get('integrations', {})
+labels = {'github': 'GitHub (gh CLI)', 'jira': 'Jira/Atlassian', 'calendar': 'Google Calendar', 'news': 'Web news'}
+for key, label in labels.items():
+    status = 'enabled' if intg.get(key, False) else 'disabled'
+    icon = '✓' if intg.get(key, False) else '✗'
+    print(f'  {icon} {label}: {status}')
+" 2>/dev/null || echo "  (could not read integrations from state.json)"
 echo ""
 echo "State & evidence stored at: $VALOR_HOME/"
 echo "Evidence CLI: python3 $VALOR_HOME/evidence_cli.py stats"

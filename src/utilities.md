@@ -3,35 +3,63 @@
 Reference file for Valor agents. Read on demand when running agent skills --
 do NOT load into every conversation.
 
+## Integrations
+
+Valor uses external tools for data gathering. Which integrations are available
+is tracked in `~/.valor/state.json` under the `integrations` key:
+
+```json
+{
+  "integrations": {
+    "github": true,
+    "jira": true,
+    "calendar": true,
+    "news": true
+  }
+}
+```
+
+**Before gathering data, read `integrations` from state.json.** If an
+integration is `false`, skip that section entirely -- do not probe for the
+tool and do not print a "not available" message. The user has already
+indicated they don't have that integration.
+
+If an integration is `true`, attempt to use it with the discovery steps
+below. If it fails at runtime (e.g. `gh` not authenticated), note it once
+and suggest the user set it to `false` in state.json if they don't plan
+to configure it.
+
+The installer auto-detects `gh` CLI availability. Other integrations
+(Jira, Calendar, News) default to `true` and should be set to `false`
+by the user if unavailable.
+
 ## Tool Discovery
 
-Before any Valor agent gathers data, discover what tools are available.
-Do NOT hardcode specific tool names. Instead, check for capabilities:
+When an integration is enabled (`true`), discover the specific tool to use:
 
-**For Jira/ticket data:**
+**GitHub** (`integrations.github`):
+1. Use `gh` CLI (most common)
+2. Check MCP tools for GitHub integration
+
+**Jira** (`integrations.jira`):
 1. Check for Atlassian/Jira MCP tools (e.g. `jira_search_issues`)
 2. Check available slash commands for any Jira-related command
 3. Fall back to asking the user to provide ticket details
 
-**For PR/code review:**
-1. Check available slash commands for any PR review command (e.g. `/sa-ds-pr-review`)
+**Calendar** (`integrations.calendar`):
+1. Check MCP tools for Google Calendar integration
+2. Check available slash commands for calendar-related commands
+
+**News** (`integrations.news`):
+1. Use WebSearch tool
+
+**PR review** (always available when GitHub is enabled):
+1. Check available slash commands for any PR review command
 2. If a dedicated review command exists, use it for analysis and add Valor's
    coaching layer on top
 3. Fall back to `gh pr view` + `gh pr diff` for direct analysis
 
-**For GitHub data:**
-1. Use `gh` CLI (most common)
-2. Check MCP tools for GitHub integration
-
-**For calendar:**
-1. Check MCP tools for Google Calendar integration
-2. Check available slash commands for calendar-related commands
-3. Skip if unavailable
-
-**For news:**
-1. Use WebSearch tool
-
-**For evidence:**
+**Evidence** (always available -- local):
 1. Use `python3 ~/.valor/evidence_cli.py` if available
 2. Fall back to direct `sqlite3` queries on `~/.valor/evidence.sqlite`
 
@@ -82,3 +110,4 @@ p.write_text(json.dumps(state, indent=2))
 | `work_area_refresh_interval` | User config | Briefings between auto-detection runs (default 5) |
 | `staleness_suppress_interval` | User config | Briefings to suppress staleness re-check after "keep" (default 10) |
 | `staleness_check_suppressed_until` | Staleness check | Briefing count at which staleness checks resume |
+| `integrations` | Installer / User config | Object with boolean flags for github, jira, calendar, news |
