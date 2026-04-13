@@ -406,6 +406,35 @@ def cmd_status(args: argparse.Namespace) -> None:
     print(json.dumps(status, indent=2))
 
 
+def cmd_feedback_add(args: argparse.Namespace) -> None:
+    conn = get_conn()
+    ensure_schema(conn)
+    entry_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    conn.execute(
+        "INSERT INTO feedback (id, evidence_id, agent, feedback_type, created_at) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (entry_id, args.evidence_id or "", args.agent, args.type, now),
+    )
+    conn.commit()
+    conn.close()
+    print(json.dumps({"status": "ok", "id": entry_id, "type": args.type}))
+
+
+def cmd_feedback_stats(args: argparse.Namespace) -> None:
+    conn = get_conn()
+    ensure_schema(conn)
+    where = "WHERE agent = ?" if args.agent else ""
+    params = (args.agent,) if args.agent else ()
+    rows = conn.execute(
+        f"SELECT feedback_type, COUNT(*) as cnt FROM feedback {where} "
+        "GROUP BY feedback_type",
+        params,
+    ).fetchall()
+    conn.close()
+    print(json.dumps({r["feedback_type"]: r["cnt"] for r in rows}, indent=2))
+
+
 def cmd_weekly_summary_save(args: argparse.Namespace) -> None:
     conn = get_conn()
     ensure_schema(conn)
@@ -514,6 +543,15 @@ def main() -> None:
     sub.add_parser("backup", help="Backup the database")
     sub.add_parser("schema-version", help="Show schema version history")
 
+    p_fb_add = sub.add_parser("feedback-add", help="Record feedback on an evidence entry")
+    p_fb_add.add_argument("--evidence-id", default="",
+                          help="ID of the evidence entry (optional)")
+    p_fb_add.add_argument("--agent", required=True, help="Agent providing feedback")
+    p_fb_add.add_argument("--type", required=True, help="Feedback type (e.g., helpful, not_relevant)")
+
+    p_fb_stats = sub.add_parser("feedback-stats", help="Show feedback statistics")
+    p_fb_stats.add_argument("--agent", default="", help="Filter by agent")
+
     p_ws_save = sub.add_parser("weekly-summary-save",
                                help="Save a weekly reflection summary")
     p_ws_save.add_argument("--week-start", required=True, type=parse_ymd_date,
@@ -546,6 +584,8 @@ def main() -> None:
         "status": cmd_status,
         "backup": cmd_backup,
         "schema-version": cmd_schema_version,
+        "feedback-add": cmd_feedback_add,
+        "feedback-stats": cmd_feedback_stats,
         "weekly-summary-save": cmd_weekly_summary_save,
         "weekly-summary-list": cmd_weekly_summary_list,
         "weekly-summary-get": cmd_weekly_summary_get,

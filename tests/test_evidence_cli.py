@@ -17,6 +17,8 @@ from src.evidence_cli import (
     cmd_status,
     cmd_backup,
     cmd_schema_version,
+    cmd_feedback_add,
+    cmd_feedback_stats,
     cmd_weekly_summary_save,
     cmd_weekly_summary_list,
     cmd_weekly_summary_get,
@@ -566,6 +568,47 @@ def test_main_invalid_competency_exits(monkeypatch):
     )
     with pytest.raises(SystemExit):
         cli_module.main()
+
+
+# --- feedback ---
+
+def test_feedback_add(cli_db, capsys):
+    cmd_feedback_add(argparse.Namespace(
+        evidence_id="abc-123", agent="valor-ambient", type="helpful",
+    ))
+    result = json.loads(capsys.readouterr().out)
+    assert result["status"] == "ok"
+    assert result["type"] == "helpful"
+
+
+def test_feedback_stats(cli_db, capsys):
+    cmd_feedback_add(argparse.Namespace(
+        evidence_id="", agent="valor-ambient", type="helpful",
+    ))
+    cmd_feedback_add(argparse.Namespace(
+        evidence_id="", agent="valor-ambient", type="helpful",
+    ))
+    cmd_feedback_add(argparse.Namespace(
+        evidence_id="", agent="valor-ambient", type="not_relevant",
+    ))
+    capsys.readouterr()
+    cmd_feedback_stats(argparse.Namespace(agent=""))
+    result = json.loads(capsys.readouterr().out)
+    assert result["helpful"] == 2
+    assert result["not_relevant"] == 1
+
+
+def test_feedback_stats_filters_by_agent(cli_db, capsys):
+    cmd_feedback_add(argparse.Namespace(
+        evidence_id="", agent="agent-a", type="helpful",
+    ))
+    cmd_feedback_add(argparse.Namespace(
+        evidence_id="", agent="agent-b", type="helpful",
+    ))
+    capsys.readouterr()
+    cmd_feedback_stats(argparse.Namespace(agent="agent-a"))
+    result = json.loads(capsys.readouterr().out)
+    assert result.get("helpful") == 1
 
 
 # --- weekly-summary ---
