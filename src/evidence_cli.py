@@ -42,8 +42,6 @@ VALID_COMPETENCIES = (
     "leadership",
 )
 
-CURRENT_SCHEMA_VERSION = 1
-
 SCHEMA_V1 = """
 CREATE TABLE IF NOT EXISTS schema_version (
     version INTEGER PRIMARY KEY,
