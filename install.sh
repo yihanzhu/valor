@@ -307,9 +307,12 @@ mkdir -p "$VALOR_HOME/carry-forward"
 
 DETECTED_INTEGRATIONS=$(detect_integrations)
 
+STATE_SCHEMA_VERSION=2
+
 if [ ! -f "$VALOR_HOME/state.json" ]; then
     cat > "$VALOR_HOME/state.json" <<STATEJSON
 {
+  "state_schema_version": $STATE_SCHEMA_VERSION,
   "current_level": "",
   "target_level": "",
   "ceiling_level": "",
@@ -328,22 +331,29 @@ STATEJSON
     echo "     ⚠️  Edit this file to set current_level, target_level, ceiling_level,"
     echo "        github_owner, and jira_projects for your setup."
 else
-    # Migrate: add integrations key if missing from existing state.json
-    if ! python3 -c "
+    # Migrate state.json to current schema
+    python3 -c "
 import json, sys
 state = json.loads(open(sys.argv[1]).read())
-sys.exit(0 if 'integrations' in state else 1)
-" "$VALOR_HOME/state.json" 2>/dev/null; then
-        python3 -c "
-import json, sys
-state = json.loads(open(sys.argv[1]).read())
-state['integrations'] = json.loads(sys.argv[2])
-open(sys.argv[1], 'w').write(json.dumps(state, indent=2))
-" "$VALOR_HOME/state.json" "$DETECTED_INTEGRATIONS"
-        echo "[OK] $VALOR_HOME/state.json migrated (added integrations)"
-    else
-        echo "[OK] $VALOR_HOME/state.json already exists"
-    fi
+target_version = int(sys.argv[2])
+current_version = state.get('state_schema_version', 1)
+changed = False
+# v1 -> v2: add integrations and state_schema_version
+if current_version < 2:
+    if 'integrations' not in state:
+        state['integrations'] = json.loads(sys.argv[3])
+        changed = True
+    if 'state_schema_version' not in state:
+        changed = True
+if state.get('state_schema_version', 1) < target_version:
+    state['state_schema_version'] = target_version
+    changed = True
+if changed:
+    open(sys.argv[1], 'w').write(json.dumps(state, indent=2))
+    print(f'[OK] state.json migrated to schema v{target_version}')
+else:
+    print('[OK] state.json already up to date')
+" "$VALOR_HOME/state.json" "$STATE_SCHEMA_VERSION" "$DETECTED_INTEGRATIONS"
 fi
 
 # 2. Copy evidence CLI and career framework to ~/.valor/
