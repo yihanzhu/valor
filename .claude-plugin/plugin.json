@@ -1,7 +1,7 @@
 {
   "name": "valor",
   "description": "Ambient career coach for developers -- morning briefings, PR review coaching, design doc guidance, weekly reflections, task identification, and evening wrap-ups with evidence tracking.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": {
     "name": "Yihan Zhu"
   },

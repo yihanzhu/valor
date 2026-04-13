@@ -49,7 +49,7 @@ What shipped:
 - state_schema_version for forward-only state.json migrations
 - architecture documentation (docs/architecture.md)
 - `--clone` flag and curl one-liner for quick install
-- test coverage: 106 -> 120 tests
+- test coverage: 106 -> 121 tests
 
 ## Phase 4: Agent-Native Extensions
 
@@ -61,6 +61,22 @@ What shipped:
 - `.codex-plugin/plugin.json` for Codex plugin system
 - three install targets: Claude Code (default), Codex CLI, Cursor (legacy)
 - docs updated across README, architecture, and getting-started
+
+## Phase 5: Evidence Outputs + Agent Quality
+
+**Status:** Complete
+
+What shipped:
+
+- `export` subcommand filtering: `--days`, `--from/--to`, `--competency`
+- weekly-summary CLI: `weekly-summary-save`, `weekly-summary-list`, `weekly-summary-get`
+- feedback CLI: `feedback-add`, `feedback-stats`
+- weekly reflection now persists structured output to weekly_summary table
+- new `/valor-prep` command for 1:1 manager prep (7th agent command)
+- standardized integration preamble across all commands
+- wrap-up now records evidence (wrapup_completed entry)
+- version bump to 0.3.0
+- test coverage: 121 -> 133 tests
 
 ## Future Considerations
 
