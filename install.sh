@@ -10,6 +10,7 @@
 #   ./install.sh --target cursor              Install for Cursor (legacy)
 #   ./install.sh --check                      Check for drift (uses current target)
 #   ./install.sh --target cursor --check      Check drift for Cursor
+#   ./install.sh --version                    Print version and exit
 
 set -euo pipefail
 
@@ -27,6 +28,9 @@ COMMAND_MAP=(
     "valor-wrapup:valor-evening-wrapup:Valor evening wrap-up: summarizes the day's work, captures carry-forward items for tomorrow, and reflects on competencies exercised"
 )
 
+# --- Version ---
+VALOR_VERSION="$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "unknown")"
+
 # --- Parse arguments ---
 TARGET="claude-code"
 CHECK_ONLY=false
@@ -43,6 +47,10 @@ while [ "$#" -gt 0 ]; do
             ;;
         --check)
             CHECK_ONLY=true
+            ;;
+        --version)
+            echo "Valor $VALOR_VERSION"
+            exit 0
             ;;
         *)
             echo "Unknown argument: $1"
