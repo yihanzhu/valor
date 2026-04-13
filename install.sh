@@ -1,15 +1,16 @@
 #!/bin/bash
-# Valor installer -- deploys agent rule + commands to Claude Code or Cursor.
+# Valor installer -- deploys agent rule + commands to Claude Code, Codex, or Cursor.
 #
 # Source of truth: rules/valor-agent.md + commands/*.md (Claude Code format)
-# For Cursor: install.sh generates .mdc frontmatter and SKILL.md wrappers.
+# For Cursor/Codex: install.sh generates SKILL.md wrappers with frontmatter.
 #
 # Usage:
 #   ./install.sh                              Install for Claude Code (default)
 #   ./install.sh --target claude-code         Install for Claude Code
+#   ./install.sh --target codex               Install for Codex CLI
 #   ./install.sh --target cursor              Install for Cursor (legacy)
 #   ./install.sh --check                      Check for drift (uses current target)
-#   ./install.sh --target cursor --check      Check drift for Cursor
+#   ./install.sh --target codex --check       Check drift for Codex
 #   ./install.sh --version                    Print version and exit
 #   ./install.sh --upgrade                    Pull latest + re-install
 #
@@ -66,7 +67,7 @@ while [ "$#" -gt 0 ]; do
         --target)
             shift
             if [ "$#" -eq 0 ]; then
-                echo "Missing value for --target (use 'claude-code' or 'cursor')"
+                echo "Missing value for --target (use 'claude-code', 'codex', or 'cursor')"
                 exit 1
             fi
             TARGET="$1"
@@ -107,11 +108,14 @@ done
 if [ "$TARGET" = "cursor" ]; then
     AGENT_RULES="$HOME/.cursor/rules"
     AGENT_SKILLS="$HOME/.cursor/skills"
+elif [ "$TARGET" = "codex" ]; then
+    CODEX_DIR="$HOME/.codex"
+    CODEX_SKILLS="$CODEX_DIR/skills"
 elif [ "$TARGET" = "claude-code" ]; then
     CLAUDE_DIR="$HOME/.claude"
     CLAUDE_COMMANDS="$CLAUDE_DIR/commands"
 else
-    echo "Unknown target: $TARGET (use 'claude-code' or 'cursor')"
+    echo "Unknown target: $TARGET (use 'claude-code', 'codex', or 'cursor')"
     exit 1
 fi
 
@@ -187,6 +191,51 @@ generate_cursor_skill() {
     } > "$dst"
 }
 
+# --- Generate Codex AGENTS.md content from the universal agent rule ---
+generate_codex_rule_content() {
+    local src="$1"
+    # Transform Claude Code references to Codex equivalents
+    sed \
+        -e 's|`/valor-briefing` command|`~/.codex/skills/valor-morning-briefing/SKILL.md`|g' \
+        -e 's|`/valor-pr-review` command|`~/.codex/skills/valor-pr-review-coach/SKILL.md`|g' \
+        -e 's|`/valor-design-doc` command|`~/.codex/skills/valor-design-doc-coach/SKILL.md`|g' \
+        -e 's|`/valor-weekly` command|`~/.codex/skills/valor-weekly-reflection/SKILL.md`|g' \
+        -e 's|`/valor-tasks` command|`~/.codex/skills/valor-task-identifier/SKILL.md`|g' \
+        -e 's|`/valor-wrapup` command|`~/.codex/skills/valor-evening-wrapup/SKILL.md`|g' \
+        -e 's|/valor-briefing|valor-morning-briefing skill|g' \
+        -e 's|/valor-pr-review|valor-pr-review-coach skill|g' \
+        -e 's|/valor-design-doc|valor-design-doc-coach skill|g' \
+        -e 's|/valor-weekly|valor-weekly-reflection skill|g' \
+        -e 's|/valor-tasks|valor-task-identifier skill|g' \
+        -e 's|/valor-wrapup|valor-evening-wrapup skill|g' \
+        -e 's|Bash tool|Shell tool|g' \
+        "$src"
+}
+
+# --- Generate Codex SKILL.md from a command file ---
+generate_codex_skill() {
+    local src="$1"
+    local dst="$2"
+    local skill_name="$3"
+    local description="$4"
+    {
+        echo '---'
+        echo "name: $skill_name"
+        echo "description: \"$description\""
+        echo '---'
+        echo ""
+        sed \
+            -e 's|/valor-briefing|valor-morning-briefing skill|g' \
+            -e 's|/valor-pr-review|valor-pr-review-coach skill|g' \
+            -e 's|/valor-design-doc|valor-design-doc-coach skill|g' \
+            -e 's|/valor-weekly|valor-weekly-reflection skill|g' \
+            -e 's|/valor-tasks|valor-task-identifier skill|g' \
+            -e 's|/valor-wrapup|valor-evening-wrapup skill|g' \
+            -e 's|Bash tool|Shell tool|g' \
+            "$src"
+    } > "$dst"
+}
+
 # --- Drift check ---
 check_drift() {
     local drift_count=0
@@ -244,6 +293,35 @@ check_drift() {
             echo "[MISSING] $rule_dest (no valor section)"
             drift_count=$((drift_count + 1))
         fi
+    elif [ "$TARGET" = "codex" ]; then
+        local rule_dest="$CODEX_DIR/AGENTS.md"
+        local marker_start="# --- BEGIN VALOR ---"
+        local marker_end="# --- END VALOR ---"
+        if [ ! -f "$rule_dest" ]; then
+            echo "[MISSING] $rule_dest"
+            drift_count=$((drift_count + 1))
+        elif grep -q "$marker_start" "$rule_dest" 2>/dev/null; then
+            local tmp_extracted
+            tmp_extracted=$(mktemp)
+            sed -n "/$marker_start/,/$marker_end/{
+                /$marker_start/d
+                /$marker_end/d
+                p
+            }" "$rule_dest" > "$tmp_extracted"
+            local tmp_expected
+            tmp_expected=$(mktemp)
+            generate_codex_rule_content "$RULE_SOURCE" > "$tmp_expected"
+            if ! diff -q "$tmp_expected" "$tmp_extracted" > /dev/null 2>&1; then
+                echo "[DRIFT]   $rule_dest (valor section)"
+                drift_count=$((drift_count + 1))
+            else
+                echo "[OK]      $rule_dest (valor section)"
+            fi
+            rm -f "$tmp_extracted" "$tmp_expected"
+        else
+            echo "[MISSING] $rule_dest (no valor section)"
+            drift_count=$((drift_count + 1))
+        fi
     elif [ "$TARGET" = "cursor" ]; then
         local rule_dest="$AGENT_RULES/valor-agent.mdc"
         if [ ! -f "$rule_dest" ]; then
@@ -284,6 +362,23 @@ check_drift() {
                 drift_count=$((drift_count + 1))
             else
                 echo "[OK]      $dst"
+            fi
+        elif [ "$TARGET" = "codex" ]; then
+            local dst="$CODEX_SKILLS/$skill_name/SKILL.md"
+            if [ ! -f "$dst" ]; then
+                echo "[MISSING] $dst"
+                drift_count=$((drift_count + 1))
+            else
+                local tmp_generated
+                tmp_generated=$(mktemp)
+                generate_codex_skill "$src" "$tmp_generated" "$skill_name" "$description"
+                if ! diff -q "$tmp_generated" "$dst" > /dev/null 2>&1; then
+                    echo "[DRIFT]   $dst"
+                    drift_count=$((drift_count + 1))
+                else
+                    echo "[OK]      $dst"
+                fi
+                rm -f "$tmp_generated"
             fi
         elif [ "$TARGET" = "cursor" ]; then
             local dst="$AGENT_SKILLS/$skill_name/SKILL.md"
@@ -406,6 +501,37 @@ if [ "$TARGET" = "cursor" ]; then
         echo "[OK] Generated skill -> $AGENT_SKILLS/$skill_name/"
     done
 
+elif [ "$TARGET" = "codex" ]; then
+    mkdir -p "$CODEX_DIR"
+
+    MARKER_START="# --- BEGIN VALOR ---"
+    MARKER_END="# --- END VALOR ---"
+
+    if [ -f "$CODEX_DIR/AGENTS.md" ]; then
+        if grep -q "$MARKER_START" "$CODEX_DIR/AGENTS.md" 2>/dev/null; then
+            tmp_file=$(mktemp)
+            sed "/$MARKER_START/,/$MARKER_END/d" "$CODEX_DIR/AGENTS.md" > "$tmp_file"
+            mv "$tmp_file" "$CODEX_DIR/AGENTS.md"
+            echo "[OK] Removed old Valor section from AGENTS.md"
+        fi
+    fi
+
+    {
+        echo ""
+        echo "$MARKER_START"
+        generate_codex_rule_content "$RULE_SOURCE"
+        echo "$MARKER_END"
+    } >> "$CODEX_DIR/AGENTS.md"
+    echo "[OK] Installed Valor agent rule -> $CODEX_DIR/AGENTS.md (appended)"
+
+    for entry in "${COMMAND_MAP[@]}"; do
+        IFS=':' read -r src_name cc_name skill_name description <<< "$entry"
+        mkdir -p "$CODEX_SKILLS/$skill_name"
+        generate_codex_skill "$SCRIPT_DIR/commands/$src_name.md" \
+            "$CODEX_SKILLS/$skill_name/SKILL.md" "$skill_name" "$description"
+        echo "[OK] Generated skill -> $CODEX_SKILLS/$skill_name/"
+    done
+
 elif [ "$TARGET" = "claude-code" ]; then
     mkdir -p "$CLAUDE_DIR"
     mkdir -p "$CLAUDE_COMMANDS"
@@ -472,6 +598,18 @@ if [ "$TARGET" = "claude-code" ]; then
     echo "  5. Task Identifier    -- /valor-tasks"
     echo "  6. Evening Wrap-up   -- auto-suggests after 5pm, or /valor-wrapup"
     echo "  7. Ambient Coaching   -- always on (say 'valor quiet' to suppress)"
+elif [ "$TARGET" = "codex" ]; then
+    echo "Valor agents installed for Codex CLI:"
+    echo "  1. Morning Briefing   -- auto-suggests before 11am, or say 'morning briefing'"
+    echo "  2. PR Review Coach    -- say 'review PR #NNN' or 'help me review'"
+    echo "  3. Design Doc Coach   -- say 'design doc for TICKET' or 'how should I approach'"
+    echo "  4. Weekly Reflection   -- auto-suggests Friday, or say 'weekly reflection'"
+    echo "  5. Task Identifier    -- say 'what should I work on' or 'find me work'"
+    echo "  6. Evening Wrap-up   -- auto-suggests after 5pm, or say 'wrap up'"
+    echo "  7. Ambient Coaching   -- always on (say 'valor quiet' to suppress)"
+    echo ""
+    echo "Agent rule: $CODEX_DIR/AGENTS.md"
+    echo "Skills:     $CODEX_SKILLS/valor-*/"
 else
     echo "Valor agents installed for Cursor:"
     echo "  1. Morning Briefing   -- auto-suggests before 11am, or say 'morning briefing'"
