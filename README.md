@@ -8,7 +8,7 @@ work to your own career framework, and nudges you toward stronger habits over
 time.
 
 Status: alpha. The current repo is a working local core for Claude Code
-(default) and Cursor (legacy).
+(default), Codex CLI, and Cursor (legacy).
 
 ## Why Valor Exists
 
@@ -64,6 +64,7 @@ Valor stores its working state under `~/.valor/`:
 Installed prompts and rules live in your assistant's local directories:
 
 - Claude Code: `~/.claude/CLAUDE.md` and `~/.claude/commands/`
+- Codex CLI: `~/.codex/AGENTS.md` and `~/.codex/skills/`
 - Cursor (legacy): `~/.cursor/rules/` and `~/.cursor/skills/`
 
 The current runtime is local-first, but not fully air-gapped by itself.
@@ -107,6 +108,12 @@ evidence, and installs Valor's rule and commands for Claude Code.
 git clone https://github.com/yihanzhu/valor.git ~/valor
 cd ~/valor
 bash install.sh
+```
+
+**For Codex CLI:**
+
+```bash
+bash install.sh --target codex
 ```
 
 **For Cursor (legacy):**
@@ -223,6 +230,7 @@ the repo source:
 ```text
 valor/
 ├── .claude-plugin/         # Claude Code plugin manifest
+├── .codex-plugin/          # Codex CLI plugin manifest
 ├── bin/                    # CLI wrappers (valor-evidence)
 ├── commands/               # User-invoked assistant commands
 ├── rules/                  # Always-applied Valor rule
