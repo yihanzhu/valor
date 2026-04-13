@@ -38,9 +38,10 @@ Specifically:
 - **Evidence recording** happens as a side effect of normal coding work. Without
   always-on instructions, evidence only gets recorded during explicit Valor
   commands.
-- **Auto-trigger suggestions** were initially thought to require plugins, but
-  Claude Code's `SessionStart` hook (user-level, via `settings.json`) can
-  deliver the same behavior. `install.sh` now writes this hook directly.
+- **Auto-trigger suggestions** are handled by the ambient rule in `CLAUDE.md`,
+  which instructs the agent to check time and state at the start of every
+  conversation. A `SessionStart` hook was prototyped but removed as redundant
+  (see Alternatives below).
 
 A `Stop` hook was considered for post-task coaching but rejected: it adds an
 extra round-trip per response (hook fires, blocks stop, Claude gets another
@@ -53,8 +54,6 @@ inline approach via `CLAUDE.md` instructions.
   find Valor and learn about it.
 - **Command-only access** -- users who only want the 7 slash commands without
   ambient coaching can install the plugin. This is a valid but limited use case.
-- **Auto-trigger hooks** -- the plugin includes a `SessionStart` hook that
-  suggests briefings/wrap-ups. This is a bonus for plugin-only users.
 
 ## Consequences
 

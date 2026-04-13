@@ -8,7 +8,7 @@ produces a concise 1:1 narrative for their manager.
 ## When to Use
 
 - User says: "weekly reflection", "reflect on my week", "weekly summary",
-  "1:1 prep", or "what did I do this week"
+  or "what did I do this week"
 - **Friday (auto-suggested):** Generate the reflection while the week is
   fresh. The valor-agent rule auto-suggests on Friday if not done this week.
 - **Monday (re-read):** If the user missed Friday, generate it Monday
