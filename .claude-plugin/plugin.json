@@ -1,6 +1,6 @@
 {
   "name": "valor",
-  "description": "Career coach for developers -- morning briefings, PR review coaching, design doc guidance, weekly reflections, task identification, evening wrap-ups, and 1:1 prep with evidence tracking. Includes auto-trigger hooks for session-start suggestions.",
+  "description": "Career coach commands for developers. For the full experience (ambient coaching, auto-triggers, evidence recording), install with: bash install.sh from the repo root.",
   "version": "0.3.0",
   "author": {
     "name": "Yihan Zhu"

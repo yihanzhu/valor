@@ -26,13 +26,15 @@ valor repo (github.com/yihanzhu/valor)
 ### Install paths
 
 
-| Target         | Rule                         | Commands / Skills     | Evidence CLI |
-| -------------- | ---------------------------- | --------------------- | ------------ |
-| Claude Code    | `~/.claude/CLAUDE.md`        | `~/.claude/commands/` | `~/.valor/`  |
-| Codex CLI      | `~/.codex/AGENTS.md`         | `~/.codex/skills/`    | `~/.valor/`  |
-| Cursor         | `~/.cursor/rules/`           | `~/.cursor/skills/`   | `~/.valor/`  |
-| Plugin (CC)    | -- (commands only)           | Plugin `commands/`    | `~/.valor/`  |
-| Plugin (Codex) | -- (commands only)           | Plugin `skills/`      | `~/.valor/`  |
+| Target         | Rule                         | Commands / Skills     | Hooks                       | Evidence CLI |
+| -------------- | ---------------------------- | --------------------- | --------------------------- | ------------ |
+| Claude Code    | `~/.claude/CLAUDE.md`        | `~/.claude/commands/` | `~/.claude/settings.json`   | `~/.valor/`  |
+| Codex CLI      | `~/.codex/AGENTS.md`         | `~/.codex/skills/`    | --                          | `~/.valor/`  |
+| Cursor         | `~/.cursor/rules/`           | `~/.cursor/skills/`   | --                          | `~/.valor/`  |
+
+Plugin manifests (`.claude-plugin/`, `.codex-plugin/`) exist for marketplace
+discovery but provide commands only -- no ambient rule or hooks. Use
+`install.sh` for the full experience.
 
 
 ## Local State (`~/.valor/`)

@@ -211,11 +211,13 @@ check_drift() {
         "$SCRIPT_DIR/src/evidence_cli.py"
         "$SCRIPT_DIR/src/career_framework.md"
         "$SCRIPT_DIR/src/utilities.md"
+        "$SCRIPT_DIR/scripts/session-check.sh"
     )
     local runtime_dests=(
         "$VALOR_HOME/evidence_cli.py"
         "$VALOR_HOME/career_framework.md"
         "$VALOR_HOME/utilities.md"
+        "$VALOR_HOME/scripts/session-check.sh"
     )
 
     for i in "${!runtime_sources[@]}"; do
@@ -440,9 +442,14 @@ else:
 " "$VALOR_HOME/state.json" "$STATE_SCHEMA_VERSION" "$DETECTED_INTEGRATIONS"
 fi
 
-# 2. Copy evidence CLI and career framework to ~/.valor/
+# 2. Copy evidence CLI, career framework, and scripts to ~/.valor/
 cp "$SCRIPT_DIR/src/evidence_cli.py" "$VALOR_HOME/evidence_cli.py"
 echo "[OK] Installed evidence CLI -> $VALOR_HOME/evidence_cli.py"
+
+mkdir -p "$VALOR_HOME/scripts"
+cp "$SCRIPT_DIR/scripts/session-check.sh" "$VALOR_HOME/scripts/session-check.sh"
+chmod +x "$VALOR_HOME/scripts/session-check.sh"
+echo "[OK] Installed session-check hook -> $VALOR_HOME/scripts/session-check.sh"
 if [ ! -f "$VALOR_HOME/career_framework.md" ]; then
     cp "$SCRIPT_DIR/src/career_framework.md" "$VALOR_HOME/career_framework.md"
     echo "[OK] Installed career framework template -> $VALOR_HOME/career_framework.md"
@@ -527,6 +534,47 @@ elif [ "$TARGET" = "claude-code" ]; then
         cp "$SCRIPT_DIR/commands/$src_name.md" "$CLAUDE_COMMANDS/$cc_name.md"
         echo "[OK] Installed command -> $CLAUDE_COMMANDS/$cc_name.md"
     done
+
+    # Install SessionStart hook into ~/.claude/settings.json
+    python3 -c "
+import json
+from pathlib import Path
+
+settings_path = Path.home() / '.claude' / 'settings.json'
+settings = {}
+if settings_path.exists():
+    try:
+        settings = json.loads(settings_path.read_text())
+    except (json.JSONDecodeError, OSError):
+        pass
+
+hook_cmd = str(Path.home() / '.valor' / 'scripts' / 'session-check.sh')
+valor_hook = {
+    'hooks': [{'type': 'command', 'command': hook_cmd, 'timeout': 5000}]
+}
+
+hooks = settings.setdefault('hooks', {})
+session_hooks = hooks.get('SessionStart', [])
+
+already_installed = any(
+    any(h.get('command', '').endswith('session-check.sh') for h in group.get('hooks', []))
+    for group in session_hooks
+)
+
+if not already_installed:
+    session_hooks.append(valor_hook)
+    hooks['SessionStart'] = session_hooks
+    settings_path.write_text(json.dumps(settings, indent=2) + '\n')
+    print('[OK] Installed SessionStart hook -> ~/.claude/settings.json')
+else:
+    # Update the existing hook command path in case it moved
+    for group in session_hooks:
+        for h in group.get('hooks', []):
+            if h.get('command', '').endswith('session-check.sh'):
+                h['command'] = hook_cmd
+    settings_path.write_text(json.dumps(settings, indent=2) + '\n')
+    print('[OK] SessionStart hook already installed (path refreshed)')
+" 2>/dev/null || echo "[WARN] Could not install SessionStart hook to settings.json"
 fi
 
 # 4. Record installed version

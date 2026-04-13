@@ -232,11 +232,13 @@ the repo source:
 
 ```text
 valor/
-├── .claude-plugin/         # Claude Code plugin manifest
-├── .codex-plugin/          # Codex CLI plugin manifest
+├── .claude-plugin/         # Claude Code plugin manifest (discovery only)
+├── .codex-plugin/          # Codex CLI plugin manifest (discovery only)
 ├── bin/                    # CLI wrappers (valor-evidence)
 ├── commands/               # User-invoked assistant commands
+├── hooks/                  # Plugin hook definitions (SessionStart)
 ├── rules/                  # Always-applied Valor rule
+├── scripts/                # Hook scripts (session-check.sh)
 ├── skills/                 # Plugin skills (setup)
 ├── src/                    # Local evidence and competency logic
 ├── tests/                  # Test suite
