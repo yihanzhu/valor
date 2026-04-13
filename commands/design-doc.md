@@ -149,7 +149,7 @@ python3 ~/.valor/evidence_cli.py add \
 
 Replace `[TICKET]` and `[TITLE]` with the actual ticket ID (e.g., `PROJ-123`) and short title.
 
-**Competency mapping** (from `valor/src/competency.py`):
+**Competency mapping** (from `valor/src/evidence_cli.py`):
 
 - `design_doc_written` -> `autonomy_scope`, `subject_matter`
 

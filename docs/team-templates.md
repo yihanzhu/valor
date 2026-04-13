@@ -27,8 +27,7 @@ Create a team with 1 PLANNER and 2 TESTERs.
 
 PLANNER: analyze src/ and identify what needs tests. Create a test plan.
 
-TESTER-1 owns tests/test_evidence_store.py and tests/test_competency.py.
-TESTER-2 owns tests/test_evidence_cli.py and tests/conftest.py.
+TESTER-1 owns tests/test_evidence_cli.py and tests/conftest.py.
 ```
 
 ## Template C: New Feature

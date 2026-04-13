@@ -164,7 +164,7 @@ Use these counts to identify:
 entirely. Don't show empty placeholders. The section will appear naturally
 after a few briefings accumulate evidence.
 
-**Competency reference** (from `valor/src/competency.py`):
+**Competency reference** (from `valor/src/evidence_cli.py`):
 - Subject Matter (`subject_matter`): technical designs, clean code, ML concepts
 - Industry Knowledge (`industry_knowledge`): awareness of tools, methods, algorithms
 - Collaboration (`collaboration`): cross-team alignment, task identification
@@ -293,7 +293,7 @@ python3 ~/.valor/evidence_cli.py add \
     --agent valor-morning-briefing
 ```
 
-Available activities and competencies are defined in `valor/src/competency.py`.
+Available activities and competencies are defined in `valor/src/evidence_cli.py`.
 Competencies: subject_matter, industry_knowledge, collaboration, autonomy_scope, leadership.
 
 ## State Update

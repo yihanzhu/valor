@@ -102,7 +102,7 @@ python3 ~/.valor/evidence_cli.py stats
 Parse the output. The `by_competency` and `this_week` fields show counts per competency.
 Competencies with low or zero counts are **gaps** — prioritize tasks that build these.
 
-**Competency reference** (from `valor/src/competency.py`):
+**Competency reference** (from `valor/src/evidence_cli.py`):
 
 - `subject_matter`: Subject Matter Expertise — technical designs, clean code, ML concepts
 - `industry_knowledge`: Industry Knowledge — tools, methods, algorithms
@@ -125,7 +125,7 @@ For each available task, assess:
 | **Urgency** | High/Highest priority in Jira |
 | **Staleness** | Stale ticket may indicate team need or overlooked work |
 
-**Activity–competency mapping** (from `valor/src/competency.py` ACTIVITY_COMPETENCY_MAP):
+**Activity–competency mapping**:
 
 - Design doc or complex system work → `autonomy_scope`, `subject_matter`
 - Cross-team coordination or task for others → `collaboration`, `leadership`
