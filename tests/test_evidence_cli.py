@@ -12,6 +12,7 @@ from src.evidence_cli import (
     cmd_add,
     cmd_list,
     cmd_search,
+    cmd_export,
     cmd_stats,
     cmd_backup,
     cmd_schema_version,
@@ -243,6 +244,39 @@ def test_cmd_search_respects_limit(cli_db, capsys):
     cmd_search(argparse.Namespace(query="PR review", limit=2))
     entries = json.loads(capsys.readouterr().out)
     assert len(entries) == 2
+
+
+# --- cmd_export ---
+
+def test_cmd_export_json_format(cli_db, capsys):
+    _add_entry("code_written", "subject_matter", "Wrote caching layer")
+    _add_entry("pr_review", "collaboration", "Reviewed PR #42")
+    capsys.readouterr()
+    cmd_export(argparse.Namespace(format="json"))
+    entries = json.loads(capsys.readouterr().out)
+    assert len(entries) == 2
+
+
+def test_cmd_export_markdown_format(cli_db, capsys):
+    _add_entry("code_written", "subject_matter", "Wrote caching layer")
+    capsys.readouterr()
+    cmd_export(argparse.Namespace(format="markdown"))
+    output = capsys.readouterr().out
+    assert "##" in output
+    assert "subject_matter" in output
+    assert "Wrote caching layer" in output
+
+
+def test_cmd_export_markdown_empty(cli_db, capsys):
+    cmd_export(argparse.Namespace(format="markdown"))
+    output = capsys.readouterr().out
+    assert "No evidence" in output
+
+
+def test_cmd_export_json_empty(cli_db, capsys):
+    cmd_export(argparse.Namespace(format="json"))
+    entries = json.loads(capsys.readouterr().out)
+    assert entries == []
 
 
 # --- cmd_stats ---

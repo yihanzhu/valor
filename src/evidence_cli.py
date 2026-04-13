@@ -10,6 +10,7 @@ Usage:
         --statement "Reviewed cross-team PR #892" --agent valor-morning-briefing
     python3 src/evidence_cli.py list --days 7
     python3 src/evidence_cli.py search "PR review"
+    python3 src/evidence_cli.py export --format markdown
     python3 src/evidence_cli.py stats
     python3 src/evidence_cli.py backup
     python3 src/evidence_cli.py schema-version
@@ -288,6 +289,30 @@ def cmd_search(args: argparse.Namespace) -> None:
     print(json.dumps(entries, indent=2))
 
 
+def cmd_export(args: argparse.Namespace) -> None:
+    conn = get_conn()
+    ensure_schema(conn)
+    query = "SELECT * FROM evidence ORDER BY date DESC, created_at DESC"
+    rows = conn.execute(query).fetchall()
+    conn.close()
+    entries = [dict(r) for r in rows]
+
+    if args.format == "json":
+        print(json.dumps(entries, indent=2))
+    elif args.format == "markdown":
+        if not entries:
+            print("_No evidence entries._")
+            return
+        by_date: dict[str, list[dict]] = {}
+        for e in entries:
+            by_date.setdefault(e["date"], []).append(e)
+        for day, group in by_date.items():
+            print(f"## {day}\n")
+            for e in group:
+                print(f"- **{e['competency']}** ({e['activity']}): {e['evidence_statement']}")
+            print()
+
+
 def cmd_schema_version(args: argparse.Namespace) -> None:
     conn = get_conn()
     ensure_schema(conn)
@@ -321,6 +346,9 @@ def main() -> None:
     p_search.add_argument("query", help="Text to search for (case-insensitive LIKE)")
     p_search.add_argument("--limit", type=int, default=50)
 
+    p_export = sub.add_parser("export", help="Export all evidence (JSON or markdown)")
+    p_export.add_argument("--format", choices=["json", "markdown"], default="json")
+
     sub.add_parser("stats", help="Show evidence statistics")
     sub.add_parser("backup", help="Backup the database")
     sub.add_parser("schema-version", help="Show schema version history")
@@ -330,6 +358,7 @@ def main() -> None:
         "add": cmd_add,
         "list": cmd_list,
         "search": cmd_search,
+        "export": cmd_export,
         "stats": cmd_stats,
         "backup": cmd_backup,
         "schema-version": cmd_schema_version,
