@@ -92,19 +92,33 @@ model provider, not by this repo. Valor does not override those policies.
 
 ## Install
 
+**Quick install (one command):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yihanzhu/valor/main/install.sh | bash -s -- --clone
+```
+
+This clones the repo to `~/valor`, creates `~/.valor/` for local state and
+evidence, and installs Valor's rule and commands for Claude Code.
+
+**Manual install:**
+
 ```bash
 git clone https://github.com/yihanzhu/valor.git ~/valor
 cd ~/valor
 bash install.sh
 ```
 
-This creates `~/.valor/` for local state and evidence, and installs Valor's
-rule and commands for Claude Code.
-
-For Cursor (legacy):
+**For Cursor (legacy):**
 
 ```bash
 bash install.sh --target cursor
+```
+
+**Upgrade to latest:**
+
+```bash
+cd ~/valor && bash install.sh --upgrade
 ```
 
 For a complete walkthrough including career framework setup, level
@@ -208,21 +222,19 @@ the repo source:
 
 ```text
 valor/
+├── .claude-plugin/         # Claude Code plugin manifest
+├── bin/                    # CLI wrappers (valor-evidence)
 ├── commands/               # User-invoked assistant commands
 ├── rules/                  # Always-applied Valor rule
+├── skills/                 # Plugin skills (setup)
 ├── src/                    # Local evidence and competency logic
 ├── tests/                  # Test suite
-├── docs/                   # Optional contributor and design docs
+├── docs/                   # Architecture, integrations, getting started
 ├── website/                # Minimal static landing page
 ├── install.sh              # Installer for Claude Code and Cursor
-├── README.md
-├── ROADMAP.md
-├── PRODUCT_VISION.md
-├── LICENSE
-├── PRIVACY.md
-├── CODE_OF_CONDUCT.md
-├── SECURITY.md
-└── CONTRIBUTING.md
+├── marketplace.json        # Plugin catalog
+├── VERSION                 # Version (single source of truth)
+└── ...                     # LICENSE, ROADMAP, CONTRIBUTING, etc.
 ```
 
 ## Contributing and Security

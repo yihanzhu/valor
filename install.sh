@@ -12,11 +12,34 @@
 #   ./install.sh --target cursor --check      Check drift for Cursor
 #   ./install.sh --version                    Print version and exit
 #   ./install.sh --upgrade                    Pull latest + re-install
+#
+# Quick install (clones repo then installs):
+#   curl -fsSL https://raw.githubusercontent.com/yihanzhu/valor/main/install.sh | bash -s -- --clone
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VALOR_HOME="$HOME/.valor"
+VALOR_REPO="https://github.com/yihanzhu/valor.git"
+VALOR_CLONE_DIR="$HOME/valor"
+
+# --- Handle --clone early (bootstrap from remote) ---
+for arg in "$@"; do
+    if [ "$arg" = "--clone" ]; then
+        if [ -d "$VALOR_CLONE_DIR/.git" ]; then
+            echo "Valor repo already exists at $VALOR_CLONE_DIR -- pulling latest..."
+            git -C "$VALOR_CLONE_DIR" pull --ff-only
+        else
+            echo "Cloning Valor to $VALOR_CLONE_DIR..."
+            git clone "$VALOR_REPO" "$VALOR_CLONE_DIR"
+        fi
+        remaining_args=()
+        for a in "$@"; do
+            [ "$a" != "--clone" ] && remaining_args+=("$a")
+        done
+        exec bash "$VALOR_CLONE_DIR/install.sh" "${remaining_args[@]+"${remaining_args[@]}"}"
+    fi
+done
 
 # --- Command source files and their target names ---
 # Format: "source-name:claude-code-name:cursor-skill-name:cursor-description"
