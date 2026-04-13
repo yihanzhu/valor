@@ -11,6 +11,7 @@
 #   ./install.sh --check                      Check for drift (uses current target)
 #   ./install.sh --target cursor --check      Check drift for Cursor
 #   ./install.sh --version                    Print version and exit
+#   ./install.sh --upgrade                    Pull latest + re-install
 
 set -euo pipefail
 
@@ -51,6 +52,23 @@ while [ "$#" -gt 0 ]; do
         --version)
             echo "Valor $VALOR_VERSION"
             exit 0
+            ;;
+        --upgrade)
+            echo "=== Valor Upgrade ==="
+            echo ""
+            if [ -d "$SCRIPT_DIR/.git" ]; then
+                echo "Pulling latest from $(git -C "$SCRIPT_DIR" remote get-url origin 2>/dev/null || echo 'origin')..."
+                git -C "$SCRIPT_DIR" pull --ff-only || {
+                    echo "Pull failed. Resolve conflicts manually, then re-run install.sh."
+                    exit 1
+                }
+                VALOR_VERSION="$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "unknown")"
+                echo "[OK] Updated to Valor $VALOR_VERSION"
+                echo ""
+            else
+                echo "Not a git repo -- cannot auto-upgrade. Run 'git pull' manually."
+                exit 1
+            fi
             ;;
         *)
             echo "Unknown argument: $1"
@@ -384,7 +402,20 @@ elif [ "$TARGET" = "claude-code" ]; then
     done
 fi
 
-# 4. Post-install verification
+# 4. Record installed version
+python3 -c "
+import json
+from datetime import datetime
+from pathlib import Path
+p = Path.home() / '.valor' / 'state.json'
+if p.exists():
+    state = json.loads(p.read_text())
+    state['installed_version'] = '$VALOR_VERSION'
+    state['installed_at'] = datetime.now().isoformat(timespec='seconds')
+    p.write_text(json.dumps(state, indent=2))
+" 2>/dev/null
+
+# 5. Post-install verification
 echo ""
 echo "=== Post-Install Verification ==="
 echo ""

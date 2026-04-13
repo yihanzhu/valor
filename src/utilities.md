@@ -111,3 +111,5 @@ p.write_text(json.dumps(state, indent=2))
 | `staleness_suppress_interval` | User config | Briefings to suppress staleness re-check after "keep" (default 10) |
 | `staleness_check_suppressed_until` | Staleness check | Briefing count at which staleness checks resume |
 | `integrations` | Installer / User config | Object with boolean flags for github, jira, calendar, news |
+| `installed_version` | Installer | Valor version at last install (semver) |
+| `installed_at` | Installer | ISO 8601 timestamp of last install |
