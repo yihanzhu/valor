@@ -2,7 +2,7 @@ import argparse
 import json
 import sqlite3
 import sys
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 
@@ -348,6 +348,41 @@ def test_cmd_export_json_empty(cli_db, capsys):
     cmd_export(argparse.Namespace(format="json"))
     entries = json.loads(capsys.readouterr().out)
     assert entries == []
+
+
+def test_cmd_export_filters_by_competency(cli_db, capsys):
+    _add_entry("code_written", "subject_matter", "SM entry")
+    _add_entry("pr_review", "collaboration", "Collab entry")
+    capsys.readouterr()
+    cmd_export(argparse.Namespace(
+        format="json", days=None, from_date=None, to_date=None,
+        competency="collaboration",
+    ))
+    entries = json.loads(capsys.readouterr().out)
+    assert len(entries) == 1
+    assert entries[0]["competency"] == "collaboration"
+
+
+def test_cmd_export_filters_by_days(cli_db, capsys):
+    _add_entry("code_written", "subject_matter", "Recent")
+    capsys.readouterr()
+    cmd_export(argparse.Namespace(
+        format="json", days=1, from_date=None, to_date=None, competency=None,
+    ))
+    entries = json.loads(capsys.readouterr().out)
+    assert len(entries) == 1
+
+
+def test_cmd_export_filters_by_date_range(cli_db, capsys):
+    _add_entry("code_written", "subject_matter", "In range")
+    capsys.readouterr()
+    today = date.today().isoformat()
+    cmd_export(argparse.Namespace(
+        format="markdown", days=None, from_date=today, to_date=today,
+        competency=None,
+    ))
+    output = capsys.readouterr().out
+    assert "In range" in output
 
 
 # --- cmd_stats ---

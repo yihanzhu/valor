@@ -308,8 +308,28 @@ def cmd_search(args: argparse.Namespace) -> None:
 def cmd_export(args: argparse.Namespace) -> None:
     conn = get_conn()
     ensure_schema(conn)
-    query = "SELECT * FROM evidence ORDER BY date DESC, created_at DESC"
-    rows = conn.execute(query).fetchall()
+
+    conditions: list[str] = []
+    params: list = []
+
+    if getattr(args, "days", None):
+        conditions.append(f"date >= date('now', '-{args.days} days')")
+    if getattr(args, "from_date", None):
+        conditions.append("date >= ?")
+        params.append(args.from_date)
+    if getattr(args, "to_date", None):
+        conditions.append("date <= ?")
+        params.append(args.to_date)
+    if getattr(args, "competency", None):
+        conditions.append("competency = ?")
+        params.append(args.competency)
+
+    query = "SELECT * FROM evidence"
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    query += " ORDER BY date DESC, created_at DESC"
+
+    rows = conn.execute(query, params).fetchall()
     conn.close()
     entries = [dict(r) for r in rows]
 
@@ -421,8 +441,16 @@ def main() -> None:
     p_search.add_argument("query", help="Text to search for (case-insensitive LIKE)")
     p_search.add_argument("--limit", type=int, default=50)
 
-    p_export = sub.add_parser("export", help="Export all evidence (JSON or markdown)")
+    p_export = sub.add_parser("export", help="Export evidence (JSON or markdown)")
     p_export.add_argument("--format", choices=["json", "markdown"], default="json")
+    p_export.add_argument("--days", type=int, default=None,
+                          help="Export entries from the last N days")
+    p_export.add_argument("--from", dest="from_date", type=parse_ymd_date, default=None,
+                          help="Start date (YYYY-MM-DD, inclusive)")
+    p_export.add_argument("--to", dest="to_date", type=parse_ymd_date, default=None,
+                          help="End date (YYYY-MM-DD, inclusive)")
+    p_export.add_argument("--competency", default=None, type=parse_competency,
+                          help="Filter by competency")
 
     sub.add_parser("stats", help="Show evidence statistics")
     sub.add_parser("status", help="Unified Valor status view")
