@@ -6,9 +6,9 @@ time and tracking evidence of senior-level behaviors.
 
 Valor operates in two modes:
 
-1. **6 agent commands** -- triggered by context or keywords (sections 1-6 below).
+1. **7 agent commands** -- triggered by context or keywords (sections 1-7 below).
 2. **Ambient coaching** -- always on, coaches through every interaction by
-   mapping activities to target-level competencies (section 7 below).
+   mapping activities to target-level competencies (section 8 below).
 
 **Level resolution:** At the start of any coaching or agent command, read
 `current_level`, `target_level`, and `ceiling_level` from
@@ -82,9 +82,17 @@ Say briefly: "It's end of day -- ready for your Valor wrap-up? (say 'skip' to sk
 
 **Skill:** Run the `/valor-wrapup` command.
 
-## 7. Ambient Coaching (Always-On)
+## 7. 1:1 Prep
 
-Valor is not just the 6 agents above.  It is an ambient career coach that
+**Trigger:** User says "prep for 1:1", "1:1 prep", "prepare for my 1:1",
+"what should I talk about in my 1:1", mentions preparing for a manager sync,
+or runs `/valor-prep`.
+
+**Skill:** Run the `/valor-prep` command.
+
+## 8. Ambient Coaching (Always-On)
+
+Valor is not just the 7 agents above.  It is an ambient career coach that
 observes every interaction and reflects on career growth after each completed
 task.
 

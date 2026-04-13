@@ -82,7 +82,7 @@ dict maps version numbers to SQL statements.
 
 ## Agent Architecture
 
-Valor has 6 discrete agents (invoked via slash commands) plus an ambient
+Valor has 7 discrete agents (invoked via slash commands) plus an ambient
 coaching layer:
 
 
@@ -94,6 +94,7 @@ coaching layer:
 | Weekly     | `/valor-weekly`     | GitHub, Jira                 | Weekly reflection                |
 | Tasks      | `/valor-tasks`      | GitHub, Jira                 | Task identification              |
 | Wrap-up    | `/valor-wrapup`     | None                         | End-of-day summary               |
+| 1:1 Prep   | `/valor-prep`       | GitHub, Jira (optional)      | Manager 1:1 preparation          |
 | *Ambient*  | Always-on rule      | None                         | Coaching annotations after tasks |
 
 

@@ -53,6 +53,7 @@ COMMAND_MAP=(
     "weekly:valor-weekly:valor-weekly-reflection:Valor weekly reflection: summarizes the week's work mapped to target-level competencies, identifies gaps, generates narrative for 1:1 with manager"
     "tasks:valor-tasks:valor-task-identifier:Valor task identifier: finds high-impact work opportunities prioritized by career growth potential and team need"
     "wrapup:valor-wrapup:valor-evening-wrapup:Valor evening wrap-up: summarizes the day's work, captures carry-forward items for tomorrow, and reflects on competencies exercised"
+    "prep:valor-prep:valor-prep:Valor 1:1 prep: generates a structured document for manager 1:1s grounded in evidence, weekly summaries, and career framework alignment"
 )
 
 # --- Version ---
@@ -147,6 +148,7 @@ apply_shared_transforms() {
         -e 's|/valor-weekly|valor-weekly-reflection skill|g' \
         -e 's|/valor-tasks|valor-task-identifier skill|g' \
         -e 's|/valor-wrapup|valor-evening-wrapup skill|g' \
+        -e 's|/valor-prep|valor-prep skill|g' \
         -e 's|Bash tool|Shell tool|g'
 }
 
@@ -160,7 +162,8 @@ apply_rule_transforms() {
         -e "s|\`/valor-design-doc\` command|\`~/$target_dir/skills/valor-design-doc-coach/SKILL.md\`|g" \
         -e "s|\`/valor-weekly\` command|\`~/$target_dir/skills/valor-weekly-reflection/SKILL.md\`|g" \
         -e "s|\`/valor-tasks\` command|\`~/$target_dir/skills/valor-task-identifier/SKILL.md\`|g" \
-        -e "s|\`/valor-wrapup\` command|\`~/$target_dir/skills/valor-evening-wrapup/SKILL.md\`|g"
+        -e "s|\`/valor-wrapup\` command|\`~/$target_dir/skills/valor-evening-wrapup/SKILL.md\`|g" \
+        -e "s|\`/valor-prep\` command|\`~/$target_dir/skills/valor-prep/SKILL.md\`|g"
 }
 
 # --- Generate Cursor .mdc from the universal agent rule ---
@@ -560,7 +563,8 @@ if [ "$TARGET" = "claude-code" ]; then
     echo "  4. Weekly Reflection   -- auto-suggests Friday, or /valor-weekly"
     echo "  5. Task Identifier    -- /valor-tasks"
     echo "  6. Evening Wrap-up   -- auto-suggests after 5pm, or /valor-wrapup"
-    echo "  7. Ambient Coaching   -- always on (say 'valor quiet' to suppress)"
+    echo "  7. 1:1 Prep           -- /valor-prep"
+    echo "  8. Ambient Coaching   -- always on (say 'valor quiet' to suppress)"
 elif [ "$TARGET" = "codex" ]; then
     echo "Valor agents installed for Codex CLI:"
     echo "  1. Morning Briefing   -- auto-suggests before 11am, or say 'morning briefing'"
@@ -569,7 +573,8 @@ elif [ "$TARGET" = "codex" ]; then
     echo "  4. Weekly Reflection   -- auto-suggests Friday, or say 'weekly reflection'"
     echo "  5. Task Identifier    -- say 'what should I work on' or 'find me work'"
     echo "  6. Evening Wrap-up   -- auto-suggests after 5pm, or say 'wrap up'"
-    echo "  7. Ambient Coaching   -- always on (say 'valor quiet' to suppress)"
+    echo "  7. 1:1 Prep           -- say 'prep for 1:1' or '1:1 prep'"
+    echo "  8. Ambient Coaching   -- always on (say 'valor quiet' to suppress)"
     echo ""
     echo "Agent rule: $CODEX_DIR/AGENTS.md"
     echo "Skills:     $CODEX_SKILLS/valor-*/"
@@ -581,7 +586,8 @@ else
     echo "  4. Weekly Reflection   -- auto-suggests Friday, or say 'weekly reflection'"
     echo "  5. Task Identifier    -- say 'what should I work on' or 'find me work'"
     echo "  6. Evening Wrap-up   -- auto-suggests after 5pm, or say 'wrap up'"
-    echo "  7. Ambient Coaching   -- always on (say 'valor quiet' to suppress)"
+    echo "  7. 1:1 Prep           -- say 'prep for 1:1' or '1:1 prep'"
+    echo "  8. Ambient Coaching   -- always on (say 'valor quiet' to suppress)"
 fi
 echo ""
 echo "Career framework: $VALOR_HOME/career_framework.md"

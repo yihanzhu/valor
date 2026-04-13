@@ -28,6 +28,7 @@ COMMANDS_NEEDING_INTEGRATION_CHECK = [
     "tasks",
     "design-doc",
     "pr-review",
+    "prep",
 ]
 
 
@@ -48,6 +49,14 @@ def test_commands_with_jira_reference_integrations_jira(cmd):
 def test_commands_with_github_reference_integrations_github(cmd):
     text = (COMMANDS_DIR / f"{cmd}.md").read_text()
     assert "integrations.github" in text, f"{cmd} uses GitHub but does not check integrations.github"
+
+
+def test_prep_command_exists_and_references_evidence():
+    text = Path("commands/prep.md").read_text()
+    assert "evidence_cli.py" in text
+    assert "weekly-summary-list" in text
+    assert "career_framework.md" in text
+    assert "one_on_one_prep" in text
 
 
 def test_wrapup_does_not_require_external_integrations():
