@@ -4,6 +4,19 @@ Helps the user find high-impact work opportunities by gathering available tasks 
 Jira and GitHub, identifying competency gaps from the evidence store, and ranking
 tasks by career impact and team need.
 
+## Integration Check
+
+Before gathering data, read `integrations` from `~/.valor/state.json`.
+Skip sections for any integration set to `false` -- do not probe or print
+a skip message.
+
+| Integration | Sections skipped when `false` |
+|-------------|-------------------------------|
+| `jira`      | Jira tasks |
+| `github`    | GitHub Issues, GitHub PRs to Review |
+
+Evidence / competency gaps (section 2) are always available (local).
+
 ## 1. GATHER AVAILABLE WORK
 
 ### Jira
@@ -37,8 +50,9 @@ e.g. `["DAT", "DSAI"]`). If not set, fall back to `jira_default_project`
 listed projects. If the user mentions a different project key, add it
 to the query.
 
-**If Atlassian MCP is unavailable:** Skip the Jira section and note: "Jira data
-unavailable — install Atlassian MCP plugin for Jira integration."
+**If Atlassian MCP is unavailable:** Skip the Jira section. If
+`integrations.jira` is `true`, note: "Jira tools not found -- install an
+Atlassian/Jira plugin, or set `integrations.jira` to `false` in state.json."
 
 ### GitHub Issues
 
@@ -48,7 +62,8 @@ If the user works in a GitHub repo context, run:
 gh issue list --state open --limit 20
 ```
 
-If `gh` is not authenticated or the workspace is not a repo, skip GitHub and note it.
+If `gh` is not authenticated, skip and note: "GitHub: `gh auth login`
+needed, or set `integrations.github` to `false` in state.json."
 
 ### GitHub PRs to Review
 
@@ -73,7 +88,8 @@ user's usual repositories. Use `user_work_areas` from `~/.valor/state.json`
 and evidence history to infer usual scope. Cross-team reviews carry
 stronger career signal.
 
-If `gh` is not authenticated, skip and note: "GitHub data unavailable."
+If `gh` is not authenticated, skip and note: "GitHub: `gh auth login`
+needed, or set `integrations.github` to `false` in state.json."
 
 ## 2. CHECK COMPETENCY GAPS
 

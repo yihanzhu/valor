@@ -3,9 +3,18 @@
 Helps the user write technical design documents for complex tickets, with structured
 options, trade-offs, career coaching, and evidence recording.
 
+## Integration Check
+
+Before gathering context, read `integrations` from `~/.valor/state.json`.
+If `integrations.jira` is `false`, skip all Jira lookups -- ask the user to
+describe the problem directly instead. This command works fully without any
+external integrations.
+
 ## 1. Gather Context
 
 ### Jira Ticket Lookup
+
+Skip this section if `integrations.jira` is `false`.
 
 **If the user mentions a Jira ticket (ID or key):**
 

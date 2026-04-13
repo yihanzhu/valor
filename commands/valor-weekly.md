@@ -16,9 +16,24 @@ produces a concise 1:1 narrative for their manager.
   just started.
 - Before a 1:1 meeting to prepare talking points
 
+## Integration Check
+
+Before gathering data, read `integrations` from `~/.valor/state.json`.
+Skip sections for any integration set to `false` -- do not probe or print
+a skip message.
+
+| Integration | Sections skipped when `false` |
+|-------------|-------------------------------|
+| `jira`      | Jira (1.2) |
+| `github`    | GitHub (1.3) |
+
+Evidence (1.1) is always available (local).
+
 ## 1. Gather Data
 
-Run all data sources in parallel. If a source is unavailable, skip that section gracefully — never error out or block the reflection.
+Run all enabled data sources in parallel. If an enabled source fails at
+runtime, note it once and suggest the user fix the tool or disable the
+integration in state.json.
 
 ### 1.0 Define the Reflection Week
 
@@ -74,7 +89,9 @@ assignee = currentUser() AND status changed >= "REFLECTION_WEEK_START" AND statu
 
 Use `maxResults: 50` and include fields: `summary`, `status`, `issuetype`, `updated`, `resolution`.
 
-**If Atlassian MCP is unavailable:** Skip the Jira section and note: "Jira data unavailable — install Atlassian MCP plugin for ticket tracking."
+**If Atlassian MCP is unavailable:** Skip the Jira section. If
+`integrations.jira` is `true`, note: "Jira tools not found -- install an
+Atlassian/Jira plugin, or set `integrations.jira` to `false` in state.json."
 
 ### 1.3 GitHub
 
@@ -92,7 +109,8 @@ After fetching, discard any PR whose `mergedAt` is on or after
 `reflection_week_end_exclusive`. This keeps Friday runs and Monday catch-up
 runs aligned to the same reflected week.
 
-If `gh` is not authenticated, skip and note: "GitHub data unavailable — run `gh auth login`."
+If `gh` is not authenticated, skip and note: "GitHub: `gh auth login`
+needed, or set `integrations.github` to `false` in state.json."
 
 ### 1.4 Previous Weeks (for trend comparison)
 
@@ -234,9 +252,9 @@ p.write_text(json.dumps(state, indent=2))
 
 | Scenario | Action |
 |----------|--------|
-| Evidence store missing or empty | Proceed with Jira/GitHub only. Note: "Start recording evidence for richer reflections." |
-| Jira MCP unavailable | Skip Jira; use evidence + GitHub. |
-| GitHub not authenticated | Skip GitHub; use evidence + Jira. |
-| All external sources unavailable | Build reflection from evidence store only; suggest connecting Jira/GitHub. |
+| Evidence store missing or empty | Proceed with enabled integrations only. Note: "Start recording evidence for richer reflections." |
+| Jira disabled or unavailable | Skip Jira; use evidence + GitHub if enabled. |
+| GitHub disabled or unavailable | Skip GitHub; use evidence + Jira if enabled. |
+| All integrations disabled | Build reflection from evidence store only. This is a valid workflow. |
 | Evidence CLI add fails | Continue; note: "Evidence recording unavailable." |
 | State update fails | Continue; reflection is still valid. |

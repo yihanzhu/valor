@@ -4,10 +4,31 @@
 Generate a comprehensive morning briefing that cross-references the user's work
 items, surfaces opportunities for career growth, and provides relevant news.
 
+## Integration Check
+
+Before gathering data, read `integrations` from `~/.valor/state.json`:
+
+```bash
+python3 -c "import json; print(json.dumps(json.loads(open('$HOME/.valor/state.json').read()).get('integrations', {})))"
+```
+
+For any integration set to `false`, skip all sections that depend on it
+entirely -- do not probe for the tool and do not print a skip message.
+
+| Integration | Sections skipped when `false` |
+|-------------|-------------------------------|
+| `jira`      | Jira Tickets (1) |
+| `github`    | GitHub PRs (2), Monday catch-up PR queries |
+| `calendar`  | Calendar (3) |
+| `news`      | News (4) |
+
+Career Coaching (5) and Evidence are always available (local).
+
 ## Data Gathering
 
-Gather data from all available sources in parallel. If a source is unavailable,
-skip that section gracefully -- never error out or block the briefing.
+Gather data from all enabled sources in parallel. If an enabled source fails
+at runtime (e.g. `gh` not authenticated), note it once and suggest the user
+either fix the tool or set the integration to `false` in state.json.
 
 ### 1. Jira Tickets
 
@@ -27,8 +48,9 @@ If Atlassian MCP is not available, check for any
 Jira-related slash command (look for commands matching `*jira*`). If found,
 read and use it to search for tickets.
 
-**If nothing is available:** Skip the Jira section and note: "Jira data
-unavailable -- install an Atlassian/Jira plugin for integration."
+**If nothing is available:** Skip the Jira section. If `integrations.jira` is
+`true`, note: "Jira tools not found -- install an Atlassian/Jira plugin, or
+set `integrations.jira` to `false` in `~/.valor/state.json`."
 
 ### 2. GitHub PRs
 
@@ -43,8 +65,8 @@ gh search prs --review-requested=@me --state=open --json number,title,author,cre
 gh search prs --author=@me --state=open --json number,title,createdAt,url,repository --limit 20
 ```
 
-If `gh` is not authenticated, skip and note: "GitHub data unavailable --
-run `gh auth login` to enable PR tracking."
+If `gh` is not authenticated, skip and note: "GitHub: `gh auth login` needed,
+or set `integrations.github` to `false` in `~/.valor/state.json`."
 
 For cross-team detection: if a PR's repository or author is outside the user's
 typical scope (based on evidence store history), flag it as "cross-team."
@@ -55,8 +77,9 @@ typical scope (based on evidence store history), flag it as "cross-team."
 Calendar or calendar-related slash command (look for commands matching
 `*google*` or `*calendar*`). If found, read and use it to fetch today's events.
 
-**If not available:** Skip and note: "Calendar unavailable -- install a
-Google Calendar skill or plugin for calendar integration."
+**If not available:** Skip. If `integrations.calendar` is `true`, note:
+"Calendar tools not found -- install a Google Calendar plugin, or set
+`integrations.calendar` to `false` in `~/.valor/state.json`."
 
 **RSVP status (mandatory):** After fetching the event list, retrieve full
 details for each event (including attendee response statuses). For each event:

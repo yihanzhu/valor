@@ -5,7 +5,11 @@ Helps the user deliver senior-level PR reviews by analyzing changes for architec
 ## Prerequisites
 
 - User provides a PR number (e.g. "review PR 123" or "help me review #456")
-- `gh` CLI must be authenticated. If not, instruct: "Run `gh auth login` to enable PR fetching."
+- `integrations.github` must be `true` in `~/.valor/state.json` (this
+  command requires GitHub access). If `false`, tell the user: "PR review
+  requires GitHub -- set `integrations.github` to `true` in state.json and
+  run `gh auth login`."
+- `gh` CLI must be authenticated. If not, instruct: "Run `gh auth login`."
 
 ## 1. FETCH and ANALYZE the PR
 
