@@ -10,6 +10,18 @@ as bookends for the workday.
   "evening wrap-up", or signals they are done for the day
 - Auto-suggested after 5pm on weekdays (see valor-agent.mdc trigger)
 
+## Integration Check
+
+Before gathering data, read `integrations` from `~/.valor/state.json`:
+
+```bash
+python3 -c "import json; from pathlib import Path; s=json.loads((Path.home()/'.valor'/'state.json').read_text()); print(json.dumps(s.get('integrations',{})))"
+```
+
+This command is primarily local (conversation, git, evidence, carry-forward).
+If `integrations.github` or `integrations.jira` are `true`, optionally
+include relevant activity from those sources. If `false`, skip silently.
+
 ## 1. Gather Context
 
 Use available sources to reconstruct the day's work. Run in parallel where

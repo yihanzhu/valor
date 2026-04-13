@@ -59,10 +59,11 @@ def test_prep_command_exists_and_references_evidence():
     assert "one_on_one_prep" in text
 
 
-def test_wrapup_does_not_require_external_integrations():
-    """Wrap-up is fully local and should not gate on integrations."""
+def test_wrapup_integrations_are_optional():
+    """Wrap-up reads integrations but treats them as optional."""
     text = Path("commands/wrapup.md").read_text()
-    assert "Integration Check" not in text
+    assert "Integration Check" in text
+    assert "primarily local" in text
 
 
 # --- Install script tests ---

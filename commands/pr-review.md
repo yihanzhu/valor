@@ -2,13 +2,21 @@
 
 Helps the user deliver senior-level PR reviews by analyzing changes for architecture, testing, naming, error handling, and cross-team impact. Coaches constructive tone with career-level competency context.
 
+## Integration Check
+
+Before starting, read `integrations` from `~/.valor/state.json`:
+
+```bash
+python3 -c "import json; from pathlib import Path; s=json.loads((Path.home()/'.valor'/'state.json').read_text()); print(json.dumps(s.get('integrations',{})))"
+```
+
+This command **requires** `integrations.github` to be `true`. If `false`,
+tell the user: "PR review requires GitHub -- set `integrations.github` to
+`true` in `~/.valor/state.json` and run `gh auth login`." Do not proceed.
+
 ## Prerequisites
 
 - User provides a PR number (e.g. "review PR 123" or "help me review #456")
-- `integrations.github` must be `true` in `~/.valor/state.json` (this
-  command requires GitHub access). If `false`, tell the user: "PR review
-  requires GitHub -- set `integrations.github` to `true` in state.json and
-  run `gh auth login`."
 - `gh` CLI must be authenticated. If not, instruct: "Run `gh auth login`."
 
 ## 1. FETCH and ANALYZE the PR
