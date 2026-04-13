@@ -12,6 +12,7 @@ Usage:
     python3 src/evidence_cli.py search "PR review"
     python3 src/evidence_cli.py export --format markdown
     python3 src/evidence_cli.py stats
+    python3 src/evidence_cli.py status
     python3 src/evidence_cli.py backup
     python3 src/evidence_cli.py schema-version
 """
@@ -313,6 +314,46 @@ def cmd_export(args: argparse.Namespace) -> None:
             print()
 
 
+def cmd_status(args: argparse.Namespace) -> None:
+    valor_home = Path.home() / ".valor"
+    state_path = valor_home / "state.json"
+
+    status: dict = {"valor_home": str(valor_home)}
+
+    version_path = Path(__file__).resolve().parent / "VERSION"
+    if not version_path.exists():
+        version_path = Path(__file__).resolve().parent.parent / "VERSION"
+    status["version"] = version_path.read_text().strip() if version_path.exists() else "unknown"
+
+    if state_path.exists():
+        state = json.loads(state_path.read_text())
+        status["current_level"] = state.get("current_level", "")
+        status["target_level"] = state.get("target_level", "")
+        status["ceiling_level"] = state.get("ceiling_level", "")
+        status["coaching_mode"] = state.get("coaching_mode", "ambient")
+        status["installed_version"] = state.get("installed_version", "")
+        status["installed_at"] = state.get("installed_at", "")
+        status["integrations"] = state.get("integrations", {})
+    else:
+        status["state"] = "not initialized (run install.sh)"
+
+    if DB_PATH.exists():
+        conn = get_conn()
+        ensure_schema(conn)
+        total = conn.execute("SELECT COUNT(*) as c FROM evidence").fetchone()["c"]
+        week_start, week_end = iso_week_bounds()
+        this_week = conn.execute(
+            "SELECT COUNT(*) as c FROM evidence WHERE date >= ? AND date < ?",
+            (week_start, week_end),
+        ).fetchone()["c"]
+        conn.close()
+        status["evidence"] = {"total": total, "this_week": this_week}
+    else:
+        status["evidence"] = {"total": 0, "this_week": 0}
+
+    print(json.dumps(status, indent=2))
+
+
 def cmd_schema_version(args: argparse.Namespace) -> None:
     conn = get_conn()
     ensure_schema(conn)
@@ -350,6 +391,7 @@ def main() -> None:
     p_export.add_argument("--format", choices=["json", "markdown"], default="json")
 
     sub.add_parser("stats", help="Show evidence statistics")
+    sub.add_parser("status", help="Unified Valor status view")
     sub.add_parser("backup", help="Backup the database")
     sub.add_parser("schema-version", help="Show schema version history")
 
@@ -360,6 +402,7 @@ def main() -> None:
         "search": cmd_search,
         "export": cmd_export,
         "stats": cmd_stats,
+        "status": cmd_status,
         "backup": cmd_backup,
         "schema-version": cmd_schema_version,
     }

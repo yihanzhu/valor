@@ -14,6 +14,7 @@ from src.evidence_cli import (
     cmd_search,
     cmd_export,
     cmd_stats,
+    cmd_status,
     cmd_backup,
     cmd_schema_version,
     iso_week_bounds,
@@ -330,6 +331,34 @@ def test_cmd_stats_this_week_uses_iso_monday_boundary(cli_db, capsys):
     cmd_stats(argparse.Namespace())
     result = json.loads(capsys.readouterr().out)
     assert result["this_week"] == {"subject_matter": 1}
+
+
+# --- cmd_status ---
+
+def test_cmd_status_includes_version(cli_db, capsys, tmp_path, monkeypatch):
+    version_file = tmp_path / "VERSION"
+    version_file.write_text("0.2.0\n")
+    monkeypatch.setattr(cli_module, "__file__", str(tmp_path / "evidence_cli.py"))
+    cmd_status(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["version"] == "0.2.0"
+
+
+def test_cmd_status_includes_evidence_counts(cli_db, capsys):
+    _add_entry("code_written", "subject_matter", "Wrote code")
+    capsys.readouterr()
+    cmd_status(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert "evidence" in result
+    assert result["evidence"]["total"] >= 1
+
+
+def test_cmd_status_no_db_shows_zero(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(cli_module, "DB_PATH", tmp_path / "nonexistent.sqlite")
+    monkeypatch.setattr(cli_module, "BACKUP_DIR", tmp_path / "backups")
+    cmd_status(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["evidence"]["total"] == 0
 
 
 # --- cmd_backup ---
