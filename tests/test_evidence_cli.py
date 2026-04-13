@@ -405,13 +405,31 @@ def test_cmd_stats_this_week_uses_iso_monday_boundary(cli_db, capsys):
 
 # --- cmd_status ---
 
-def test_cmd_status_includes_version(cli_db, capsys, tmp_path, monkeypatch):
+def test_cmd_status_includes_version_from_file(cli_db, capsys, tmp_path, monkeypatch):
     version_file = tmp_path / "VERSION"
     version_file.write_text("0.2.0\n")
     monkeypatch.setattr(cli_module, "__file__", str(tmp_path / "evidence_cli.py"))
     cmd_status(argparse.Namespace())
     result = json.loads(capsys.readouterr().out)
     assert result["version"] == "0.2.0"
+
+
+def test_cmd_status_falls_back_to_state_json(cli_db, capsys, tmp_path, monkeypatch):
+    """When VERSION file is absent, version comes from state.json installed_version."""
+    no_version_dir = tmp_path / "noversion"
+    no_version_dir.mkdir()
+    monkeypatch.setattr(cli_module, "__file__", str(no_version_dir / "evidence_cli.py"))
+    fake_home = tmp_path / "fakehome"
+    valor_dir = fake_home / ".valor"
+    valor_dir.mkdir(parents=True)
+    (valor_dir / "state.json").write_text(json.dumps({
+        "installed_version": "0.2.0-test",
+        "coaching_mode": "ambient",
+    }))
+    monkeypatch.setenv("HOME", str(fake_home))
+    cmd_status(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["version"] == "0.2.0-test"
 
 
 def test_cmd_status_includes_evidence_counts(cli_db, capsys):

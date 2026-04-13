@@ -329,16 +329,29 @@ def cmd_export(args: argparse.Namespace) -> None:
             print()
 
 
+def _resolve_version() -> str:
+    """Determine Valor version from VERSION file or state.json."""
+    for candidate in [
+        Path(__file__).resolve().parent / "VERSION",
+        Path(__file__).resolve().parent.parent / "VERSION",
+    ]:
+        if candidate.exists():
+            return candidate.read_text().strip()
+    state_path = Path.home() / ".valor" / "state.json"
+    if state_path.exists():
+        state = json.loads(state_path.read_text())
+        v = state.get("installed_version", "")
+        if v:
+            return v
+    return "unknown"
+
+
 def cmd_status(args: argparse.Namespace) -> None:
     valor_home = Path.home() / ".valor"
     state_path = valor_home / "state.json"
 
     status: dict = {"valor_home": str(valor_home)}
-
-    version_path = Path(__file__).resolve().parent / "VERSION"
-    if not version_path.exists():
-        version_path = Path(__file__).resolve().parent.parent / "VERSION"
-    status["version"] = version_path.read_text().strip() if version_path.exists() else "unknown"
+    status["version"] = _resolve_version()
 
     if state_path.exists():
         state = json.loads(state_path.read_text())
