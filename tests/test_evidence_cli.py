@@ -171,7 +171,10 @@ def test_cmd_add_invalid_date_raises(cli_db):
 def test_cmd_list_returns_all_entries(cli_db, capsys):
     _add_entry("code_written", "subject_matter", "Wrote code")
     capsys.readouterr()
-    cmd_list(argparse.Namespace(days=None, competency=None, limit=50))
+    cmd_list(argparse.Namespace(
+        days=None, from_date=None, to_date=None,
+        competency=None, activity=None, limit=50,
+    ))
     entries = json.loads(capsys.readouterr().out)
     assert len(entries) >= 1
 
@@ -180,7 +183,10 @@ def test_cmd_list_competency_filter(cli_db, capsys):
     _add_entry("code_written", "subject_matter", "Wrote code")
     _add_entry("pr_review_cross_scope", "collaboration", "Reviewed PR")
     capsys.readouterr()
-    cmd_list(argparse.Namespace(days=None, competency="subject_matter", limit=50))
+    cmd_list(argparse.Namespace(
+        days=None, from_date=None, to_date=None,
+        competency="subject_matter", activity=None, limit=50,
+    ))
     entries = json.loads(capsys.readouterr().out)
     assert len(entries) >= 1
     assert all(e["competency"] == "subject_matter" for e in entries)
@@ -190,7 +196,10 @@ def test_cmd_list_limit(cli_db, capsys):
     for i in range(5):
         _add_entry(f"activity_{i}", "subject_matter", f"Statement {i}", agent=f"agent_{i}")
     capsys.readouterr()
-    cmd_list(argparse.Namespace(days=None, competency=None, limit=2))
+    cmd_list(argparse.Namespace(
+        days=None, from_date=None, to_date=None,
+        competency=None, activity=None, limit=2,
+    ))
     entries = json.loads(capsys.readouterr().out)
     assert len(entries) <= 2
 
@@ -199,13 +208,74 @@ def test_cmd_list_combined_filters(cli_db, capsys):
     _add_entry("code_written", "subject_matter", "Wrote code")
     _add_entry("pr_review", "collaboration", "Reviewed PR")
     capsys.readouterr()
-    cmd_list(argparse.Namespace(days=30, competency="subject_matter", limit=50))
+    cmd_list(argparse.Namespace(
+        days=30, from_date=None, to_date=None,
+        competency="subject_matter", activity=None, limit=50,
+    ))
     entries = json.loads(capsys.readouterr().out)
     assert all(e["competency"] == "subject_matter" for e in entries)
 
 
+def test_cmd_list_from_date_filter(cli_db, capsys):
+    args_old = argparse.Namespace(
+        activity="code_written", competency="subject_matter",
+        statement="Old entry", agent="test", metadata=None, date="2026-01-01",
+    )
+    args_recent = argparse.Namespace(
+        activity="code_written", competency="subject_matter",
+        statement="Recent entry", agent="test2", metadata=None, date="2026-04-01",
+    )
+    cmd_add(args_old)
+    cmd_add(args_recent)
+    capsys.readouterr()
+    cmd_list(argparse.Namespace(
+        days=None, from_date="2026-03-01", to_date=None,
+        competency=None, activity=None, limit=50,
+    ))
+    entries = json.loads(capsys.readouterr().out)
+    assert len(entries) == 1
+    assert entries[0]["evidence_statement"] == "Recent entry"
+
+
+def test_cmd_list_to_date_filter(cli_db, capsys):
+    args_old = argparse.Namespace(
+        activity="code_written", competency="subject_matter",
+        statement="Old entry", agent="test", metadata=None, date="2026-01-01",
+    )
+    args_recent = argparse.Namespace(
+        activity="code_written", competency="subject_matter",
+        statement="Recent entry", agent="test2", metadata=None, date="2026-04-01",
+    )
+    cmd_add(args_old)
+    cmd_add(args_recent)
+    capsys.readouterr()
+    cmd_list(argparse.Namespace(
+        days=None, from_date=None, to_date="2026-02-01",
+        competency=None, activity=None, limit=50,
+    ))
+    entries = json.loads(capsys.readouterr().out)
+    assert len(entries) == 1
+    assert entries[0]["evidence_statement"] == "Old entry"
+
+
+def test_cmd_list_activity_filter(cli_db, capsys):
+    _add_entry("code_written", "subject_matter", "Wrote code")
+    _add_entry("pr_review", "collaboration", "Reviewed PR")
+    capsys.readouterr()
+    cmd_list(argparse.Namespace(
+        days=None, from_date=None, to_date=None,
+        competency=None, activity="pr_review", limit=50,
+    ))
+    entries = json.loads(capsys.readouterr().out)
+    assert len(entries) == 1
+    assert entries[0]["activity"] == "pr_review"
+
+
 def test_cmd_list_empty_db(cli_db, capsys):
-    cmd_list(argparse.Namespace(days=None, competency=None, limit=50))
+    cmd_list(argparse.Namespace(
+        days=None, from_date=None, to_date=None,
+        competency=None, activity=None, limit=50,
+    ))
     entries = json.loads(capsys.readouterr().out)
     assert entries == []
 

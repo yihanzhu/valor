@@ -194,18 +194,33 @@ def cmd_add(args: argparse.Namespace) -> None:
 def cmd_list(args: argparse.Namespace) -> None:
     conn = get_conn()
     ensure_schema(conn)
-    query = "SELECT * FROM evidence"
+
+    conditions: list[str] = []
     params: list = []
+
     if args.days:
-        query += f" WHERE date >= date('now', '-{args.days} days')"
+        conditions.append(f"date >= date('now', '-{args.days} days')")
+    if getattr(args, "from_date", None):
+        conditions.append("date >= ?")
+        params.append(args.from_date)
+    if getattr(args, "to_date", None):
+        conditions.append("date <= ?")
+        params.append(args.to_date)
     if args.competency:
-        query += " WHERE " if "WHERE" not in query else " AND "
-        query += "competency = ?"
+        conditions.append("competency = ?")
         params.append(args.competency)
+    if getattr(args, "activity", None):
+        conditions.append("activity = ?")
+        params.append(args.activity)
+
+    query = "SELECT * FROM evidence"
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
     query += " ORDER BY date DESC, created_at DESC"
     if args.limit:
         query += " LIMIT ?"
         params.append(args.limit)
+
     rows = conn.execute(query, params).fetchall()
     conn.close()
     entries = [dict(r) for r in rows]
@@ -379,8 +394,14 @@ def main() -> None:
     p_add.add_argument("--metadata", type=json.loads, default=None)
 
     p_list = sub.add_parser("list", help="List evidence entries")
-    p_list.add_argument("--days", type=int, default=None)
+    p_list.add_argument("--days", type=int, default=None,
+                        help="Show entries from the last N days")
+    p_list.add_argument("--from", dest="from_date", type=parse_ymd_date, default=None,
+                        help="Start date (YYYY-MM-DD, inclusive)")
+    p_list.add_argument("--to", dest="to_date", type=parse_ymd_date, default=None,
+                        help="End date (YYYY-MM-DD, inclusive)")
     p_list.add_argument("--competency", default=None, type=parse_competency)
+    p_list.add_argument("--activity", default=None, help="Filter by activity type")
     p_list.add_argument("--limit", type=int, default=50)
 
     p_search = sub.add_parser("search", help="Full-text search on evidence statements")
