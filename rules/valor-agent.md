@@ -266,6 +266,30 @@ Evidence CLI: `python3 ~/.valor/evidence_cli.py`
 - `work_area_refresh_interval` (default 5), `staleness_suppress_interval` (default 10)
 - `state_schema_version` (integer for installer migrations)
 - `installed_version`, `installed_at` (install tracking)
+- `last_update_check` (ISO timestamp of last remote version check)
+- `update_check_interval_hours` (default 24, how often to check for updates)
+
+## Auto-Update Check
+
+At the START of every conversation, silently check for Valor updates:
+
+1. Read `~/.valor/state.json` -- check `last_update_check`
+2. If `last_update_check` is empty or more than `update_check_interval_hours`
+   (default 24) have passed since `last_update_check`:
+   a. Run: `curl -sfL https://raw.githubusercontent.com/yihanzhu/valor/main/VERSION`
+   b. Compare with `installed_version` in state.json
+   c. If newer version available:
+      - Minor/patch update (same major version): run
+        `bash ~/.valor/repo/install.sh --auto-update` silently
+      - Major version bump: suggest briefly:
+        "Valor X.0 is available. Update? (say 'skip' to skip)"
+        If user says yes, run the auto-update command above.
+   d. Update `last_update_check` in state.json to the current ISO timestamp
+      regardless of whether an update was applied
+3. If `curl` fails (offline, timeout), skip silently -- do not warn the user
+
+This check should be invisible when no update is needed. Do not mention it
+unless a major version bump requires user confirmation.
 
 ## Behavior Rules
 

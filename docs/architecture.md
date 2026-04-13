@@ -53,13 +53,14 @@ and `utilities.md`).
 | `utilities.md`        | Tool discovery reference for agents           | `install.sh`         |
 | `carry-forward/`      | Wrap-up notes for cross-day continuity        | `wrapup` agent       |
 | `backups/`            | Auto-rotated SQLite backups (max 10)          | `evidence_cli.py`    |
+| `repo/`               | Git clone of the Valor source repo            | `install.sh --clone` |
 
 
 ### state.json schema
 
 The `installed_version` and `installed_at` fields track when the last install
 happened. The `state_schema_version` field enables forward-only migrations
-when the installer adds new fields (currently at version 2).
+when the installer adds new fields (currently at version 3).
 
 Key fields:
 
@@ -68,6 +69,8 @@ Key fields:
 - `integrations` -- boolean flags for github, jira, calendar, news
 - `state_schema_version` -- integer for installer migrations
 - `installed_version`, `installed_at` -- install tracking
+- `last_update_check` -- ISO timestamp of last remote version check
+- `update_check_interval_hours` -- how often to check (default 24)
 
 ### evidence.sqlite schema
 
@@ -119,3 +122,19 @@ User completes a task
 
 Evidence is append-only. Deduplication prevents duplicate entries (same date +
 activity + agent + statement).
+
+## Auto-Update
+
+At session start, the ambient rule checks `last_update_check` in state.json.
+If more than `update_check_interval_hours` (default 24) have passed, the agent
+curls the remote `VERSION` file and compares with `installed_version`:
+
+- **Same version:** updates `last_update_check`, no action
+- **Minor/patch bump:** runs `install.sh --auto-update` silently (git pull +
+  quiet reinstall in `~/.valor/repo/`)
+- **Major bump:** prompts the user before updating
+- **Offline/failure:** skips silently
+
+The `--auto-update` flag performs a `git pull --ff-only` in `~/.valor/repo/`,
+re-runs `install.sh --target all` with suppressed output, and prints a
+one-line summary of the version change.

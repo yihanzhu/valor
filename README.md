@@ -102,15 +102,16 @@ model provider, not by this repo. Valor does not override those policies.
 curl -fsSL https://raw.githubusercontent.com/yihanzhu/valor/main/install.sh | bash -s -- --clone
 ```
 
-This clones the repo to `~/valor`, creates `~/.valor/` for local state and
-evidence, and installs Valor for all supported agents (Claude Code, Codex CLI,
-and Cursor).
+This clones the repo to `~/.valor/repo/`, creates `~/.valor/` for local state
+and evidence, and installs Valor for all supported agents (Claude Code,
+Codex CLI, and Cursor). Valor checks for updates daily and auto-applies
+minor/patch releases.
 
 **Manual install:**
 
 ```bash
-git clone https://github.com/yihanzhu/valor.git ~/valor
-cd ~/valor
+git clone https://github.com/yihanzhu/valor.git ~/.valor/repo
+cd ~/.valor/repo
 bash install.sh
 ```
 
@@ -122,10 +123,10 @@ bash install.sh --target codex         # Codex CLI only
 bash install.sh --target cursor        # Cursor only
 ```
 
-**Upgrade to latest:**
+**Upgrade manually:**
 
 ```bash
-cd ~/valor && bash install.sh --upgrade
+cd ~/.valor/repo && bash install.sh --upgrade
 ```
 
 For a complete walkthrough including career framework setup, level

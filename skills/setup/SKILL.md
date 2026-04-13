@@ -110,7 +110,7 @@ adding Valor's rule to your `~/.claude/CLAUDE.md`. This is not handled by
 the plugin -- run `install.sh` from the Valor repo for ambient coaching:
 
 ```bash
-cd ~/valor && bash install.sh
+cd ~/.valor/repo && bash install.sh
 ```
 
 Without this step, the 7 Valor commands (`/valor-briefing`,

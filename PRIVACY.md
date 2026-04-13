@@ -13,6 +13,7 @@ By default, Valor stores data under `~/.valor/`:
 - `evidence.sqlite`: structured evidence entries and summaries
 - `backups/`: local SQLite backups created by the CLI
 - `carry-forward/`: local wrap-up notes and next-day pickup files
+- `repo/`: git clone of the Valor source repository (used for updates)
 
 Installed prompts and rules live in assistant-specific local directories:
 
@@ -31,6 +32,24 @@ The code in this repository does not include:
 - automatic data sharing with the maintainer
 
 ## When Network Access Can Still Happen
+
+### Auto-update version check
+
+Once per day (configurable via `update_check_interval_hours` in state.json),
+Valor's ambient rule fetches a single file from GitHub to check for new
+versions:
+
+```
+https://raw.githubusercontent.com/yihanzhu/valor/main/VERSION
+```
+
+This request contains no user data -- it downloads a version string (e.g.
+"0.3.0"). If a minor or patch update is available, Valor auto-applies it
+via `git pull` in `~/.valor/repo/`. Major version bumps prompt the user
+first. You can disable this by setting `update_check_interval_hours` to `0`
+in state.json.
+
+### Tool-initiated network access
 
 Valor may cause network access indirectly when it instructs the host assistant
 to use tools that are already present in the user's environment, such as:
@@ -66,7 +85,7 @@ policies. Valor cannot override those policies from inside this repo.
 
 To remove Valor's local data:
 
-- delete `~/.valor/`
+- delete `~/.valor/` (this includes the source repo clone at `~/.valor/repo/`)
 - remove installed commands/skills from `~/.claude/commands/`, `~/.codex/skills/`, or `~/.cursor/skills/`
 - remove the installed Valor rule from `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, or `~/.cursor/rules/`
 

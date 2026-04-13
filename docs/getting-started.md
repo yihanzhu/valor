@@ -7,8 +7,8 @@ required.
 ## 1. Install
 
 ```bash
-git clone https://github.com/yihanzhu/valor.git ~/valor
-cd ~/valor
+git clone https://github.com/yihanzhu/valor.git ~/.valor/repo
+cd ~/.valor/repo
 bash install.sh                           # All targets (default)
 # or install for a specific target:
 bash install.sh --target claude-code      # Claude Code only

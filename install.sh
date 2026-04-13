@@ -14,6 +14,7 @@
 #   ./install.sh --target codex --check       Check drift for Codex
 #   ./install.sh --version                    Print version and exit
 #   ./install.sh --upgrade                    Pull latest + re-install
+#   ./install.sh --auto-update                Pull latest + quiet re-install (for agent-triggered updates)
 #
 # Quick install (clones repo then installs):
 #   curl -fsSL https://raw.githubusercontent.com/yihanzhu/valor/main/install.sh | bash -s -- --clone
@@ -23,11 +24,17 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VALOR_HOME="$HOME/.valor"
 VALOR_REPO="https://github.com/yihanzhu/valor.git"
-VALOR_CLONE_DIR="$HOME/valor"
+VALOR_CLONE_DIR="$VALOR_HOME/repo"
 
 # --- Handle --clone early (bootstrap from remote) ---
 for arg in "$@"; do
     if [ "$arg" = "--clone" ]; then
+        mkdir -p "$VALOR_HOME"
+        # Migrate from legacy ~/valor to ~/.valor/repo/ if needed
+        if [ -d "$HOME/valor/.git" ] && [ ! -d "$VALOR_CLONE_DIR/.git" ]; then
+            echo "Migrating Valor repo from ~/valor to $VALOR_CLONE_DIR..."
+            mv "$HOME/valor" "$VALOR_CLONE_DIR"
+        fi
         if [ -d "$VALOR_CLONE_DIR/.git" ]; then
             echo "Valor repo already exists at $VALOR_CLONE_DIR -- pulling latest..."
             git -C "$VALOR_CLONE_DIR" pull --ff-only
@@ -97,6 +104,27 @@ while [ "$#" -gt 0 ]; do
                 echo "Not a git repo -- cannot auto-upgrade. Run 'git pull' manually."
                 exit 1
             fi
+            ;;
+        --auto-update)
+            old_version="$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "unknown")"
+            repo_dir="$VALOR_HOME/repo"
+            if [ -d "$repo_dir/.git" ]; then
+                git -C "$repo_dir" pull --ff-only >/dev/null 2>&1 || {
+                    echo "Valor auto-update: pull failed (offline?)" >&2
+                    exit 1
+                }
+                new_version="$(cat "$repo_dir/VERSION" 2>/dev/null || echo "unknown")"
+                if [ "$old_version" = "$new_version" ]; then
+                    echo "Valor is already up to date ($new_version)."
+                    exit 0
+                fi
+                bash "$repo_dir/install.sh" --target all >/dev/null 2>&1
+                echo "Valor updated: $old_version -> $new_version"
+            else
+                echo "Valor auto-update: no repo at $repo_dir (run install.sh --clone first)" >&2
+                exit 1
+            fi
+            exit 0
             ;;
         *)
             echo "Unknown argument: $1"
@@ -387,7 +415,7 @@ mkdir -p "$VALOR_HOME/carry-forward"
 
 DETECTED_INTEGRATIONS=$(detect_integrations)
 
-STATE_SCHEMA_VERSION=2
+STATE_SCHEMA_VERSION=3
 
 if [ ! -f "$VALOR_HOME/state.json" ]; then
     cat > "$VALOR_HOME/state.json" <<STATEJSON
@@ -404,7 +432,9 @@ if [ ! -f "$VALOR_HOME/state.json" ]; then
   "user_work_areas_pinned": [],
   "github_owner": "",
   "jira_projects": [],
-  "integrations": $DETECTED_INTEGRATIONS
+  "integrations": $DETECTED_INTEGRATIONS,
+  "last_update_check": "",
+  "update_check_interval_hours": 24
 }
 STATEJSON
     echo "[OK] Created $VALOR_HOME/state.json (integrations auto-detected)"
@@ -424,6 +454,14 @@ if current_version < 2:
         state['integrations'] = json.loads(sys.argv[3])
         changed = True
     if 'state_schema_version' not in state:
+        changed = True
+# v2 -> v3: add auto-update fields
+if current_version < 3:
+    if 'last_update_check' not in state:
+        state['last_update_check'] = ''
+        changed = True
+    if 'update_check_interval_hours' not in state:
+        state['update_check_interval_hours'] = 24
         changed = True
 if state.get('state_schema_version', 1) < target_version:
     state['state_schema_version'] = target_version
