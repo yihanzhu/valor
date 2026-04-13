@@ -324,25 +324,12 @@ check_drift() {
             else
                 echo "[OK]      $dst"
             fi
-        elif [ "$TARGET" = "codex" ]; then
-            local dst="$CODEX_SKILLS/$skill_name/SKILL.md"
-            if [ ! -f "$dst" ]; then
-                echo "[MISSING] $dst"
-                drift_count=$((drift_count + 1))
-            else
-                local tmp_generated
-                tmp_generated=$(mktemp)
-                generate_skill "$src" "$tmp_generated" "$skill_name" "$description"
-                if ! diff -q "$tmp_generated" "$dst" > /dev/null 2>&1; then
-                    echo "[DRIFT]   $dst"
-                    drift_count=$((drift_count + 1))
-                else
-                    echo "[OK]      $dst"
-                fi
-                rm -f "$tmp_generated"
-            fi
-        elif [ "$TARGET" = "cursor" ]; then
-            local dst="$AGENT_SKILLS/$skill_name/SKILL.md"
+        else
+            # Codex and Cursor both use generated SKILL.md wrappers
+            local skills_root=""
+            [ "$TARGET" = "codex" ] && skills_root="$CODEX_SKILLS"
+            [ "$TARGET" = "cursor" ] && skills_root="$AGENT_SKILLS"
+            local dst="$skills_root/$skill_name/SKILL.md"
             if [ ! -f "$dst" ]; then
                 echo "[MISSING] $dst"
                 drift_count=$((drift_count + 1))
@@ -454,14 +441,6 @@ if [ "$TARGET" = "cursor" ]; then
     generate_cursor_rule "$RULE_SOURCE" "$AGENT_RULES/valor-agent.mdc"
     echo "[OK] Generated rule -> $AGENT_RULES/valor-agent.mdc"
 
-    for entry in "${COMMAND_MAP[@]}"; do
-        IFS=':' read -r src_name cc_name skill_name description <<< "$entry"
-        mkdir -p "$AGENT_SKILLS/$skill_name"
-        generate_skill "$SCRIPT_DIR/commands/$src_name.md" \
-            "$AGENT_SKILLS/$skill_name/SKILL.md" "$skill_name" "$description"
-        echo "[OK] Generated skill -> $AGENT_SKILLS/$skill_name/"
-    done
-
 elif [ "$TARGET" = "codex" ]; then
     mkdir -p "$CODEX_DIR"
 
@@ -484,14 +463,6 @@ elif [ "$TARGET" = "codex" ]; then
         echo "$MARKER_END"
     } >> "$CODEX_DIR/AGENTS.md"
     echo "[OK] Installed Valor agent rule -> $CODEX_DIR/AGENTS.md (appended)"
-
-    for entry in "${COMMAND_MAP[@]}"; do
-        IFS=':' read -r src_name cc_name skill_name description <<< "$entry"
-        mkdir -p "$CODEX_SKILLS/$skill_name"
-        generate_skill "$SCRIPT_DIR/commands/$src_name.md" \
-            "$CODEX_SKILLS/$skill_name/SKILL.md" "$skill_name" "$description"
-        echo "[OK] Generated skill -> $CODEX_SKILLS/$skill_name/"
-    done
 
 elif [ "$TARGET" = "claude-code" ]; then
     mkdir -p "$CLAUDE_DIR"
@@ -523,6 +494,20 @@ elif [ "$TARGET" = "claude-code" ]; then
         echo "[OK] Installed command -> $CLAUDE_COMMANDS/$cc_name.md"
     done
 
+fi
+
+# Install skills (Codex and Cursor share the same generate_skill pipeline)
+if [ "$TARGET" = "codex" ] || [ "$TARGET" = "cursor" ]; then
+    SKILLS_ROOT="$AGENT_SKILLS"
+    [ "$TARGET" = "codex" ] && SKILLS_ROOT="$CODEX_SKILLS"
+
+    for entry in "${COMMAND_MAP[@]}"; do
+        IFS=':' read -r src_name cc_name skill_name description <<< "$entry"
+        mkdir -p "$SKILLS_ROOT/$skill_name"
+        generate_skill "$SCRIPT_DIR/commands/$src_name.md" \
+            "$SKILLS_ROOT/$skill_name/SKILL.md" "$skill_name" "$description"
+        echo "[OK] Generated skill -> $SKILLS_ROOT/$skill_name/"
+    done
 fi
 
 # 4. Record installed version
