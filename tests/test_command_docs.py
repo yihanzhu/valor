@@ -7,14 +7,14 @@ COMMANDS_DIR = Path("commands")
 
 
 def test_wrapup_carry_forward_stays_under_valor_home():
-    text = Path("commands/valor-wrapup.md").read_text()
+    text = Path("commands/wrapup.md").read_text()
     assert "~/.valor/carry-forward/" in text
     assert ".claude/memories" not in text
     assert "MEMORY.md" not in text
 
 
 def test_weekly_reflection_uses_explicit_week_window():
-    text = Path("commands/valor-weekly.md").read_text()
+    text = Path("commands/weekly.md").read_text()
     assert "reflection_week_start" in text
     assert "reflection_week_end_exclusive" in text
     assert "previous ISO week" in text
@@ -23,11 +23,11 @@ def test_weekly_reflection_uses_explicit_week_window():
 # --- Integration check tests ---
 
 COMMANDS_NEEDING_INTEGRATION_CHECK = [
-    "valor-briefing",
-    "valor-weekly",
-    "valor-tasks",
-    "valor-design-doc",
-    "valor-pr-review",
+    "briefing",
+    "weekly",
+    "tasks",
+    "design-doc",
+    "pr-review",
 ]
 
 
@@ -38,13 +38,13 @@ def test_commands_reference_integrations(cmd):
     assert "integrations" in text, f"{cmd} does not reference integrations"
 
 
-@pytest.mark.parametrize("cmd", ["valor-briefing", "valor-weekly", "valor-tasks"])
+@pytest.mark.parametrize("cmd", ["briefing", "weekly", "tasks"])
 def test_commands_with_jira_reference_integrations_jira(cmd):
     text = (COMMANDS_DIR / f"{cmd}.md").read_text()
     assert "integrations.jira" in text, f"{cmd} uses Jira but does not check integrations.jira"
 
 
-@pytest.mark.parametrize("cmd", ["valor-briefing", "valor-weekly", "valor-tasks"])
+@pytest.mark.parametrize("cmd", ["briefing", "weekly", "tasks"])
 def test_commands_with_github_reference_integrations_github(cmd):
     text = (COMMANDS_DIR / f"{cmd}.md").read_text()
     assert "integrations.github" in text, f"{cmd} uses GitHub but does not check integrations.github"
@@ -52,7 +52,7 @@ def test_commands_with_github_reference_integrations_github(cmd):
 
 def test_wrapup_does_not_require_external_integrations():
     """Wrap-up is fully local and should not gate on integrations."""
-    text = Path("commands/valor-wrapup.md").read_text()
+    text = Path("commands/wrapup.md").read_text()
     assert "Integration Check" not in text
 
 

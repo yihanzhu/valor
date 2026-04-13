@@ -18,15 +18,17 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VALOR_HOME="$HOME/.valor"
 
-# --- Command source files and their Cursor skill names ---
-# Format: "command-name:cursor-skill-name:cursor-description"
+# --- Command source files and their target names ---
+# Format: "source-name:claude-code-name:cursor-skill-name:cursor-description"
+# source-name: filename in commands/ (without .md), also the plugin command name
+# claude-code-name: filename when installed standalone to ~/.claude/commands/
 COMMAND_MAP=(
-    "valor-briefing:valor-morning-briefing:Valor morning briefing: gathers Jira tickets, PRs, calendar, tech/world news, and career coaching into a comprehensive daily briefing"
-    "valor-pr-review:valor-pr-review-coach:Valor PR review coach: helps give senior-level code review feedback with architecture, testing, and career coaching annotations"
-    "valor-design-doc:valor-design-doc-coach:Valor design doc coach: helps write technical design documents with structured options, trade-offs, and career coaching"
-    "valor-weekly:valor-weekly-reflection:Valor weekly reflection: summarizes the week's work mapped to target-level competencies, identifies gaps, generates narrative for 1:1 with manager"
-    "valor-tasks:valor-task-identifier:Valor task identifier: finds high-impact work opportunities prioritized by career growth potential and team need"
-    "valor-wrapup:valor-evening-wrapup:Valor evening wrap-up: summarizes the day's work, captures carry-forward items for tomorrow, and reflects on competencies exercised"
+    "briefing:valor-briefing:valor-morning-briefing:Valor morning briefing: gathers Jira tickets, PRs, calendar, tech/world news, and career coaching into a comprehensive daily briefing"
+    "pr-review:valor-pr-review:valor-pr-review-coach:Valor PR review coach: helps give senior-level code review feedback with architecture, testing, and career coaching annotations"
+    "design-doc:valor-design-doc:valor-design-doc-coach:Valor design doc coach: helps write technical design documents with structured options, trade-offs, and career coaching"
+    "weekly:valor-weekly:valor-weekly-reflection:Valor weekly reflection: summarizes the week's work mapped to target-level competencies, identifies gaps, generates narrative for 1:1 with manager"
+    "tasks:valor-tasks:valor-task-identifier:Valor task identifier: finds high-impact work opportunities prioritized by career growth potential and team need"
+    "wrapup:valor-wrapup:valor-evening-wrapup:Valor evening wrap-up: summarizes the day's work, captures carry-forward items for tomorrow, and reflects on competencies exercised"
 )
 
 # --- Version ---
@@ -240,8 +242,8 @@ check_drift() {
 
     # Check commands/skills
     for entry in "${COMMAND_MAP[@]}"; do
-        IFS=':' read -r cmd_name skill_name description <<< "$entry"
-        local src="$SCRIPT_DIR/commands/$cmd_name.md"
+        IFS=':' read -r src_name cc_name skill_name description <<< "$entry"
+        local src="$SCRIPT_DIR/commands/$src_name.md"
 
         if [ ! -f "$src" ]; then
             echo "[MISSING SRC] $src"
@@ -250,7 +252,7 @@ check_drift() {
         fi
 
         if [ "$TARGET" = "claude-code" ]; then
-            local dst="$CLAUDE_COMMANDS/$cmd_name.md"
+            local dst="$CLAUDE_COMMANDS/$cc_name.md"
             if [ ! -f "$dst" ]; then
                 echo "[MISSING] $dst"
                 drift_count=$((drift_count + 1))
@@ -268,7 +270,7 @@ check_drift() {
             else
                 local tmp_generated
                 tmp_generated=$(mktemp)
-                generate_cursor_skill "$src" "$tmp_generated" "$skill_name" "$description"
+                generate_cursor_skill "$src" "$tmp_generated" "$skill_name" "$description" "$cc_name"
                 if ! diff -q "$tmp_generated" "$dst" > /dev/null 2>&1; then
                     echo "[DRIFT]   $dst"
                     drift_count=$((drift_count + 1))
@@ -364,9 +366,9 @@ if [ "$TARGET" = "cursor" ]; then
     echo "[OK] Generated rule -> $AGENT_RULES/valor-agent.mdc"
 
     for entry in "${COMMAND_MAP[@]}"; do
-        IFS=':' read -r cmd_name skill_name description <<< "$entry"
+        IFS=':' read -r src_name cc_name skill_name description <<< "$entry"
         mkdir -p "$AGENT_SKILLS/$skill_name"
-        generate_cursor_skill "$SCRIPT_DIR/commands/$cmd_name.md" \
+        generate_cursor_skill "$SCRIPT_DIR/commands/$src_name.md" \
             "$AGENT_SKILLS/$skill_name/SKILL.md" "$skill_name" "$description"
         echo "[OK] Generated skill -> $AGENT_SKILLS/$skill_name/"
     done
@@ -396,9 +398,9 @@ elif [ "$TARGET" = "claude-code" ]; then
     echo "[OK] Installed Valor agent rule -> $CLAUDE_DIR/CLAUDE.md (appended)"
 
     for entry in "${COMMAND_MAP[@]}"; do
-        IFS=':' read -r cmd_name skill_name description <<< "$entry"
-        cp "$SCRIPT_DIR/commands/$cmd_name.md" "$CLAUDE_COMMANDS/$cmd_name.md"
-        echo "[OK] Installed command -> $CLAUDE_COMMANDS/$cmd_name.md"
+        IFS=':' read -r src_name cc_name skill_name description <<< "$entry"
+        cp "$SCRIPT_DIR/commands/$src_name.md" "$CLAUDE_COMMANDS/$cc_name.md"
+        echo "[OK] Installed command -> $CLAUDE_COMMANDS/$cc_name.md"
     done
 fi
 
