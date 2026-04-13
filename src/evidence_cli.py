@@ -20,7 +20,6 @@ import argparse
 import json
 import shutil
 import sqlite3
-import sys
 import uuid
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path

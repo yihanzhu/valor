@@ -18,6 +18,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dev dependencies
         run: python -m pip install -r requirements-dev.txt
+      - name: Lint
+        run: ruff check src tests
       - name: Run tests
         run: python -m pytest -q
       - name: Compile sources

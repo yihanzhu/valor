@@ -4,7 +4,6 @@ from src.competency import (
     Competency,
     ACTIVITY_COMPETENCY_MAP,
     AMBIENT_COACHING_TEMPLATES,
-    CoachingTip,
     coaching_tips_for_prs,
     coaching_tips_for_design_docs,
     gap_analysis,

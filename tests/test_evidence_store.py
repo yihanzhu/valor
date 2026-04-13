@@ -1,4 +1,3 @@
-import pytest
 
 from src.competency import Competency
 from src.evidence_store import EvidenceEntry, FeedbackEntry, WeeklySummary, EvidenceStore
