@@ -113,16 +113,17 @@ cd ~/valor
 bash install.sh
 ```
 
-**For Codex CLI:**
+**For all three (Claude Code + Codex CLI + Cursor):**
 
 ```bash
-bash install.sh --target codex
+bash install.sh --target all
 ```
 
-**For Cursor (legacy):**
+**Or individually:**
 
 ```bash
-bash install.sh --target cursor
+bash install.sh --target codex    # Codex CLI only
+bash install.sh --target cursor   # Cursor only
 ```
 
 **Upgrade to latest:**
@@ -228,8 +229,8 @@ If you are editing installed artifacts locally, you can verify they still match
 the repo source:
 
 ```bash
-./install.sh --check
-./install.sh --target cursor --check
+./install.sh --check                    # Claude Code (default)
+./install.sh --target all --check       # All targets
 ```
 
 ## Project Layout

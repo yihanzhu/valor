@@ -8,7 +8,8 @@
 #   ./install.sh                              Install for Claude Code (default)
 #   ./install.sh --target claude-code         Install for Claude Code
 #   ./install.sh --target codex               Install for Codex CLI
-#   ./install.sh --target cursor              Install for Cursor (legacy)
+#   ./install.sh --target cursor              Install for Cursor
+#   ./install.sh --target all                 Install for all three
 #   ./install.sh --check                      Check for drift (uses current target)
 #   ./install.sh --target codex --check       Check drift for Codex
 #   ./install.sh --version                    Print version and exit
@@ -68,7 +69,7 @@ while [ "$#" -gt 0 ]; do
         --target)
             shift
             if [ "$#" -eq 0 ]; then
-                echo "Missing value for --target (use 'claude-code', 'codex', or 'cursor')"
+                echo "Missing value for --target (use 'claude-code', 'codex', 'cursor', or 'all')"
                 exit 1
             fi
             TARGET="$1"
@@ -104,6 +105,19 @@ while [ "$#" -gt 0 ]; do
     esac
     shift
 done
+
+# --- Handle --target all by re-invoking for each target ---
+if [ "$TARGET" = "all" ]; then
+    overall_exit=0
+    check_flag=""
+    [ "$CHECK_ONLY" = true ] && check_flag="--check"
+    for t in claude-code codex cursor; do
+        echo ""
+        bash "$SCRIPT_DIR/install.sh" --target "$t" $check_flag || overall_exit=$?
+        echo ""
+    done
+    exit "$overall_exit"
+fi
 
 # --- Target-specific paths ---
 if [ "$TARGET" = "cursor" ]; then
@@ -498,8 +512,9 @@ fi
 
 # Install skills (Codex and Cursor share the same generate_skill pipeline)
 if [ "$TARGET" = "codex" ] || [ "$TARGET" = "cursor" ]; then
-    SKILLS_ROOT="$AGENT_SKILLS"
+    SKILLS_ROOT=""
     [ "$TARGET" = "codex" ] && SKILLS_ROOT="$CODEX_SKILLS"
+    [ "$TARGET" = "cursor" ] && SKILLS_ROOT="$AGENT_SKILLS"
 
     for entry in "${COMMAND_MAP[@]}"; do
         IFS=':' read -r src_name cc_name skill_name description <<< "$entry"
