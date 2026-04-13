@@ -27,6 +27,7 @@ import argparse
 import json
 import shutil
 import sqlite3
+import sys
 import uuid
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -69,7 +70,7 @@ CREATE TABLE IF NOT EXISTS feedback (
 
 CREATE TABLE IF NOT EXISTS weekly_summary (
     id TEXT PRIMARY KEY,
-    week_start TEXT NOT NULL,
+    week_start TEXT NOT NULL UNIQUE,
     week_end TEXT NOT NULL,
     summary TEXT NOT NULL,
     gaps TEXT DEFAULT '[]',
@@ -84,8 +85,29 @@ CREATE INDEX IF NOT EXISTS idx_weekly_start ON weekly_summary(week_start);
 """
 
 MIGRATIONS: dict[int, str] = {
-    # Future migrations go here:
-    # 2: "ALTER TABLE evidence ADD COLUMN target_level TEXT DEFAULT 'l4';",
+    2: """
+-- Deduplicate weekly_summary rows, keeping the latest per week_start
+DELETE FROM weekly_summary WHERE id NOT IN (
+    SELECT id FROM (
+        SELECT id, ROW_NUMBER() OVER (PARTITION BY week_start ORDER BY created_at DESC) AS rn
+        FROM weekly_summary
+    ) WHERE rn = 1
+);
+-- Recreate with UNIQUE constraint on week_start
+CREATE TABLE IF NOT EXISTS weekly_summary_new (
+    id TEXT PRIMARY KEY,
+    week_start TEXT NOT NULL UNIQUE,
+    week_end TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    gaps TEXT DEFAULT '[]',
+    narrative TEXT DEFAULT '',
+    created_at TEXT NOT NULL
+);
+INSERT OR IGNORE INTO weekly_summary_new SELECT * FROM weekly_summary;
+DROP TABLE weekly_summary;
+ALTER TABLE weekly_summary_new RENAME TO weekly_summary;
+CREATE INDEX IF NOT EXISTS idx_weekly_start ON weekly_summary(week_start);
+""",
 }
 
 
@@ -118,7 +140,7 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
                 (version, datetime.now(timezone.utc).isoformat()),
             )
             conn.commit()
-            print(f"Applied migration v{version}")
+            print(f"Applied migration v{version}", file=sys.stderr)
 
 
 def parse_competency(value: str) -> str:
@@ -441,9 +463,13 @@ def cmd_weekly_summary_save(args: argparse.Namespace) -> None:
     summary_data = args.summary if isinstance(args.summary, str) else json.dumps(args.summary)
     gaps_data = args.gaps if isinstance(args.gaps, str) else json.dumps(args.gaps)
     conn.execute(
-        "INSERT OR REPLACE INTO weekly_summary "
+        "INSERT INTO weekly_summary "
         "(id, week_start, week_end, summary, gaps, narrative, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "VALUES (?, ?, ?, ?, ?, ?, ?) "
+        "ON CONFLICT(week_start) DO UPDATE SET "
+        "week_end=excluded.week_end, summary=excluded.summary, "
+        "gaps=excluded.gaps, narrative=excluded.narrative, "
+        "created_at=excluded.created_at",
         (entry_id, args.week_start, args.week_end, summary_data, gaps_data,
          args.narrative or "", now),
     )

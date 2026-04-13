@@ -58,14 +58,14 @@ def test_ensure_schema_creates_required_tables(cli_db):
     conn.close()
 
 
-def test_ensure_schema_sets_version_1(cli_db):
+def test_ensure_schema_sets_latest_version(cli_db):
     db_path, _ = cli_db
     conn = _make_conn(db_path)
     ensure_schema(conn)
     version = conn.execute(
         "SELECT MAX(version) as v FROM schema_version"
     ).fetchone()["v"]
-    assert version == 1
+    assert version == 2
     conn.close()
 
 
@@ -77,7 +77,7 @@ def test_ensure_schema_is_idempotent(cli_db):
     version = conn.execute(
         "SELECT MAX(version) as v FROM schema_version"
     ).fetchone()["v"]
-    assert version == 1
+    assert version == 2
     conn.close()
 
 
@@ -628,6 +628,26 @@ def test_weekly_summary_save_and_get(cli_db, capsys):
     assert entry["summary"]["subject_matter"] == 3
     assert entry["gaps"] == ["leadership"]
     assert entry["narrative"] == "Good week overall."
+
+
+def test_weekly_summary_save_upserts_same_week(cli_db, capsys):
+    cmd_weekly_summary_save(argparse.Namespace(
+        week_start="2026-04-06", week_end="2026-04-12",
+        summary={"subject_matter": 1}, gaps=[], narrative="First pass",
+    ))
+    capsys.readouterr()
+
+    cmd_weekly_summary_save(argparse.Namespace(
+        week_start="2026-04-06", week_end="2026-04-12",
+        summary={"subject_matter": 5}, gaps=["leadership"], narrative="Revised",
+    ))
+    capsys.readouterr()
+
+    cmd_weekly_summary_list(argparse.Namespace(limit=10))
+    entries = json.loads(capsys.readouterr().out)
+    assert len(entries) == 1, "Duplicate rows created for the same week_start"
+    assert entries[0]["summary"]["subject_matter"] == 5
+    assert entries[0]["narrative"] == "Revised"
 
 
 def test_weekly_summary_list(cli_db, capsys):
