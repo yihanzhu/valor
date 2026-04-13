@@ -22,6 +22,9 @@ from src.evidence_cli import (
     cmd_weekly_summary_save,
     cmd_weekly_summary_list,
     cmd_weekly_summary_get,
+    cmd_context,
+    cmd_state_set,
+    cmd_framework_slice,
     iso_week_bounds,
 )
 
@@ -676,3 +679,258 @@ def test_weekly_summary_list_empty(cli_db, capsys):
     cmd_weekly_summary_list(argparse.Namespace(limit=8))
     entries = json.loads(capsys.readouterr().out)
     assert entries == []
+
+
+# --- cmd_context ---
+
+def test_context_returns_all_fields(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({
+        "current_level": "L3",
+        "target_level": "L4",
+        "ceiling_level": "L5",
+        "coaching_mode": "ambient",
+        "integrations": {"github": True, "jira": False},
+        "installed_version": "0.3.0",
+        "briefing_count": 15,
+        "github_owner": "TestOrg",
+        "jira_projects": ["PROJ1"],
+    }))
+    cmd_context(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["levels"] == {"current": "L3", "target": "L4", "ceiling": "L5"}
+    assert result["coaching_mode"] == "ambient"
+    assert result["integrations"] == {"github": True, "jira": False}
+    assert result["installed_version"] == "0.3.0"
+    assert "suggest" in result
+    assert "briefing_meta" in result
+    assert result["briefing_meta"]["count"] == 15
+    assert result["briefing_meta"]["tone_tier"] == "developing"
+    assert result["github_owner"] == "TestOrg"
+    assert result["jira_projects"] == ["PROJ1"]
+
+
+def test_context_suggest_briefing_before_11(cli_db, capsys, monkeypatch):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({
+        "last_briefing_date": "2020-01-01",
+    }))
+    # Mock to Wednesday 9am
+    mock_now = datetime(2026, 4, 15, 9, 0, 0)  # Wednesday
+    monkeypatch.setattr("src.evidence_cli.datetime", type("MockDT", (datetime,), {
+        "now": staticmethod(lambda *a, **kw: mock_now),
+        "fromisoformat": datetime.fromisoformat,
+        "strptime": datetime.strptime,
+    }))
+    cmd_context(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["suggest"]["briefing"] is True
+    assert result["suggest"]["wrapup"] is False
+
+
+def test_context_suggest_wrapup_after_17(cli_db, capsys, monkeypatch):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({
+        "last_wrapup_date": "2020-01-01",
+    }))
+    mock_now = datetime(2026, 4, 15, 18, 0, 0)  # Wednesday 6pm
+    monkeypatch.setattr("src.evidence_cli.datetime", type("MockDT", (datetime,), {
+        "now": staticmethod(lambda *a, **kw: mock_now),
+        "fromisoformat": datetime.fromisoformat,
+        "strptime": datetime.strptime,
+    }))
+    cmd_context(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["suggest"]["wrapup"] is True
+
+
+def test_context_tone_tiers(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    for count, expected_tier in [(0, "onboarding"), (10, "onboarding"),
+                                  (11, "developing"), (40, "developing"),
+                                  (41, "established")]:
+        (valor_home / "state.json").write_text(json.dumps({"briefing_count": count}))
+        cmd_context(argparse.Namespace())
+        result = json.loads(capsys.readouterr().out)
+        assert result["briefing_meta"]["tone_tier"] == expected_tier, f"count={count}"
+
+
+def test_context_work_area_refresh_not_due_at_count_zero(cli_db, capsys):
+    """When briefing_count is 0 and work_areas exist, refresh should NOT be due."""
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({
+        "briefing_count": 0,
+        "user_work_areas": ["topic1", "topic2"],
+    }))
+    cmd_context(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["briefing_meta"]["work_area_refresh_due"] is False
+
+
+def test_context_work_area_refresh_due_when_empty(cli_db, capsys):
+    """When work_areas is empty, refresh should be due regardless of count."""
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({
+        "briefing_count": 0,
+        "user_work_areas": [],
+    }))
+    cmd_context(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["briefing_meta"]["work_area_refresh_due"] is True
+
+
+def test_context_update_check_due_when_empty(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({"last_update_check": ""}))
+    cmd_context(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["update_check_due"] is True
+
+
+def test_context_empty_state(cli_db, capsys):
+    """Context works even with no state.json at all."""
+    cmd_context(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["coaching_mode"] == "ambient"
+    assert result["levels"] == {"current": "", "target": "", "ceiling": ""}
+
+
+# --- cmd_state_set ---
+
+def test_state_set_basic(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({"existing": "value"}))
+    cmd_state_set(argparse.Namespace(pairs=["key1", "hello", "key2", "world"]))
+    state = json.loads((valor_home / "state.json").read_text())
+    assert state["key1"] == "hello"
+    assert state["key2"] == "world"
+    assert state["existing"] == "value"
+
+
+def test_state_set_increment(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({"briefing_count": 10}))
+    cmd_state_set(argparse.Namespace(pairs=["briefing_count", "+1"]))
+    state = json.loads((valor_home / "state.json").read_text())
+    assert state["briefing_count"] == 11
+
+
+def test_state_set_decrement(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({"counter": 5}))
+    cmd_state_set(argparse.Namespace(pairs=["counter", "-2"]))
+    state = json.loads((valor_home / "state.json").read_text())
+    assert state["counter"] == 3
+
+
+def test_state_set_increment_missing_key(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({}))
+    cmd_state_set(argparse.Namespace(pairs=["new_count", "+5"]))
+    state = json.loads((valor_home / "state.json").read_text())
+    assert state["new_count"] == 5
+
+
+def test_state_set_json_value(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({}))
+    cmd_state_set(argparse.Namespace(pairs=["items", '["a","b"]']))
+    state = json.loads((valor_home / "state.json").read_text())
+    assert state["items"] == ["a", "b"]
+
+
+def test_state_set_boolean_json(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({}))
+    cmd_state_set(argparse.Namespace(pairs=["flag", "true"]))
+    state = json.loads((valor_home / "state.json").read_text())
+    assert state["flag"] is True
+
+
+# --- cmd_framework_slice ---
+
+def test_framework_slice_extracts_levels(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({
+        "current_level": "L3",
+        "target_level": "L4",
+        "ceiling_level": "L5",
+    }))
+    (valor_home / "career_framework.md").write_text(
+        "# Career Framework\n\n"
+        "### L3\n\nDoes basic work.\n\n"
+        "### L4\n\nLeads features.\n\n"
+        "### L5\n\nDrives architecture.\n\n"
+        "### L6\n\nOrg-wide impact.\n"
+    )
+    cmd_framework_slice(argparse.Namespace())
+    output = capsys.readouterr().out
+    assert "### L3" in output
+    assert "### L4" in output
+    assert "### L5" in output
+    assert "### L6" not in output
+    assert "Does basic work." in output
+    assert "Leads features." in output
+    assert "Drives architecture." in output
+    assert "Org-wide impact." not in output
+
+
+def test_framework_slice_prefix_match(cli_db, capsys):
+    """Headings like '### L3 - Software Engineer' match level 'L3'."""
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({
+        "current_level": "L3",
+        "target_level": "L4",
+    }))
+    (valor_home / "career_framework.md").write_text(
+        "# Career Framework\n\n"
+        "### L3 - Software Engineer\n\nEntry level work.\n\n"
+        "### L4 - Senior Software Engineer\n\nLeads projects.\n\n"
+        "### L5 - Staff Software Engineer\n\nArchitecture.\n"
+    )
+    cmd_framework_slice(argparse.Namespace())
+    output = capsys.readouterr().out
+    assert "Entry level work." in output
+    assert "Leads projects." in output
+    assert "Architecture." not in output
+
+
+def test_framework_slice_missing_level(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({
+        "current_level": "L3",
+        "target_level": "L99",
+        "ceiling_level": "",
+    }))
+    (valor_home / "career_framework.md").write_text(
+        "### L3\n\nSolid contributor.\n"
+    )
+    cmd_framework_slice(argparse.Namespace())
+    output = capsys.readouterr().out
+    assert "### L3" in output
+    assert "Solid contributor." in output
+    assert "(Not found in career framework)" in output
+
+
+def test_framework_slice_no_levels_configured(cli_db):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({}))
+    with pytest.raises(SystemExit):
+        cmd_framework_slice(argparse.Namespace())

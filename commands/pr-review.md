@@ -4,12 +4,7 @@ Helps the user deliver senior-level PR reviews by analyzing changes for architec
 
 ## Integration Check
 
-Before starting, read `integrations` from `~/.valor/state.json`:
-
-```bash
-python3 -c "import json; from pathlib import Path; s=json.loads((Path.home()/'.valor'/'state.json').read_text()); print(json.dumps(s.get('integrations',{})))"
-```
-
+Use `context.integrations` from the session-start context (already loaded).
 This command **requires** `integrations.github` to be `true`. If `false`,
 tell the user: "PR review requires GitHub -- set `integrations.github` to
 `true` in `~/.valor/state.json` and run `gh auth login`." Do not proceed.
@@ -95,11 +90,11 @@ Before or during analysis, determine if the PR is cross-team:
 - **Same scope:** PR is in a repo the user typically contributes to, author is on their team or in their usual scope
 - **Cross-team:** PR repo or author is outside the user's usual scope (e.g., different org, different product area)
 
-**How to infer:** Read `user_work_areas` from `~/.valor/state.json` to
-understand the user's domain. Also check evidence history in
-`~/.valor/evidence.sqlite` for typical repos and collaborators. If
-neither is available, use heuristics: different GitHub org, different repo
-name pattern, author not in user's known collaborators.
+**How to infer:** Use `context.user_work_areas` to understand the user's
+domain. Also check evidence history in `~/.valor/evidence.sqlite` for
+typical repos and collaborators. If neither is available, use heuristics:
+different GitHub org, different repo name pattern, author not in user's
+known collaborators.
 
 If cross-team, add a callout:
 

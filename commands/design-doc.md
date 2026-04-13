@@ -5,12 +5,7 @@ options, trade-offs, career coaching, and evidence recording.
 
 ## Integration Check
 
-Before gathering context, read `integrations` from `~/.valor/state.json`:
-
-```bash
-python3 -c "import json; from pathlib import Path; s=json.loads((Path.home()/'.valor'/'state.json').read_text()); print(json.dumps(s.get('integrations',{})))"
-```
-
+Use `context.integrations` from the session-start context (already loaded).
 If `integrations.jira` is `false`, skip all Jira lookups -- ask the user to
 describe the problem directly instead. This command works fully without any
 external integrations.

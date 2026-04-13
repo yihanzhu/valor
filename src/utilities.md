@@ -5,29 +5,18 @@ do NOT load into every conversation.
 
 ## Integrations
 
-Valor uses external tools for data gathering. Which integrations are available
-is tracked in `~/.valor/state.json` under the `integrations` key:
-
-```json
-{
-  "integrations": {
-    "github": true,
-    "jira": true,
-    "calendar": true,
-    "news": true
-  }
-}
-```
-
-**Before gathering data, read `integrations` from state.json.** If an
-integration is `false`, skip that section entirely -- do not probe for the
-tool and do not print a "not available" message. The user has already
-indicated they don't have that integration.
+Integration availability is included in the session-start context
+(`context.integrations`). If an integration is `false`, skip that section
+entirely -- do not probe for the tool and do not print a "not available"
+message.
 
 If an integration is `true`, attempt to use it with the discovery steps
 below. If it fails at runtime (e.g. `gh` not authenticated), note it once
-and suggest the user set it to `false` in state.json if they don't plan
-to configure it.
+and suggest the user set it to `false` via:
+
+```
+python3 ~/.valor/evidence_cli.py state-set integrations '{"github":false,"jira":true,"calendar":true,"news":true}'
+```
 
 The installer auto-detects `gh` CLI availability. Other integrations
 (Jira, Calendar, News) default to `true` and should be set to `false`
@@ -67,6 +56,9 @@ When an integration is enabled (`true`), discover the specific tool to use:
 
 | Subcommand | Purpose |
 |------------|---------|
+| `context` | Session-start context blob (run once, reuse throughout session) |
+| `state-set KEY VAL ...` | Patch state.json fields (`+N` for numeric increments) |
+| `framework-slice` | Extract career framework sections for configured levels |
 | `add` | Record evidence (`--activity`, `--competency`, `--statement`, `--agent`, `--date`, `--metadata`) |
 | `list` | List entries (`--days`, `--from`, `--to`, `--competency`, `--activity`, `--limit`) |
 | `search` | Full-text search on statements (`query`, `--limit`) |
@@ -86,20 +78,16 @@ When an integration is enabled (`true`), discover the specific tool to use:
 State file: `~/.valor/state.json`
 Evidence CLI: `python3 ~/.valor/evidence_cli.py`
 
-To read state: `cat ~/.valor/state.json 2>/dev/null || echo '{}'`
+To read state, use the `context` subcommand (preferred) or `cat ~/.valor/state.json`.
 
-To update state, run:
+To update state:
+
+```bash
+python3 ~/.valor/evidence_cli.py state-set KEY1 VALUE1 KEY2 VALUE2
 ```
-python3 -c "
-import json
-from pathlib import Path
-p = Path.home() / '.valor' / 'state.json'
-p.parent.mkdir(parents=True, exist_ok=True)
-state = json.loads(p.read_text()) if p.exists() else {}
-state['KEY'] = 'VALUE'
-p.write_text(json.dumps(state, indent=2))
-"
-```
+
+Supports `+N` / `-N` for numeric increments, JSON values (arrays, objects,
+booleans), and plain strings.
 
 ## State.json Fields Reference
 

@@ -6,12 +6,7 @@ items, surfaces opportunities for career growth, and provides relevant news.
 
 ## Integration Check
 
-Before gathering data, read `integrations` from `~/.valor/state.json`:
-
-```bash
-python3 -c "import json; print(json.dumps(json.loads(open('$HOME/.valor/state.json').read()).get('integrations', {})))"
-```
-
+Use `context.integrations` from the session-start context (already loaded).
 For any integration set to `false`, skip all sections that depend on it
 entirely -- do not probe for the tool and do not print a skip message.
 
@@ -103,10 +98,10 @@ include the current date in search queries to anchor results.
 **Coverage window:** The news section covers a continuous timeline from
 the last briefing to now -- no gaps, no overlaps.
 
-Read `last_briefing_timestamp` from `~/.valor/state.json` (ISO 8601
-format). The coverage window is:
+Use `context.briefing_meta.news_window_start` (ISO 8601 timestamp from the
+session-start context). The coverage window is:
 
-  `[last_briefing_timestamp, now)`
+  `[news_window_start, now)`
 
 For example, if last briefing was Tuesday 10:00 AM and this briefing is
 Wednesday 9:00 AM, cover news published between Tuesday 10 AM and
@@ -173,14 +168,14 @@ after a few briefings accumulate evidence.
 
 ### Coaching Tone Evolution
 
-Determine tone from `briefing_count` in `~/.valor/state.json`:
+Use `context.briefing_meta.tone_tier` (pre-computed from briefing count):
 
-- **Beginner (0-10):** Explain what each competency means and why the suggested
+- **onboarding:** Explain what each competency means and why the suggested
   action matters. E.g., "Cross-team PR reviews build Leadership visibility --
   senior engineers are expected to review beyond their direct scope."
-- **Intermediate (11-40):** Concise nudges with data. E.g., "Cross-team review
+- **developing:** Concise nudges with data. E.g., "Cross-team review
   ratio: 10% (target: 25%). Sarah's #892 is a good candidate."
-- **Advanced (40+):** Data only. E.g., "Cross-team: 10/25%. #892 available."
+- **established:** Data only. E.g., "Cross-team: 10/25%. #892 available."
 
 ## Briefing Format
 
@@ -240,8 +235,7 @@ Cross-reference items across sections (link tickets to meetings, PRs to tickets)
 
 ## Monday / Return-from-Absence Mode
 
-If today is Monday, OR if `last_briefing_timestamp` (or `last_briefing_date`
-for backward compatibility) is more than 1 day ago, add a "Catch-Up"
+If `context.briefing_meta.is_monday_or_catchup` is `true`, add a "Catch-Up"
 section after Work Context:
 
 ```
@@ -298,36 +292,23 @@ Competencies: subject_matter, industry_knowledge, collaboration, autonomy_scope,
 
 ## State Update
 
-After the briefing, update `~/.valor/state.json`:
-- Set `last_briefing_date` to today (kept for backward compatibility)
-- Set `last_briefing_timestamp` to the current ISO 8601 datetime
-- Increment `briefing_count`
-- Set `today_priorities` to the list of suggested priorities (short strings)
-  so the evening wrap-up can reconcile against them
+After the briefing, update state:
 
 ```bash
-python3 -c "
-import json
-from datetime import datetime
-from pathlib import Path
-p = Path.home() / '.valor' / 'state.json'
-p.parent.mkdir(parents=True, exist_ok=True)
-state = json.loads(p.read_text()) if p.exists() else {}
-state['last_briefing_date'] = '$(date +%Y-%m-%d)'
-state['last_briefing_timestamp'] = datetime.now().isoformat(timespec='seconds')
-state['briefing_count'] = state.get('briefing_count', 0) + 1
-state['today_priorities'] = $PRIORITIES_LIST  # agent replaces with actual list
-p.write_text(json.dumps(state, indent=2))
-"
+python3 ~/.valor/evidence_cli.py state-set \
+  last_briefing_date "$(date +%Y-%m-%d)" \
+  last_briefing_timestamp "$(date -Iseconds)" \
+  briefing_count +1 \
+  today_priorities '["Review PR #412","Finish PROJ-1234 design doc"]'
 ```
+
+Replace the `today_priorities` value with the actual suggested priorities
+as a JSON array (single-quoted to prevent shell expansion).
 
 ### Work Area Auto-Detection
 
-Refresh `user_work_areas` in state.json periodically or when state has no
-`user_work_areas` at all. The refresh cadence is controlled by
-`work_area_refresh_interval` in state.json (default: 5 briefings if not set).
-
-Check: `briefing_count % refresh_interval == 0 or "user_work_areas" not in state`
+Refresh `user_work_areas` in state.json when `context.briefing_meta.work_area_refresh_due`
+is `true` (already computed by the context command based on briefing count and interval).
 
 #### Step 1: Gather project signals
 
@@ -401,20 +382,13 @@ keywords"), add those keywords to `user_work_areas_pinned` so they survive
 future auto-detection runs.
 
 ```bash
-python3 -c "
-import json
-from pathlib import Path
-p = Path.home() / '.valor' / 'state.json'
-state = json.loads(p.read_text())
-# pinned and auto_detected should be set by the agent before this step
-pinned = state.get('user_work_areas_pinned', [])
-auto_detected = $AUTO_DETECTED_LIST  # agent replaces this with the actual list
-combined = list(dict.fromkeys(pinned + auto_detected))  # dedup, preserve order
-state['user_work_areas'] = combined
-state['user_work_areas_last_refreshed'] = '$(date +%Y-%m-%d)'
-p.write_text(json.dumps(state, indent=2))
-"
+python3 ~/.valor/evidence_cli.py state-set \
+  user_work_areas '["keyword1","keyword2"]' \
+  user_work_areas_last_refreshed "$(date +%Y-%m-%d)"
 ```
+
+Replace the `user_work_areas` value with the actual combined (pinned + auto-detected,
+deduplicated) keyword list.
 
 ## Follow-Up Interaction
 

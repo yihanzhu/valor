@@ -6,7 +6,7 @@ tasks by career impact and team need.
 
 ## Integration Check
 
-Before gathering data, read `integrations` from `~/.valor/state.json`.
+Use `context.integrations` from the session-start context (already loaded).
 Skip sections for any integration set to `false` -- do not probe or print
 a skip message.
 
@@ -41,14 +41,13 @@ Check if Atlassian MCP tools are available. If `searchJiraIssuesUsingJql` exists
      project IN ($PROJECTS) AND priority IN (Highest, High) AND status != Done
      ```
 
-   Where `$PROJECTS` is the comma-separated list from `jira_projects` in
-   state.json. If only one project, use `project = KEY` instead of `IN`.
+   Where `$PROJECTS` is the comma-separated list from `context.jira_projects`.
+   If only one project, use `project = KEY` instead of `IN`.
 
-**Project keys:** Read `jira_projects` from `~/.valor/state.json` (a list,
-e.g. `["DAT", "DSAI"]`). Use `project IN (...)` in JQL to search across all
-listed projects. If `jira_projects` is empty or not set, ask the user for
-their project key. If the user mentions a different project key, add it
-to the query.
+**Project keys:** Use `context.jira_projects` (a list, e.g. `["PROJ", "ENG"]`).
+Use `project IN (...)` in JQL to search across all listed projects. If
+`jira_projects` is empty or not set, ask the user for their project key. If the
+user mentions a different project key, add it to the query.
 
 **If Atlassian MCP is unavailable:** Skip the Jira section. If
 `integrations.jira` is `true`, note: "Jira tools not found -- install an
@@ -74,19 +73,18 @@ Search for PRs the user could review. Run these in parallel:
 gh search prs --review-requested=@me --state=open --json number,title,author,repository,url --limit 10
 
 # Recent open PRs in adjacent repos
-# Read github_owner from ~/.valor/state.json (no default -- skip if not set)
+# Use context.github_owner (skip if not set)
 gh search prs --state=open --owner=$GITHUB_OWNER --sort=updated --json number,title,author,repository,url --limit 20
 ```
 
 From the second query, filter for repos related to the user's domain. Use
-`user_work_areas` from `~/.valor/state.json` and the user's known repos
-(from evidence history, the current workspace, or nearby accessible repos)
-to identify relevant PRs. Exclude the user's own PRs.
+`context.user_work_areas` and the user's known repos (from evidence history,
+the current workspace, or nearby accessible repos) to identify relevant PRs.
+Exclude the user's own PRs.
 
 **Cross-team detection:** A PR is cross-team if the repo is outside the
-user's usual repositories. Use `user_work_areas` from `~/.valor/state.json`
-and evidence history to infer usual scope. Cross-team reviews carry
-stronger career signal.
+user's usual repositories. Use `context.user_work_areas` and evidence history
+to infer usual scope. Cross-team reviews carry stronger career signal.
 
 If `gh` is not authenticated, skip and note: "GitHub: `gh auth login`
 needed, or set `integrations.github` to `false` in state.json."

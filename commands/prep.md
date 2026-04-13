@@ -11,11 +11,7 @@ in evidence from the last 1--2 weeks plus any saved weekly reflections.
 
 ## 1. Check Integrations
 
-Read `integrations` from `~/.valor/state.json`:
-
-```bash
-python3 -c "import json; from pathlib import Path; s=json.loads((Path.home()/'.valor'/'state.json').read_text()); print(json.dumps(s.get('integrations',{})))"
-```
+Use `context.integrations` from the session-start context (already loaded).
 
 | Integration | Used for |
 |-------------|----------|
@@ -49,11 +45,14 @@ section if none are available yet.
 
 ### 2.3 Career Framework
 
-Read `~/.valor/career_framework.md` for:
-- Target-level competency definitions
-- Company values (if listed)
+Use `context.levels` for level names, then run:
 
-Read `~/.valor/state.json` for `current_level`, `target_level`, `ceiling_level`.
+```bash
+python3 ~/.valor/evidence_cli.py framework-slice
+```
+
+This returns the target-level competency definitions and company values
+for the configured levels.
 
 ### 2.4 External Context (if integrations enabled)
 

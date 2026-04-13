@@ -18,7 +18,7 @@ produces a concise 1:1 narrative for their manager.
 
 ## Integration Check
 
-Before gathering data, read `integrations` from `~/.valor/state.json`.
+Use `context.integrations` from the session-start context (already loaded).
 Skip sections for any integration set to `false` -- do not probe or print
 a skip message.
 
@@ -139,8 +139,8 @@ Use the five competencies from `~/.valor/career_framework.md`. Map each activity
 - PRs reviewed (own team) → `autonomy_scope`
 - PRs reviewed (cross-team) → `collaboration`, `leadership`
 
-Use `user_work_areas` from `~/.valor/state.json` to determine what
-constitutes "cross-team" -- repos or topics outside those areas.
+Use `context.user_work_areas` to determine what constitutes "cross-team" --
+repos or topics outside those areas.
 - Evidence entries from CLI → use the entry's `competency` field directly
 - Design docs, tech debt proposals → `autonomy_scope`, `subject_matter`
 - Cross-team alignment, mentoring → `collaboration`, `leadership`
@@ -245,26 +245,16 @@ the reflection itself is the primary output.
 
 ## 9. Update State
 
-Set `last_reflection_week` in `~/.valor/state.json` to the ISO week that was
-actually reflected:
+Determine the ISO week that was reflected (current week, or previous week
+if today is Monday), then update state:
 
 ```bash
-python3 -c "
-import json
-from datetime import datetime, timedelta
-from pathlib import Path
-p = Path.home() / '.valor' / 'state.json'
-p.parent.mkdir(parents=True, exist_ok=True)
-state = json.loads(p.read_text()) if p.exists() else {}
-today = datetime.now().date()
-current_week_start = today - timedelta(days=today.weekday())
-reflection_week_start = current_week_start - timedelta(days=7) if today.weekday() == 0 else current_week_start
-iso_year, iso_week, _ = reflection_week_start.isocalendar()
-state['last_reflection_week'] = f'{iso_year}-W{iso_week:02d}'
-state['last_reflection_date'] = datetime.now().strftime('%Y-%m-%d')
-p.write_text(json.dumps(state, indent=2))
-"
+python3 ~/.valor/evidence_cli.py state-set \
+  last_reflection_week "YYYY-WNN" \
+  last_reflection_date "$(date +%Y-%m-%d)"
 ```
+
+Replace `YYYY-WNN` with the actual ISO week string (e.g. `2026-W15`).
 
 ## 10. Fallbacks
 

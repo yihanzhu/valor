@@ -1,24 +1,26 @@
 #!/usr/bin/env python3
-"""Valor evidence store CLI.
+"""Valor evidence store and state CLI.
 
-Provides a clean interface for the Cursor skill (and the user) to interact
-with the evidence SQLite database. Handles schema creation, migrations,
-adding entries, querying, stats, and backup.
+Provides a clean interface for agents and users to interact with the evidence
+SQLite database, session context, and state management.
 
 Usage:
-    python3 src/evidence_cli.py add --activity pr_review --competency collaboration \
+    python3 evidence_cli.py context
+    python3 evidence_cli.py state-set last_briefing_date 2026-04-13 briefing_count +1
+    python3 evidence_cli.py framework-slice
+    python3 evidence_cli.py add --activity pr_review --competency collaboration \
         --statement "Reviewed cross-team PR #892" --agent valor-morning-briefing
-    python3 src/evidence_cli.py list --days 7
-    python3 src/evidence_cli.py search "PR review"
-    python3 src/evidence_cli.py export --format markdown --days 7
-    python3 src/evidence_cli.py stats
-    python3 src/evidence_cli.py status
-    python3 src/evidence_cli.py backup
-    python3 src/evidence_cli.py schema-version
-    python3 src/evidence_cli.py weekly-summary-save --week-start 2026-04-06 \
+    python3 evidence_cli.py list --days 7
+    python3 evidence_cli.py search "PR review"
+    python3 evidence_cli.py export --format markdown --days 7
+    python3 evidence_cli.py stats
+    python3 evidence_cli.py status
+    python3 evidence_cli.py backup
+    python3 evidence_cli.py schema-version
+    python3 evidence_cli.py weekly-summary-save --week-start 2026-04-06 \
         --week-end 2026-04-12 --summary '{"subject_matter": 3}' --narrative "Good week"
-    python3 src/evidence_cli.py weekly-summary-list --limit 4
-    python3 src/evidence_cli.py weekly-summary-get --week-start 2026-04-06
+    python3 evidence_cli.py weekly-summary-list --limit 4
+    python3 evidence_cli.py weekly-summary-get --week-start 2026-04-06
 """
 
 from __future__ import annotations
@@ -512,6 +514,192 @@ def cmd_weekly_summary_get(args: argparse.Namespace) -> None:
     print(json.dumps(entry, indent=2))
 
 
+VALOR_HOME = Path.home() / ".valor"
+
+
+def _read_state() -> dict:
+    state_path = VALOR_HOME / "state.json"
+    if state_path.exists():
+        return json.loads(state_path.read_text())
+    return {}
+
+
+def _write_state(state: dict) -> None:
+    state_path = VALOR_HOME / "state.json"
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.write_text(json.dumps(state, indent=2))
+
+
+def cmd_context(args: argparse.Namespace) -> None:
+    state = _read_state()
+    now = datetime.now()
+    weekday = now.weekday()  # 0=Monday ... 6=Sunday
+    hour = now.hour
+    today_str = now.strftime("%Y-%m-%d")
+    is_weekday = weekday < 5
+
+    # --- Levels ---
+    levels = {
+        "current": state.get("current_level", ""),
+        "target": state.get("target_level", ""),
+        "ceiling": state.get("ceiling_level", ""),
+    }
+
+    # --- Briefing auto-trigger ---
+    suggest_before = state.get("briefing_suggest_before", 11)
+    last_briefing = state.get("last_briefing_date", "") or ""
+    suggest_briefing = is_weekday and hour < suggest_before and last_briefing != today_str
+
+    # --- Wrapup auto-trigger ---
+    suggest_after = state.get("wrapup_suggest_after", 17)
+    last_wrapup = state.get("last_wrapup_date", "") or ""
+    suggest_wrapup = is_weekday and hour >= suggest_after and last_wrapup != today_str
+
+    # --- Weekly auto-trigger ---
+    iso_year, iso_week_num, _ = now.date().isocalendar()
+    current_iso_week = f"{iso_year}-W{iso_week_num:02d}"
+    last_reflection_week = state.get("last_reflection_week", "") or ""
+    suggest_weekly = weekday == 4 and last_reflection_week != current_iso_week
+
+    # --- Update check ---
+    update_interval = state.get("update_check_interval_hours", 24)
+    last_update = state.get("last_update_check", "") or ""
+    update_check_due = False
+    if update_interval > 0:
+        if not last_update:
+            update_check_due = True
+        else:
+            try:
+                last_ts = datetime.fromisoformat(last_update)
+                elapsed_hours = (now - last_ts).total_seconds() / 3600
+                update_check_due = elapsed_hours >= update_interval
+            except ValueError:
+                update_check_due = True
+
+    # --- Briefing metadata ---
+    briefing_count = state.get("briefing_count", 0)
+    if briefing_count <= 10:
+        tone_tier = "onboarding"
+    elif briefing_count <= 40:
+        tone_tier = "developing"
+    else:
+        tone_tier = "established"
+
+    news_window_start = state.get("last_briefing_timestamp", "") or ""
+
+    work_area_refresh_interval = state.get("work_area_refresh_interval", 5)
+    work_areas = state.get("user_work_areas", [])
+    work_area_refresh_due = (
+        not work_areas
+        or (briefing_count > 0
+            and work_area_refresh_interval > 0
+            and briefing_count % work_area_refresh_interval == 0)
+    )
+
+    is_monday_or_catchup = weekday == 0
+    if not is_monday_or_catchup and last_briefing:
+        try:
+            last_date = datetime.strptime(last_briefing, "%Y-%m-%d").date()
+            is_monday_or_catchup = (now.date() - last_date).days > 1
+        except ValueError:
+            pass
+
+    result = {
+        "coaching_mode": state.get("coaching_mode", "ambient"),
+        "levels": levels,
+        "suggest": {
+            "briefing": suggest_briefing,
+            "wrapup": suggest_wrapup,
+            "weekly": suggest_weekly,
+        },
+        "update_check_due": update_check_due,
+        "integrations": state.get("integrations", {}),
+        "briefing_meta": {
+            "count": briefing_count,
+            "tone_tier": tone_tier,
+            "news_window_start": news_window_start,
+            "work_area_refresh_due": work_area_refresh_due,
+            "is_monday_or_catchup": is_monday_or_catchup,
+        },
+        "installed_version": state.get("installed_version", ""),
+        "github_owner": state.get("github_owner", ""),
+        "jira_projects": state.get("jira_projects", []),
+        "user_work_areas": work_areas,
+    }
+    print(json.dumps(result, indent=2))
+
+
+def cmd_state_set(args: argparse.Namespace) -> None:
+    state = _read_state()
+    pairs = args.pairs
+    if len(pairs) % 2 != 0:
+        print("Error: state-set requires key value pairs", file=sys.stderr)
+        sys.exit(1)
+    for i in range(0, len(pairs), 2):
+        key, val = pairs[i], pairs[i + 1]
+        if val.startswith("+") or (val.startswith("-") and len(val) > 1):
+            try:
+                delta = int(val)
+                state[key] = state.get(key, 0) + delta
+                continue
+            except ValueError:
+                pass
+        try:
+            state[key] = json.loads(val)
+        except (json.JSONDecodeError, ValueError):
+            state[key] = val
+    _write_state(state)
+
+
+def cmd_framework_slice(args: argparse.Namespace) -> None:
+    state = _read_state()
+    levels_to_find = [
+        state.get("current_level", ""),
+        state.get("target_level", ""),
+        state.get("ceiling_level", ""),
+    ]
+    levels_to_find = [lv for lv in levels_to_find if lv]
+    if not levels_to_find:
+        print("No levels configured in state.json.", file=sys.stderr)
+        sys.exit(1)
+
+    fw_path = VALOR_HOME / "career_framework.md"
+    if not fw_path.exists():
+        print(f"Career framework not found: {fw_path}", file=sys.stderr)
+        sys.exit(1)
+
+    content = fw_path.read_text()
+    lines = content.split("\n")
+    sections: dict[str, str] = {}
+    current_heading = ""
+    current_lines: list[str] = []
+
+    for line in lines:
+        if line.startswith("### "):
+            if current_heading:
+                sections[current_heading] = "\n".join(current_lines)
+            current_heading = line[4:].strip()
+            current_lines = [line]
+        elif current_heading:
+            current_lines.append(line)
+    if current_heading:
+        sections[current_heading] = "\n".join(current_lines)
+
+    output_parts: list[str] = []
+    for level in levels_to_find:
+        matched = None
+        for heading, body in sections.items():
+            if heading == level or heading.startswith(f"{level} ") or heading.startswith(f"{level} -"):
+                matched = body
+                break
+        if matched:
+            output_parts.append(matched)
+        else:
+            output_parts.append(f"### {level}\n\n(Not found in career framework)")
+
+    print("\n\n".join(output_parts))
+
+
 def cmd_schema_version(args: argparse.Namespace) -> None:
     conn = get_conn()
     ensure_schema(conn)
@@ -598,6 +786,14 @@ def main() -> None:
     p_ws_get.add_argument("--week-start", required=True, type=parse_ymd_date,
                           help="Monday of the week (YYYY-MM-DD)")
 
+    sub.add_parser("context", help="Session-start context blob (JSON)")
+    p_state_set = sub.add_parser("state-set",
+                                 help="Patch state.json fields (key value pairs)")
+    p_state_set.add_argument("pairs", nargs="+",
+                             help="Key-value pairs (e.g. last_briefing_date 2026-04-13 briefing_count +1)")
+    sub.add_parser("framework-slice",
+                   help="Extract career framework sections for configured levels")
+
     args = parser.parse_args()
     commands = {
         "add": cmd_add,
@@ -613,6 +809,9 @@ def main() -> None:
         "weekly-summary-save": cmd_weekly_summary_save,
         "weekly-summary-list": cmd_weekly_summary_list,
         "weekly-summary-get": cmd_weekly_summary_get,
+        "context": cmd_context,
+        "state-set": cmd_state_set,
+        "framework-slice": cmd_framework_slice,
     }
     commands[args.command](args)
 

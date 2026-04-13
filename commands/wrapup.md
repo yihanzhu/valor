@@ -12,12 +12,7 @@ as bookends for the workday.
 
 ## Integration Check
 
-Before gathering data, read `integrations` from `~/.valor/state.json`:
-
-```bash
-python3 -c "import json; from pathlib import Path; s=json.loads((Path.home()/'.valor'/'state.json').read_text()); print(json.dumps(s.get('integrations',{})))"
-```
-
+Use `context.integrations` from the session-start context (already loaded).
 This command is primarily local (conversation, git, evidence, carry-forward).
 If `integrations.github` or `integrations.jira` are `true`, optionally
 include relevant activity from those sources. If `false`, skip silently.
@@ -200,20 +195,10 @@ and carry-forward file are the primary outputs.
 
 ## 6. Update State
 
-Set `last_wrapup_date` and `last_wrapup_timestamp` in `~/.valor/state.json`:
-
 ```bash
-python3 -c "
-import json
-from datetime import datetime
-from pathlib import Path
-p = Path.home() / '.valor' / 'state.json'
-p.parent.mkdir(parents=True, exist_ok=True)
-state = json.loads(p.read_text()) if p.exists() else {}
-state['last_wrapup_date'] = '$(date +%Y-%m-%d)'
-state['last_wrapup_timestamp'] = datetime.now().isoformat(timespec='seconds')
-p.write_text(json.dumps(state, indent=2))
-"
+python3 ~/.valor/evidence_cli.py state-set \
+  last_wrapup_date "$(date +%Y-%m-%d)" \
+  last_wrapup_timestamp "$(date -Iseconds)"
 ```
 
 ## 7. Fallbacks

@@ -10,23 +10,45 @@ Valor operates in two modes:
 2. **Ambient coaching** -- always on, coaches through every interaction by
    mapping activities to target-level competencies (section 8 below).
 
-**Level resolution:** At the start of any coaching or agent command, read
-`current_level`, `target_level`, and `ceiling_level` from
-`~/.valor/state.json`. Then look up their competency definitions in
-`~/.valor/career_framework.md` (matching the `### [level]` headings).
-Use these throughout instead of any specific level name. If levels are
-not set in state.json, ask the user to configure them.
+## Session Start
+
+At the START of every conversation, run the context command **once**:
+
+```
+python3 ~/.valor/evidence_cli.py context
+```
+
+This returns a JSON blob with all session-start context pre-computed:
+
+- `coaching_mode` -- if `"off"`, skip all coaching annotations
+- `levels` -- `current`, `target`, `ceiling` level names. If empty, ask the
+  user to configure them in `~/.valor/state.json`
+- `suggest.briefing` / `suggest.wrapup` / `suggest.weekly` -- booleans for
+  auto-trigger suggestions (time, weekday, and recency already evaluated)
+- `update_check_due` -- whether to check for a Valor version update
+- `integrations` -- which external tools are enabled
+- `briefing_meta` -- tone tier, news window, work area refresh, catchup mode
+- `github_owner`, `jira_projects`, `user_work_areas` -- config values
+
+Use this context throughout the session. Do not read `~/.valor/state.json`
+directly unless you need a field not in the context output.
+
+**Level definitions:** When coaching or running a command that needs career
+framework details, run `python3 ~/.valor/evidence_cli.py framework-slice`
+to get just the relevant level sections (not the full file).
+
+**Auto-suggestions from context:**
+
+- If `suggest.briefing` is `true`: say briefly
+  "Good morning! Ready for your Valor daily briefing? (say 'skip' to skip)"
+- If `suggest.wrapup` is `true`: say briefly
+  "It's end of day -- ready for your Valor wrap-up? (say 'skip' to skip)"
+- If `suggest.weekly` is `true`: say briefly
+  "It's Friday -- want your weekly reflection to prep for Monday's 1:1? (say 'skip' to skip)"
 
 ## 1. Morning Briefing
 
-**Auto-trigger:** At the START of every conversation, silently check:
-1. Current time (from system prompt or run `date`)
-2. Read `~/.valor/state.json` -- check `last_briefing_timestamp` (or
-   `last_briefing_date` for backward compatibility)
-
-Auto-suggest if: weekday + before `briefing_suggest_before` hour (default
-11, configurable in state.json) + last briefing was not today.
-Say briefly: "Good morning! Ready for your Valor daily briefing? (say 'skip' to skip)"
+**Auto-trigger:** `context.suggest.briefing == true` (see Session Start above).
 
 **Manual trigger:** User says "morning briefing", "start my day", "daily briefing",
 "valor briefing", "briefing", or runs `/valor-briefing`.
@@ -50,9 +72,7 @@ or runs `/valor-design-doc`.
 
 ## 4. Weekly Reflection
 
-**Auto-trigger:** If it is Friday AND `last_reflection_week` in
-state.json is not the current ISO week number, suggest briefly:
-"It's Friday -- want your weekly reflection to prep for Monday's 1:1? (say 'skip' to skip)"
+**Auto-trigger:** `context.suggest.weekly == true` (see Session Start above).
 
 **Manual trigger:** User says "weekly reflection", "reflect on my week",
 "week summary", "what did I do this week", or runs `/valor-weekly`.
@@ -69,13 +89,7 @@ or runs `/valor-tasks`.
 
 ## 6. Evening Wrap-up
 
-**Auto-trigger:** At the START of every conversation, silently check:
-1. Current time (from system prompt or run `date`)
-2. Read `~/.valor/state.json` -- check `last_wrapup_date`
-
-Auto-suggest if: weekday + after `wrapup_suggest_after` hour (default 17,
-configurable in state.json) + `last_wrapup_date` != today.
-Say briefly: "It's end of day -- ready for your Valor wrap-up? (say 'skip' to skip)"
+**Auto-trigger:** `context.suggest.wrapup == true` (see Session Start above).
 
 **Manual trigger:** User says "wrap up", "end of day", "call it a day",
 "let's wrap up", "evening wrap-up", or runs `/valor-wrapup`.
@@ -104,13 +118,12 @@ Do NOT coach during pure Q&A, exploration, or trivial edits.
 
 ### Competency and values definitions
 
-Before coaching, read `~/.valor/state.json` for level selection
-(`current_level`, `target_level`, `ceiling_level`), then look up their
-definitions in `~/.valor/career_framework.md` (matching `### [level]`
-headings). Also read company values from the framework file.
+Use `context.levels` for the level names, then run
+`python3 ~/.valor/evidence_cli.py framework-slice` to get the competency
+definitions for those levels. Also read company values from the output.
 
-All coaching MUST be grounded in those definitions.  Do not invent expectations
-beyond what is listed in the framework file.  When coaching, reference
+All coaching MUST be grounded in those definitions. Do not invent expectations
+beyond what is listed in the framework file. When coaching, reference
 whichever is more relevant: a competency, a company value, or both.
 
 **Ceiling level rule:** If the user demonstrates a behavior that matches the
@@ -238,58 +251,55 @@ Respect these commands:
 - **"valor off"** -- suppress coaching until the user says "valor on".
 - **"valor on"** -- re-enable coaching.
 
-Track the mode in `~/.valor/state.json` under the `coaching_mode` key
-(values: `"ambient"`, `"quiet"`, `"off"`; default `"ambient"`).  At the start
-of each conversation, read `coaching_mode` from state.  If `"off"`, do not
-add coaching annotations.  `"quiet"` is per-conversation and does not persist.
+The `context.coaching_mode` field reflects the persisted mode (`"ambient"`,
+`"quiet"`, or `"off"`). If `"off"`, do not add coaching annotations. To
+change it, run:
+
+```
+python3 ~/.valor/evidence_cli.py state-set coaching_mode off
+```
+
+`"quiet"` is per-conversation and does not persist.
 
 ## Tool Discovery & State Management
 
-For tool discovery patterns (Jira, GitHub, calendar, etc.) and state
-management utilities, read `~/.valor/utilities.md`.
+For tool discovery patterns (Jira, GitHub, calendar, etc.), read
+`~/.valor/utilities.md`.
 
-State file: `~/.valor/state.json`
-Evidence CLI: `python3 ~/.valor/evidence_cli.py`
+**CLI subcommands** (preferred over manual state.json reads):
 
-**Key state.json fields** (written by various skills):
-- `current_level`, `target_level`, `ceiling_level` (user config -- level selection)
-- `last_briefing_timestamp`, `last_briefing_date`, `briefing_count` (morning briefing)
-- `last_wrapup_date` (evening wrapup)
-- `last_reflection_week`, `last_reflection_date` (weekly reflection)
-- `today_priorities` (morning briefing -> evening wrapup reconciliation)
-- `user_work_areas`, `user_work_areas_pinned`, `user_work_areas_retired` (work area lifecycle)
-- `coaching_mode` (quiet mode toggle)
-- `integrations` (boolean flags: github, jira, calendar, news)
-- `github_owner` (GitHub org for PR search)
-- `jira_projects` (list of Jira project keys for task discovery)
-- `briefing_suggest_before` (default 11), `wrapup_suggest_after` (default 17) (trigger hours)
-- `work_area_refresh_interval` (default 5), `staleness_suppress_interval` (default 10)
-- `state_schema_version` (integer for installer migrations)
-- `installed_version`, `installed_at` (install tracking)
-- `last_update_check` (ISO timestamp of last remote version check)
-- `update_check_interval_hours` (default 24, how often to check for updates)
+| Subcommand | Purpose |
+|------------|---------|
+| `context` | Session-start context blob (run once at session start) |
+| `state-set KEY VALUE ...` | Patch state.json fields (`+N` for increments) |
+| `framework-slice` | Extract career framework for configured levels |
+| `add` | Record evidence entry |
+| `list` / `search` / `export` / `stats` | Query evidence |
+| `status` | Unified Valor status view |
+
+To update state after a command completes, use `state-set` instead of
+inline Python:
+
+```
+python3 ~/.valor/evidence_cli.py state-set last_briefing_date 2026-04-13 briefing_count +1
+```
 
 ## Auto-Update Check
 
-At the START of every conversation, silently check for Valor updates:
+If `context.update_check_due` is `true`:
 
-1. Read `~/.valor/state.json` -- check `last_update_check`
-2. If `last_update_check` is empty or more than `update_check_interval_hours`
-   (default 24) have passed since `last_update_check`:
-   a. Run: `curl -sfL https://raw.githubusercontent.com/yihanzhu/valor/main/VERSION`
-   b. Compare with `installed_version` in state.json
-   c. If newer version available:
-      - Minor/patch update (same major version): run
-        `bash ~/.valor/repo/install.sh --auto-update` silently
-      - Major version bump: suggest briefly:
-        "Valor X.0 is available. Update? (say 'skip' to skip)"
-        If user says yes, run the auto-update command above.
-   d. Update `last_update_check` in state.json to the current ISO timestamp
-      regardless of whether an update was applied
-3. If `curl` fails (offline, timeout), skip silently -- do not warn the user
+1. Run: `curl -sfL https://raw.githubusercontent.com/yihanzhu/valor/main/VERSION`
+2. Compare with `context.installed_version`
+3. If newer version available:
+   - Minor/patch update (same major): run
+     `bash ~/.valor/repo/install.sh --auto-update` silently
+   - Major version bump: suggest briefly:
+     "Valor X.0 is available. Update? (say 'skip' to skip)"
+4. Update the timestamp regardless:
+   `python3 ~/.valor/evidence_cli.py state-set last_update_check "$(date -Iseconds)"`
+5. If `curl` fails (offline, timeout), skip silently
 
-This check should be invisible when no update is needed. Do not mention it
-unless a major version bump requires user confirmation.
+This check should be invisible when no update is needed.
 
 ## Behavior Rules
 
