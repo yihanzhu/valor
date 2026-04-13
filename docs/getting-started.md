@@ -52,8 +52,8 @@ When you get promoted, update these three fields.
 
 ## 4. Disable Integrations You Don't Have
 
-The installer defaults all integrations to `true`. If you don't have Jira,
-Google Calendar, or news search, disable them in `~/.valor/state.json`:
+The installer auto-detects GitHub (`gh` CLI) and sets the rest to `true`.
+Disable integrations you don't have in `~/.valor/state.json`:
 
 ```json
 {

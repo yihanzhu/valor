@@ -4,7 +4,6 @@ from pathlib import Path
 import pytest
 
 COMMANDS_DIR = Path("commands")
-COMMAND_FILES = sorted(COMMANDS_DIR.glob("valor-*.md"))
 
 
 def test_wrapup_carry_forward_stays_under_valor_home():
@@ -73,8 +72,8 @@ def test_install_script_contains_integrations():
     assert '"integrations"' in text
 
 
-def test_state_json_template_is_valid_json():
-    """The initial state.json template in install.sh should produce valid JSON."""
+def test_state_json_template_exists_in_installer():
+    """install.sh should contain the state.json template marker."""
     text = Path("install.sh").read_text()
     assert "STATEJSON" in text, "install.sh should contain the state template"
 
