@@ -123,19 +123,14 @@ fi
 RULE_SOURCE="$SCRIPT_DIR/rules/valor-agent.md"
 
 # --- Auto-detect available integrations ---
+# Only GitHub can be detected (gh CLI + auth). Jira, calendar, and news
+# default to true -- the user can disable them in state.json.
 detect_integrations() {
-    local github="true"
-    local jira="true"
-    local calendar="true"
-    local news="true"
-
+    local github="false"
     if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
         github="true"
-    else
-        github="false"
     fi
-
-    echo "{\"github\": $github, \"jira\": $jira, \"calendar\": $calendar, \"news\": $news}"
+    echo "{\"github\": $github, \"jira\": true, \"calendar\": true, \"news\": true}"
 }
 
 # --- Shared sed transforms for non-Claude-Code targets (stdin -> stdout) ---
