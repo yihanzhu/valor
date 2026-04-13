@@ -2,9 +2,11 @@
 
 ## Overview
 
-Valor is a local-first ambient career coach for developers. It runs as a set
-of prompts and a lightweight Python evidence store inside AI coding assistants
-(Claude Code, Cursor). All data stays on the user's machine.
+Valor is a local-first ambient career coach for developers. It runs entirely
+inside AI coding assistants (Claude Code, Cursor) as a set of prompts and a
+lightweight Python evidence store. Valor is not standalone software -- it has
+no daemon, no background process, and no runtime outside of agent sessions.
+All data stays on the user's machine.
 
 ## Distribution Model
 

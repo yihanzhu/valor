@@ -51,25 +51,22 @@ What shipped:
 - `--clone` flag and curl one-liner for quick install
 - test coverage: 106 -> 120 tests
 
-## Phase 4: Local Background Assistance
+## Phase 4: Agent-Native Extensions
 
 **Status:** Planned
 
-Possible work:
+Valor lives inside LLM coding agents -- it is not standalone software.
+Phase 4 extends Valor's capabilities within agent sessions:
 
-- a local daemon for reminders and periodic summaries
-- optional notification hooks that remain local-first
-- scheduled reflections and briefings without needing to start a session first
-
-## Phase 5: Optional Extensions
-
-**Status:** Future
-
-Possible work:
-
-- local model support
-- self-hosted or encrypted sync
-- plugin adapters for more tools
 - richer exports for promotion packets and review prep
+- plugin adapters for more agent platforms
+- deeper integration with agent memory and context systems
+- evidence-driven career narrative generation
 
-These are extensions, not requirements for the core experience.
+## Future Considerations
+
+These are not committed but worth exploring:
+
+- local model support for privacy-sensitive environments
+- self-hosted or encrypted sync across machines
+- cross-agent evidence federation (e.g., Cursor + Claude Code on same machine)
