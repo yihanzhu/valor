@@ -176,7 +176,29 @@ next session has a stable path for recall without touching the active repo.
 
 If a carry-forward file already exists for the same date, replace it.
 
-## 5. Update State
+## 5. Record Evidence
+
+After presenting the wrap-up, record it with a **specific** statement
+summarizing the day's key outcomes:
+
+```bash
+python3 ~/.valor/evidence_cli.py add \
+  --activity wrapup_completed \
+  --competency autonomy_scope \
+  --statement "Wrap-up: [top accomplishment], [N carry-forward items]. Competency focus: [strongest area today]." \
+  --agent valor-evening-wrapup \
+  --date $(date +%Y-%m-%d)
+```
+
+**Good example:** "Wrap-up: shipped PR #1025 boundary fix, 2 carry-forward
+items (pipeline test, design doc draft). Competency focus: subject_matter."
+
+**Bad example:** "Completed evening wrap-up."
+
+If the evidence CLI is unavailable, skip silently -- the wrap-up output
+and carry-forward file are the primary outputs.
+
+## 6. Update State
 
 Set `last_wrapup_date` and `last_wrapup_timestamp` in `~/.valor/state.json`:
 
@@ -194,7 +216,7 @@ p.write_text(json.dumps(state, indent=2))
 "
 ```
 
-## 6. Fallbacks
+## 7. Fallbacks
 
 | Scenario | Action |
 |----------|--------|
