@@ -45,9 +45,9 @@ Check if Atlassian MCP tools are available. If `searchJiraIssuesUsingJql` exists
    state.json. If only one project, use `project = KEY` instead of `IN`.
 
 **Project keys:** Read `jira_projects` from `~/.valor/state.json` (a list,
-e.g. `["DAT", "DSAI"]`). If not set, fall back to `jira_default_project`
-(single string). Use `project IN (...)` in JQL to search across all
-listed projects. If the user mentions a different project key, add it
+e.g. `["DAT", "DSAI"]`). Use `project IN (...)` in JQL to search across all
+listed projects. If `jira_projects` is empty or not set, ask the user for
+their project key. If the user mentions a different project key, add it
 to the query.
 
 **If Atlassian MCP is unavailable:** Skip the Jira section. If

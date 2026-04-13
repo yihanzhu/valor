@@ -68,7 +68,7 @@ Installed prompts and rules live in your assistant's local directories:
 
 - Claude Code: `~/.claude/CLAUDE.md` and `~/.claude/commands/`
 - Codex CLI: `~/.codex/AGENTS.md` and `~/.codex/skills/`
-- Cursor (legacy): `~/.cursor/rules/` and `~/.cursor/skills/`
+- Cursor: `~/.cursor/rules/` and `~/.cursor/skills/`
 
 The current runtime is local-first, but not fully air-gapped by itself.
 See [PRIVACY.md](PRIVACY.md) for the exact trust boundary.

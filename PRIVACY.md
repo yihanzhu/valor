@@ -17,7 +17,8 @@ By default, Valor stores data under `~/.valor/`:
 Installed prompts and rules live in assistant-specific local directories:
 
 - Claude Code: `~/.claude/CLAUDE.md` and `~/.claude/commands/`
-- Cursor (legacy): `~/.cursor/rules/` and `~/.cursor/skills/`
+- Codex CLI: `~/.codex/AGENTS.md` and `~/.codex/skills/`
+- Cursor: `~/.cursor/rules/` and `~/.cursor/skills/`
 
 ## What This Repo Does Not Do
 
@@ -66,8 +67,8 @@ policies. Valor cannot override those policies from inside this repo.
 To remove Valor's local data:
 
 - delete `~/.valor/`
-- remove installed commands from `~/.claude/commands/` or `~/.cursor/skills/`
-- remove the installed Valor rule from `~/.claude/CLAUDE.md` or `~/.cursor/rules/`
+- remove installed commands/skills from `~/.claude/commands/`, `~/.codex/skills/`, or `~/.cursor/skills/`
+- remove the installed Valor rule from `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, or `~/.cursor/rules/`
 
 ## Scope of the Privacy Promise
 
