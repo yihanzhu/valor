@@ -14,7 +14,7 @@ All data stays on the user's machine.
 valor repo (github.com/yihanzhu/valor)
 ├── .claude-plugin/       Plugin manifest (Claude Code plugin system)
 ├── commands/             Prompt files (one per Valor agent)
-├── src/                  Shared source (evidence CLI, Python library, rule, framework)
+├── src/                  Shared source (evidence CLI, career framework, utilities)
 ├── bin/                  Executable wrappers (valor-evidence)
 ├── skills/               Plugin skills (setup)
 ├── .codex-plugin/        Plugin manifest (Codex CLI plugin system)
@@ -71,7 +71,7 @@ Key fields:
 
 ### evidence.sqlite schema
 
-Current schema version: **1**
+Current schema version: **2**
 
 Tables:
 

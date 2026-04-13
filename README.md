@@ -7,8 +7,8 @@ your daily assistant interactions, captures meaningful work evidence, maps that
 work to your own career framework, and nudges you toward stronger habits over
 time.
 
-Status: alpha. The current repo is a working local core for Claude Code
-(default), Codex CLI, and Cursor (legacy).
+Status: alpha. The current repo is a working local core for Claude Code,
+Codex CLI, and Cursor.
 
 ## Why Valor Exists
 
@@ -239,7 +239,7 @@ valor/
 ├── commands/               # User-invoked assistant commands
 ├── rules/                  # Always-applied Valor rule
 ├── skills/                 # Plugin skills (setup)
-├── src/                    # Local evidence and competency logic
+├── src/                    # Evidence CLI, career framework, utilities
 ├── tests/                  # Test suite
 ├── docs/                   # Architecture, integrations, getting started
 ├── website/                # Minimal static landing page

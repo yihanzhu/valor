@@ -7,7 +7,7 @@
     {
       "name": "valor",
       "source": ".",
-      "description": "Ambient career coach for developers -- evidence tracking, coaching, briefings, reflections."
+      "description": "Career coach commands for developers -- briefings, PR reviews, design docs, reflections, and more. Install with install.sh for the full ambient experience."
     }
   ]
 }

@@ -32,7 +32,7 @@ What shipped:
 - integration portability model (state.json flags, auto-detection, graceful skip)
 - contributor workflow (PR/issue templates, Ruff linter in CI)
 - getting-started guide and integrations documentation
-- expanded test coverage (87 -> 106 tests)
+- expanded test coverage
 
 ## Phase 3: Better Local Packaging
 
@@ -43,13 +43,12 @@ What shipped:
 - VERSION file and `--version` flag for traceability
 - `--upgrade` flag (git pull + re-install) and version tracking in state.json
 - Claude Code plugin packaging (plugin.json, marketplace.json, bin/, setup skill)
-- command files renamed for plugin namespace (`/valor:briefing` etc.)
+- command files named for plugin namespace (`/valor-briefing` etc.)
 - evidence CLI enhancements: `search`, `export`, `status` subcommands
 - improved `list` filtering: `--from`, `--to`, `--activity` date/type filters
 - state_schema_version for forward-only state.json migrations
 - architecture documentation (docs/architecture.md)
 - `--clone` flag and curl one-liner for quick install
-- test coverage: 106 -> 121 tests
 
 ## Phase 4: Agent-Native Extensions
 
@@ -59,7 +58,7 @@ What shipped:
 
 - Codex CLI support (`--target codex`) with AGENTS.md rule and skills adapter
 - `.codex-plugin/plugin.json` for Codex plugin system
-- three install targets: Claude Code (default), Codex CLI, Cursor (legacy)
+- three install targets: Claude Code, Codex CLI, Cursor
 - docs updated across README, architecture, and getting-started
 
 ## Phase 5: Evidence Outputs + Agent Quality
@@ -76,7 +75,6 @@ What shipped:
 - standardized integration preamble across all commands
 - wrap-up now records evidence (wrapup_completed entry)
 - version bump to 0.3.0
-- test coverage: 121 -> 133 tests
 
 ## Future Considerations
 

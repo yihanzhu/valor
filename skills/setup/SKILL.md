@@ -113,6 +113,6 @@ the plugin -- run `install.sh` from the Valor repo for ambient coaching:
 cd ~/valor && bash install.sh
 ```
 
-Without this step, the 7 Valor commands (`/valor:briefing`,
-`/valor:weekly`, `/valor:prep`, etc.) work normally, but you won't get
+Without this step, the 7 Valor commands (`/valor-briefing`,
+`/valor-weekly`, `/valor-prep`, etc.) work normally, but you won't get
 automatic coaching annotations after tasks.

@@ -1,6 +1,6 @@
 {
   "name": "valor",
-  "description": "Career coach commands for developers. For the full experience (ambient coaching, auto-triggers, evidence recording), install with: bash install.sh --target codex from the repo root.",
+  "description": "Career coach commands for developers. For the full experience (ambient coaching, auto-triggers, evidence recording), install with: bash install.sh from the repo root.",
   "version": "0.3.0",
   "author": {
     "name": "Yihan Zhu"

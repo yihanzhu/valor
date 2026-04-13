@@ -4,23 +4,7 @@ Ready-to-use prompts for Claude Code Agent Teams. These templates assume the
 usual planner/coder/tester/reviewer team shape, but they can be adjusted for
 your own local setup.
 
-## Template A: Phase 3 -- Background Daemon
-
-```text
-Create a team to build the Phase 3 background daemon (see ROADMAP.md).
-
-PLANNER: design the daemon architecture (monitor.py, notify.py,
-sources/, launchd plist). Evaluate notification channel options from
-ROADMAP.md. Read existing src/ to understand the evidence store.
-
-CODER-1 owns daemon/monitor.py + daemon/sources/*.
-CODER-2 owns daemon/notify.py + daemon/*.plist.
-TESTER owns tests/.
-
-Constraint: stdlib only for production code. pytest allowed for tests.
-```
-
-## Template B: Add Tests to Existing Code
+## Template A: Add Tests to Existing Code
 
 ```text
 Create a team with 1 PLANNER and 2 TESTERs.
