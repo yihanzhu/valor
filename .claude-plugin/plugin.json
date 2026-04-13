@@ -1,11 +1,12 @@
 {
   "name": "valor",
-  "description": "Career coach commands for developers -- morning briefings, PR review coaching, design doc guidance, weekly reflections, task identification, evening wrap-ups, and 1:1 prep with evidence tracking. For ambient coaching, install with install.sh.",
+  "description": "Career coach for developers -- morning briefings, PR review coaching, design doc guidance, weekly reflections, task identification, evening wrap-ups, and 1:1 prep with evidence tracking. Includes auto-trigger hooks for session-start suggestions.",
   "version": "0.3.0",
   "author": {
     "name": "Yihan Zhu"
   },
   "homepage": "https://github.com/yihanzhu/valor",
   "repository": "https://github.com/yihanzhu/valor",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "hooks": "./hooks/hooks.json"
 }
