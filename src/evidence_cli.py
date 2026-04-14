@@ -681,7 +681,6 @@ def cmd_framework_slice(args: argparse.Namespace) -> None:
     values_lines: list[str] = []
     current_heading = ""
     current_lines: list[str] = []
-    current_h2 = ""
     in_values = False
 
     for line in lines:
@@ -697,7 +696,6 @@ def cmd_framework_slice(args: argparse.Namespace) -> None:
             in_values = "value" in section_name
             if in_values:
                 values_lines.append(line)
-            current_h2 = section_name
         elif line.startswith("### "):
             if current_heading:
                 if in_values:
@@ -806,7 +804,7 @@ def cmd_framework_validate(args: argparse.Namespace) -> None:
         print(json.dumps({"valid": False, "errors": errors, "warnings": warnings}, indent=2))
         return
 
-    has_h1 = any(l.startswith("# ") and not l.startswith("## ") for l in lines)
+    has_h1 = any(ln.startswith("# ") and not ln.startswith("## ") for ln in lines)
     if not has_h1:
         warnings.append("Missing top-level '# Career Framework' heading")
 
@@ -838,7 +836,7 @@ def cmd_framework_validate(args: argparse.Namespace) -> None:
             level_competencies[current_level].append(comp_name)
 
     if not has_levels_section:
-        h3_count = sum(1 for l in lines if l.startswith("### "))
+        h3_count = sum(1 for ln in lines if ln.startswith("### "))
         if h3_count > 0:
             errors.append("Level headings (###) found but no '## Levels' section marker. "
                           "Add '## Levels' before the first level heading.")
