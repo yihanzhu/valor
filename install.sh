@@ -611,7 +611,7 @@ print_summary_all() {
     echo "  3. Design Doc Coach  -- 'design doc for TICKET'"
     echo "  4. Weekly Reflection -- auto-suggests Friday"
     echo "  5. Task Identifier   -- 'what should I work on'"
-    echo "  6. Evening Wrap-up   -- auto-suggests after 5pm"
+    echo "  6. Evening Wrap-up   -- auto-suggests after 4pm"
     echo "  7. 1:1 Prep          -- 'prep for 1:1'"
     echo "  8. Setup             -- /valor-setup or 'set up valor'"
     echo "  9. Ambient Coaching  -- always on ('valor quiet' to suppress)"

@@ -46,7 +46,7 @@ hardcoding one.
 | **Design Doc Coach**  | `/valor-design-doc` or "how should I approach" | Structured design guidance with options, trade-offs, and recommendations        |
 | **Weekly Reflection** | Auto Friday, or `/valor-weekly`                | Week summary mapped to competencies, gap analysis, and 1:1 narrative            |
 | **Task Identifier**   | `/valor-tasks` or "what should I work on"      | High-impact work prioritized by career growth potential                         |
-| **Evening Wrap-up**   | Auto after 5pm, or `/valor-wrapup`             | Day summary, carry-forward items, and career reflection                         |
+| **Evening Wrap-up**   | Auto after 4pm, or `/valor-wrapup`             | Day summary, carry-forward items, and career reflection                         |
 | **1:1 Prep**          | `/valor-prep` or "prep for 1:1"                | Evidence-grounded prep document for manager 1:1s                                |
 | **Setup**             | `/valor-setup` or "set up valor"               | Guided career framework, level, and integration configuration                  |
 
@@ -172,7 +172,7 @@ Automatic suggestions:
 
 - start a conversation before 11am on a weekday for a morning briefing
 - chat on Friday for a weekly reflection prompt
-- chat after 5pm on a weekday for an evening wrap-up prompt
+- chat after 4pm on a weekday for an evening wrap-up prompt
 
 Commands:
 

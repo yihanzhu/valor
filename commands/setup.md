@@ -265,7 +265,7 @@ Your Valor agents:
   3. Design Doc Coach  -- 'design doc for TICKET'
   4. Weekly Reflection -- auto-suggests Friday
   5. Task Identifier   -- 'what should I work on'
-  6. Evening Wrap-up   -- auto-suggests after 5pm
+  6. Evening Wrap-up   -- auto-suggests after 4pm
   7. 1:1 Prep          -- 'prep for 1:1'
   8. Setup             -- /valor-setup or 'set up valor'
   9. Ambient Coaching  -- always on ('valor quiet' to suppress)

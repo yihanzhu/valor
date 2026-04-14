@@ -553,7 +553,7 @@ def cmd_context(args: argparse.Namespace) -> None:
     suggest_briefing = is_weekday and hour < suggest_before and last_briefing != today_str
 
     # --- Wrapup auto-trigger ---
-    suggest_after = state.get("wrapup_suggest_after", 17)
+    suggest_after = state.get("wrapup_suggest_after", 16)
     last_wrapup = state.get("last_wrapup_date", "") or ""
     suggest_wrapup = is_weekday and hour >= suggest_after and last_wrapup != today_str
 

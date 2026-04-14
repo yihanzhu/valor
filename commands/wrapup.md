@@ -8,7 +8,7 @@ as bookends for the workday.
 
 - User says: "wrap up", "end of day", "call it a day", "let's wrap up",
   "evening wrap-up", or signals they are done for the day
-- Auto-suggested after 5pm on weekdays (see valor-agent.mdc trigger)
+- Auto-suggested after 4pm on weekdays (see valor-agent.mdc trigger)
 
 ## Integration Check
 

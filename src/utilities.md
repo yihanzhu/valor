@@ -111,7 +111,7 @@ fields, so a fresh `state.json` with only installer fields is valid.
 | `briefing_suggest_before` | User config | Hour before which to auto-suggest briefing (default 11) |
 | `last_wrapup_date` | Evening wrapup | Date of last wrapup (YYYY-MM-DD) |
 | `last_wrapup_timestamp` | Evening wrapup | ISO 8601 datetime of last wrapup |
-| `wrapup_suggest_after` | User config | Hour after which to auto-suggest wrapup (default 17) |
+| `wrapup_suggest_after` | User config | Hour after which to auto-suggest wrapup (default 16) |
 | `last_reflection_week` | Weekly reflection | ISO week of last reflection (e.g. "2026-W14") |
 | `last_reflection_date` | Weekly reflection | Date of last reflection (YYYY-MM-DD) |
 | `today_priorities` | Morning briefing | List of today's suggested priorities (for wrapup reconciliation) |
