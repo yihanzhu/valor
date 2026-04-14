@@ -251,11 +251,13 @@ check_drift() {
         "$SCRIPT_DIR/src/evidence_cli.py"
         "$SCRIPT_DIR/src/career_framework.md"
         "$SCRIPT_DIR/src/utilities.md"
+        "$SCRIPT_DIR/src/coaching-ref.md"
     )
     local runtime_dests=(
         "$VALOR_HOME/evidence_cli.py"
         "$VALOR_HOME/career_framework.md"
         "$VALOR_HOME/utilities.md"
+        "$VALOR_HOME/coaching-ref.md"
     )
 
     for i in "${!runtime_sources[@]}"; do
@@ -481,6 +483,9 @@ else:
 
     cp "$SCRIPT_DIR/src/utilities.md" "$VALOR_HOME/utilities.md"
     echo "  [OK] utilities.md"
+
+    cp "$SCRIPT_DIR/src/coaching-ref.md" "$VALOR_HOME/coaching-ref.md"
+    echo "  [OK] coaching-ref.md"
 
     # Record installed version
     python3 -c "
