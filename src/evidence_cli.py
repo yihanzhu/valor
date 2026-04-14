@@ -534,7 +534,7 @@ def _write_state(state: dict) -> None:
 
 def cmd_context(args: argparse.Namespace) -> None:
     state = _read_state()
-    now = datetime.now()
+    now = datetime.now().astimezone()
     weekday = now.weekday()  # 0=Monday ... 6=Sunday
     hour = now.hour
     today_str = now.strftime("%Y-%m-%d")
