@@ -14,7 +14,7 @@ All data stays on the user's machine.
 valor repo (github.com/yihanzhu/valor)
 ├── .claude-plugin/       Plugin manifest (Claude Code plugin system)
 ├── commands/             Prompt files (one per Valor agent)
-├── src/                  Shared source (evidence CLI, career framework, utilities)
+├── src/                  Shared source (evidence CLI, career framework, coaching ref)
 ├── bin/                  Executable wrappers (valor-evidence)
 ├── skills/               Plugin skills (setup)
 ├── .codex-plugin/        Plugin manifest (Codex CLI plugin system)
@@ -51,6 +51,7 @@ and `utilities.md`).
 | `evidence_cli.py`     | CLI for the evidence store                    | `install.sh`         |
 | `career_framework.md` | User's career ladder (not overwritten)        | User                 |
 | `utilities.md`        | Tool discovery reference for agents           | `install.sh`         |
+| `coaching-ref.md`     | Coaching specs loaded on-demand (see below)   | `install.sh`         |
 | `carry-forward/`      | Wrap-up notes for cross-day continuity        | `wrapup` agent       |
 | `backups/`            | Auto-rotated SQLite backups (max 10)          | `evidence_cli.py`    |
 | `repo/`               | Git clone of the Valor source repo            | `install.sh --clone` |
@@ -106,6 +107,57 @@ coaching layer:
 
 All agents read `integrations` from `state.json` and silently skip sections
 for disabled integrations.
+
+## Context Loading Strategy
+
+The agent rule (`valor-agent.md`) is injected into **every conversation** as
+part of the system prompt. Every token in this file is consumed whether or not
+Valor coaching is relevant to the conversation. This makes the rule's size a
+direct cost on all interactions.
+
+To minimize this cost, Valor splits its instructions into two tiers:
+
+**Always-loaded (the rule, ~105 lines):**
+- Session start protocol (context command, auto-triggers)
+- Agent routing table (trigger keywords → commands)
+- Coaching trigger condition ("after meaningful tasks, add coaching")
+- Footer template (the visual format)
+- Evidence recording command (the CLI invocation)
+- Quiet mode, behavior rules
+
+**On-demand (`~/.valor/coaching-ref.md`, ~75 lines):**
+- Activity classification table (which activity maps to which competency)
+- Coaching format detailed instructions and examples
+- Evidence statement quality rules with good/bad examples
+- Ceiling level rule
+
+The rule tells the agent: "for detailed coaching specs, read
+`~/.valor/coaching-ref.md`." The agent reads this file only when it's about to
+produce a coaching annotation, which happens 1-3 times per conversation at most.
+
+```
+Every conversation:          [rule: ~105 lines always loaded]
+                                      │
+Coaching triggered? ─── no ───> done (saved ~75 lines)
+         │
+        yes
+         │
+         ▼
+Read coaching-ref.md ──> [+75 lines loaded once]
+         │
+         ▼
+Produce footer + record evidence
+```
+
+**Why this matters:** In the common case (exploration, Q&A, debugging with no
+coaching), the on-demand file is never loaded. Even when coaching IS triggered,
+total context (105 + 75 = 180 lines) is less than the previous monolithic rule
+(335 lines) because the on-demand file loads once per conversation, not per
+message.
+
+**Do not merge these files back together.** The split is intentional. If you
+need to add coaching instructions, add them to `src/coaching-ref.md` (on-demand)
+unless they affect when or whether coaching fires (put those in the rule).
 
 ## Evidence Flow
 
