@@ -18,6 +18,8 @@
           <span class="brand-text">Valor</span>
         </a>
         <nav class="header-nav" aria-label="Primary">
+          <a href="https://github.com/yihanzhu/valor/blob/main/README.md" target="_blank" rel="noreferrer">Docs</a>
+          <a href="https://github.com/yihanzhu/valor/blob/main/PRIVACY.md" target="_blank" rel="noreferrer">Privacy</a>
           <a href="https://github.com/yihanzhu/valor" target="_blank" rel="noreferrer">GitHub</a>
         </nav>
       </header>
@@ -26,12 +28,16 @@
         <section class="hero">
           <div class="hero-copy">
             <p class="eyebrow">Local-first · Device-local · Agent-integrated</p>
-            <h1>Build your career with Valor</h1>
+            <h1>Career coaching that lives where developers already work.</h1>
             <p class="lede">
-              A local-first growth layer inside your coding agent. Plan the day,
-              coach the work, carry context forward, and reflect over time.
+              Valor runs inside Claude Code, Codex CLI, and Cursor to turn daily
+              execution into reusable evidence, better reflection, and clearer
+              next-level growth.
             </p>
-            <p class="support-note">Built for work use. Core memory and evidence stay on your machine, not in a Valor backend.</p>
+            <p class="support-note">
+              Built for work use. Core memory, evidence, and career framework stay
+              on your machine, not in a Valor backend.
+            </p>
             <div class="install-wrap hero-install">
               <pre class="install-snippet" id="install-command"><code>curl -fsSL https://raw.githubusercontent.com/yihanzhu/valor/main/install.sh | bash -s -- --clone</code></pre>
               <button class="copy-button" type="button" data-copy-target="install-command" aria-label="Copy install command" title="Copy install command">
@@ -43,18 +49,60 @@
                 </span>
               </button>
             </div>
-            <p class="support-note">Installs for all agents (Claude Code, Codex CLI, Cursor). Use <code>--target claude-code</code> for a single agent.</p>
+            <p class="support-note">
+              Installs for all agents. Use <code>--target claude-code</code>,
+              <code>--target codex</code>, or <code>--target cursor</code> for a
+              single host.
+            </p>
             <div class="hero-actions">
-              <a class="button button-primary" href="https://github.com/yihanzhu/valor" target="_blank" rel="noreferrer">GitHub</a>
-              <a class="button button-secondary" href="https://github.com/yihanzhu/valor/blob/main/README.md" target="_blank" rel="noreferrer">README</a>
+              <a class="button button-primary" href="https://github.com/yihanzhu/valor/blob/main/docs/getting-started.md" target="_blank" rel="noreferrer">Get started</a>
+              <a class="button button-secondary" href="https://github.com/yihanzhu/valor" target="_blank" rel="noreferrer">GitHub</a>
             </div>
+          </div>
+        </section>
+
+        <section class="section" id="why">
+          <div class="section-head">
+            <p class="section-tag">Why teams try it</p>
+            <h2>It captures the work that normal career tooling misses.</h2>
+            <p class="section-copy">
+              Valor is designed around the reality that modern engineering work
+              already flows through coding agents. Instead of adding another HR
+              system or manual brag doc, it uses that workflow as the coaching
+              surface.
+            </p>
+          </div>
+
+          <div class="difference-grid">
+            <article class="info-card">
+              <h3>Ambient coaching</h3>
+              <p>
+                Valor shows up in the flow of work itself, so reviews, debugging,
+                and planning become growth moments instead of end-of-week recall.
+              </p>
+            </article>
+            <article class="info-card">
+              <h3>Evidence over vibes</h3>
+              <p>
+                Valor turns reviews, design work, debugging, and coordination
+                into structured evidence you can reuse for weekly reflection and
+                1:1 prep.
+              </p>
+            </article>
+            <article class="info-card">
+              <h3>Bring your own framework</h3>
+              <p>
+                Valor adapts to your company ladder, target level, and growth
+                expectations instead of forcing a generic career rubric.
+              </p>
+            </article>
           </div>
         </section>
 
         <section class="section" id="workday">
           <div class="section-head">
             <p class="section-tag">Across the workday</p>
-            <h2>A simple loop.</h2>
+            <h2>A simple loop that compounds over time.</h2>
           </div>
 
           <div class="workday-flow" aria-label="Valor daily loop">
@@ -67,14 +115,55 @@
             <article class="flow-step">
               <p class="panel-label">02</p>
               <h3>In-flow coaching</h3>
-              <p>Turn work into growth signals.</p>
+              <p>Map meaningful work to target-level signals.</p>
             </article>
             <div class="flow-arrow" aria-hidden="true">→</div>
             <article class="flow-step">
               <p class="panel-label">03</p>
               <h3>Wrap-up</h3>
-              <p>Carry context forward.</p>
+              <p>Save context and carry tomorrow forward.</p>
             </article>
+          </div>
+        </section>
+
+        <section class="section" id="example">
+          <div class="section-head">
+            <p class="section-tag">What It Looks Like</p>
+            <h2>Useful output, not another dashboard.</h2>
+            <p class="section-copy">
+              A good Valor interaction should help you decide what to do next,
+              surface the risk, and connect the work to growth without making
+              you fill out more process.
+            </p>
+          </div>
+
+          <div class="artifact-shell" aria-label="Sample Valor morning briefing">
+            <div class="artifact-header">
+              <div>
+                <p class="artifact-label">Sample output</p>
+                <h3>Morning briefing</h3>
+              </div>
+              <p class="artifact-meta">Tuesday · 8:42 AM</p>
+            </div>
+
+            <div class="artifact-grid">
+              <article class="artifact-block">
+                <p class="artifact-kicker">Primary focus</p>
+                <p>Land the auth retry fix before noon and post the rollout note in the incident thread.</p>
+              </article>
+              <article class="artifact-block">
+                <p class="artifact-kicker">Review queue</p>
+                <p>PR #418 needs a migration note before review. PR #421 looks unblocked and ready to merge.</p>
+              </article>
+              <article class="artifact-block">
+                <p class="artifact-kicker">Carry-forward</p>
+                <p>Yesterday's wrap-up flagged session cache risk across two tickets touching the same path.</p>
+              </article>
+              <article class="artifact-block">
+                <p class="artifact-kicker">Coaching nudge</p>
+                <p>This is next-level coordination work: reduce merge risk early and leave a handoff others can reuse.</p>
+              </article>
+            </div>
           </div>
         </section>
 
@@ -82,9 +171,13 @@
           <div class="section-head">
             <p class="section-tag">Plus on-demand agents</p>
             <h2>Deeper guidance when you need it.</h2>
+            <p class="section-copy">
+              The repo currently ships eight guided workflows, plus the ambient
+              coaching layer that rides alongside normal development work.
+            </p>
           </div>
 
-          <div class="workday-flow" aria-label="Valor agents">
+          <div class="agents-grid" aria-label="Valor agents">
             <article class="flow-step">
               <h3>Weekly Reflection</h3>
               <p>Competency review and 1:1 narrative.</p>
@@ -105,13 +198,64 @@
               <h3>1:1 Prep</h3>
               <p>Evidence-grounded manager sync.</p>
             </article>
+            <article class="flow-step">
+              <h3>Setup</h3>
+              <p>Career framework, level, and integration setup.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" id="docs">
+          <div class="section-head">
+            <p class="section-tag">Read the docs</p>
+            <h2>Start where you need depth.</h2>
+          </div>
+
+          <div class="docs-grid">
+            <a class="doc-card" href="https://github.com/yihanzhu/valor/blob/main/docs/getting-started.md" target="_blank" rel="noreferrer">
+              <span class="panel-label">Guide</span>
+              <h3>Getting Started</h3>
+              <p>Install Valor, run setup, and try the first workflows.</p>
+            </a>
+            <a class="doc-card" href="https://github.com/yihanzhu/valor/blob/main/docs/architecture.md" target="_blank" rel="noreferrer">
+              <span class="panel-label">Reference</span>
+              <h3>Architecture</h3>
+              <p>See the install model, local state, agent flow, and update path.</p>
+            </a>
+            <a class="doc-card" href="https://github.com/yihanzhu/valor/blob/main/docs/integrations.md" target="_blank" rel="noreferrer">
+              <span class="panel-label">Reference</span>
+              <h3>Integrations</h3>
+              <p>Understand GitHub, Jira, calendar, and news support.</p>
+            </a>
+            <a class="doc-card" href="https://github.com/yihanzhu/valor/blob/main/PRIVACY.md" target="_blank" rel="noreferrer">
+              <span class="panel-label">Trust</span>
+              <h3>Privacy Model</h3>
+              <p>Review what stays local and what depends on your host assistant.</p>
+            </a>
+            <a class="doc-card" href="https://github.com/yihanzhu/valor/blob/main/ROADMAP.md" target="_blank" rel="noreferrer">
+              <span class="panel-label">Direction</span>
+              <h3>Roadmap</h3>
+              <p>Track shipped phases and the next local-first ideas under discussion.</p>
+            </a>
+            <a class="doc-card" href="https://github.com/yihanzhu/valor/blob/main/README.md" target="_blank" rel="noreferrer">
+              <span class="panel-label">Overview</span>
+              <h3>README</h3>
+              <p>Start from the root overview, install flow, and command guide.</p>
+            </a>
           </div>
         </section>
       </main>
 
       <footer class="footer">
-        <p>&copy; 2026 Yihan Zhu</p>
-        <a href="https://github.com/yihanzhu/valor" target="_blank" rel="noreferrer">GitHub</a>
+        <p class="footer-credit">
+          &copy; 2026
+          <a href="https://yihanzhu.com" target="_blank" rel="noreferrer">Yihan Zhu</a>
+        </p>
+        <div class="footer-links">
+          <a href="https://github.com/yihanzhu/valor/blob/main/README.md" target="_blank" rel="noreferrer">Docs</a>
+          <a href="https://github.com/yihanzhu/valor/blob/main/PRIVACY.md" target="_blank" rel="noreferrer">Privacy</a>
+          <a href="https://github.com/yihanzhu/valor" target="_blank" rel="noreferrer">GitHub</a>
+        </div>
       </footer>
     </div>
     <script>

@@ -134,6 +134,14 @@ For a complete walkthrough including career framework setup, level
 configuration, and integration options, see
 [docs/getting-started.md](docs/getting-started.md).
 
+## Documentation
+
+- [Getting Started](docs/getting-started.md)
+- [Integrations](docs/integrations.md)
+- [Architecture](docs/architecture.md)
+- [Privacy Model](PRIVACY.md)
+- [Roadmap](ROADMAP.md)
+
 ## First-Time Setup
 
 After install, open your agent and run `/valor-setup` (or say "set up valor").
@@ -236,8 +244,8 @@ valor/
 ├── skills/                 # Plugin skills (setup)
 ├── src/                    # Evidence CLI, career framework, utilities
 ├── tests/                  # Test suite
-├── docs/                   # Architecture, integrations, getting started
-├── website/                # Minimal static landing page
+├── docs/                   # Setup, architecture, integrations, ADRs
+├── website/                # Static marketing site and install entry point
 ├── install.sh              # Installer for Claude Code, Codex CLI, and Cursor
 ├── marketplace.json        # Plugin catalog
 ├── VERSION                 # Version (single source of truth)

@@ -148,6 +148,13 @@ pre {
   letter-spacing: -0.045em;
 }
 
+.section-copy {
+  margin: 0;
+  max-width: 64ch;
+  color: var(--text-soft);
+  line-height: 1.68;
+}
+
 .hero h1 {
   max-width: none;
   font-size: clamp(2rem, 4.8vw, 3.4rem);
@@ -155,9 +162,6 @@ pre {
 }
 
 .lede,
-.step-card p,
-.difference-card p,
-.trust-summary,
 .footer p {
   color: var(--text-soft);
   font-size: 1rem;
@@ -251,6 +255,88 @@ pre {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.agents-grid,
+.docs-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.agents-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.docs-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.artifact-shell {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(8, 18, 35, 0.78), rgba(7, 16, 30, 0.98));
+  box-shadow: inset 0 1px 0 rgba(132, 188, 255, 0.05);
+  overflow: hidden;
+}
+
+.artifact-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 24px 18px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(15, 31, 57, 0.8), rgba(9, 20, 37, 0.45));
+}
+
+.artifact-header h3 {
+  margin: 6px 0 0;
+  font-size: 1.05rem;
+}
+
+.artifact-label,
+.artifact-kicker,
+.artifact-meta {
+  margin: 0;
+  font-family: "JetBrains Mono", "SFMono-Regular", "Menlo", "Consolas", monospace;
+  letter-spacing: 0.08em;
+}
+
+.artifact-label,
+.artifact-kicker {
+  text-transform: uppercase;
+}
+
+.artifact-label,
+.artifact-kicker {
+  color: var(--gold);
+  font-size: 0.72rem;
+}
+
+.artifact-meta {
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.artifact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 18px;
+}
+
+.artifact-block {
+  border: 1px solid rgba(121, 179, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(10, 21, 39, 0.72);
+  padding: 18px;
+}
+
+.artifact-block p:last-child {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.68;
+}
+
 .workday-flow {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, auto));
@@ -259,7 +345,8 @@ pre {
 }
 
 .flow-step,
-.info-card {
+.info-card,
+.doc-card {
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: linear-gradient(180deg, rgba(9, 20, 39, 0.42), rgba(9, 20, 37, 0.76));
@@ -267,26 +354,35 @@ pre {
 }
 
 .flow-step h3,
-.info-card h3 {
+.info-card h3,
+.doc-card h3 {
   margin: 0 0 10px;
   font-size: 1rem;
   letter-spacing: 0.01em;
 }
 
 .flow-step p,
-.info-card p {
+.info-card p,
+.doc-card p {
   margin: 0;
+}
+
+.doc-card {
+  display: block;
+  text-decoration: none;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.doc-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(132, 188, 255, 0.42);
+  background: linear-gradient(180deg, rgba(14, 30, 57, 0.76), rgba(9, 20, 37, 0.96));
 }
 
 .flow-arrow {
   color: var(--gold);
   font-size: 1.25rem;
   line-height: 1;
-}
-
-.trust-summary {
-  margin: 0;
-  max-width: 64ch;
 }
 
 .panel-label {
@@ -299,12 +395,19 @@ pre {
   margin: 0;
   padding: 22px 24px;
   padding-right: 104px;
-  overflow-x: auto;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: linear-gradient(180deg, rgba(8, 18, 35, 0.74), rgba(6, 15, 29, 0.98));
   box-shadow: inset 0 1px 0 rgba(132, 188, 255, 0.06);
   color: #d9e8ff;
+}
+
+.install-snippet code {
+  white-space: inherit;
+  overflow-wrap: anywhere;
 }
 
 .copy-button {
@@ -365,6 +468,14 @@ pre {
   text-decoration: none;
 }
 
+.footer-credit a {
+  color: var(--text);
+}
+
+.footer-credit a:hover {
+  color: var(--azure-bright);
+}
+
 @keyframes fade-up {
   from {
     opacity: 0;
@@ -381,6 +492,9 @@ pre {
     grid-template-columns: 1fr;
   }
 
+  .agents-grid,
+  .artifact-grid,
+  .docs-grid,
   .workday-flow {
     grid-template-columns: 1fr;
   }
@@ -406,6 +520,11 @@ pre {
 
   .header-nav {
     flex-wrap: wrap;
+  }
+
+  .artifact-header {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .footer {
