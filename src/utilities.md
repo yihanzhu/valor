@@ -60,6 +60,7 @@ When an integration is enabled (`true`), discover the specific tool to use:
 | `state-set KEY VAL ...` | Patch state.json fields (`+N` for numeric increments) |
 | `framework-slice` | Extract career framework sections for configured levels |
 | `setup-status` | Check what setup steps are complete (framework, levels, integrations) |
+| `framework-validate` | Validate career_framework.md structure: headings, competencies, level matches |
 | `add` | Record evidence (`--activity`, `--competency`, `--statement`, `--agent`, `--date`, `--metadata`) |
 | `list` | List entries (`--days`, `--from`, `--to`, `--competency`, `--activity`, `--limit`) |
 | `search` | Full-text search on statements (`query`, `--limit`) |

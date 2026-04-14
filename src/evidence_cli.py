@@ -9,6 +9,7 @@ Usage:
     python3 evidence_cli.py state-set last_briefing_date 2026-04-13 briefing_count +1
     python3 evidence_cli.py framework-slice
     python3 evidence_cli.py setup-status
+    python3 evidence_cli.py framework-validate
     python3 evidence_cli.py add --activity pr_review --competency collaboration \
         --statement "Reviewed cross-team PR #892" --agent valor-morning-briefing
     python3 evidence_cli.py list --days 7
@@ -744,6 +745,113 @@ def cmd_setup_status(args: argparse.Namespace) -> None:
     print(json.dumps(result, indent=2))
 
 
+REQUIRED_COMPETENCIES = [
+    "Subject Matter Expertise",
+    "Industry Knowledge",
+    "Internal Collaboration",
+    "Autonomy & Scope",
+    "Leadership",
+]
+
+
+def cmd_framework_validate(args: argparse.Namespace) -> None:
+    fw_path = VALOR_HOME / "career_framework.md"
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    if not fw_path.exists():
+        print(json.dumps({"valid": False, "errors": ["File not found: " + str(fw_path)], "warnings": []}, indent=2))
+        return
+
+    content = fw_path.read_text()
+    lines = content.split("\n")
+
+    if TEMPLATE_MARKER in content:
+        errors.append("File is still the unedited template (contains placeholder brackets)")
+        print(json.dumps({"valid": False, "errors": errors, "warnings": warnings}, indent=2))
+        return
+
+    has_h1 = any(l.startswith("# ") and not l.startswith("## ") for l in lines)
+    if not has_h1:
+        warnings.append("Missing top-level '# Career Framework' heading")
+
+    has_levels_section = False
+    has_values_section = False
+    level_headings: list[str] = []
+    level_competencies: dict[str, list[str]] = {}
+    current_level: str | None = None
+    in_levels = False
+
+    for line in lines:
+        if line.startswith("## "):
+            section = line[3:].strip().lower()
+            if section == "levels":
+                has_levels_section = True
+                in_levels = True
+            elif "value" in section:
+                has_values_section = True
+                in_levels = False
+            else:
+                in_levels = False
+        elif line.startswith("### ") and in_levels:
+            heading = line[4:].strip()
+            level_headings.append(heading)
+            current_level = heading
+            level_competencies[current_level] = []
+        elif current_level and line.strip().startswith("- **"):
+            comp_name = line.strip().lstrip("- ").split(":**")[0].strip("*")
+            level_competencies[current_level].append(comp_name)
+
+    if not has_levels_section:
+        h3_count = sum(1 for l in lines if l.startswith("### "))
+        if h3_count > 0:
+            errors.append("Level headings (###) found but no '## Levels' section marker. "
+                          "Add '## Levels' before the first level heading.")
+        else:
+            errors.append("No '## Levels' section and no level headings (###) found")
+
+    if not level_headings:
+        errors.append("No level headings found under '## Levels'")
+    elif len(level_headings) < 3:
+        warnings.append(f"Only {len(level_headings)} levels found; recommend at least 3 "
+                        "(current, target, ceiling)")
+
+    for heading, comps in level_competencies.items():
+        missing = [c for c in REQUIRED_COMPETENCIES if c not in comps]
+        if missing:
+            errors.append(f"Level '{heading}' is missing competencies: {', '.join(missing)}")
+
+    if not has_values_section:
+        errors.append("No '## Company Values' section found. Coaching references both "
+                      "competencies and company values. Add a '## Company Values' section "
+                      "with '### [Value Name]' subsections.")
+
+    state = _read_state()
+    configured_levels = [
+        state.get("current_level", ""),
+        state.get("target_level", ""),
+        state.get("ceiling_level", ""),
+    ]
+    configured_levels = [lv for lv in configured_levels if lv]
+
+    for lv in configured_levels:
+        matched = any(
+            h == lv or h.startswith(f"{lv} ") or h.startswith(f"{lv} -")
+            for h in level_headings
+        )
+        if not matched:
+            errors.append(f"Configured level '{lv}' not found in framework headings. "
+                          f"Available: {', '.join(level_headings)}")
+
+    result = {
+        "valid": len(errors) == 0,
+        "errors": errors,
+        "warnings": warnings,
+        "levels_found": level_headings,
+    }
+    print(json.dumps(result, indent=2))
+
+
 def cmd_schema_version(args: argparse.Namespace) -> None:
     conn = get_conn()
     ensure_schema(conn)
@@ -839,6 +947,8 @@ def main() -> None:
                    help="Extract career framework sections for configured levels")
     sub.add_parser("setup-status",
                    help="Check what setup steps are complete (JSON)")
+    sub.add_parser("framework-validate",
+                   help="Validate career_framework.md structure (JSON)")
 
     args = parser.parse_args()
     commands = {
@@ -859,6 +969,7 @@ def main() -> None:
         "state-set": cmd_state_set,
         "framework-slice": cmd_framework_slice,
         "setup-status": cmd_setup_status,
+        "framework-validate": cmd_framework_validate,
     }
     commands[args.command](args)
 

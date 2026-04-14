@@ -227,14 +227,21 @@ Replace each boolean with the actual value determined above.
 
 ## 4. Verification
 
-Run the full check:
+Run the validation and context checks:
 
 ```bash
+python3 ~/.valor/evidence_cli.py framework-validate
 python3 ~/.valor/evidence_cli.py context
-python3 ~/.valor/evidence_cli.py framework-slice
 ```
 
-Present a summary:
+`framework-validate` returns JSON with `valid`, `errors`, `warnings`, and
+`levels_found`. If `valid` is `false`, fix the errors before proceeding.
+Common errors:
+- Missing `## Levels` section marker -> add it above the first `### ` heading
+- Missing competencies -> add the missing axes to the level
+- Configured level not in headings -> fix the level code in state or framework
+
+If valid, present a summary:
 
 ```
 Valor Setup Complete

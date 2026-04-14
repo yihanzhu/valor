@@ -284,6 +284,7 @@ For tool discovery patterns (Jira, GitHub, calendar, etc.), read
 | `state-set KEY VALUE ...` | Patch state.json fields (`+N` for increments) |
 | `framework-slice` | Extract career framework for configured levels |
 | `setup-status` | Check what setup steps are complete (JSON) |
+| `framework-validate` | Validate career_framework.md structure (JSON) |
 | `add` | Record evidence entry |
 | `list` / `search` / `export` / `stats` | Query evidence |
 | `status` | Unified Valor status view |

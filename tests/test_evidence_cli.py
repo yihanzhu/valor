@@ -26,6 +26,7 @@ from src.evidence_cli import (
     cmd_state_set,
     cmd_framework_slice,
     cmd_setup_status,
+    cmd_framework_validate,
     iso_week_bounds,
 )
 
@@ -992,3 +993,139 @@ def test_setup_status_no_framework_file(cli_db, capsys):
     result = json.loads(capsys.readouterr().out)
     assert result["framework_exists"] is False
     assert result["framework_levels"] == []
+
+
+# --- cmd_framework_validate ---
+
+VALID_FRAMEWORK = (
+    "# Career Framework\n\n"
+    "## Levels\n\n"
+    "### IC3 - Engineer\n\n"
+    "**Role summary:** Does work.\n\n"
+    "**Competencies:**\n\n"
+    "- **Subject Matter Expertise:** Writes code.\n"
+    "- **Industry Knowledge:** Knows tools.\n"
+    "- **Internal Collaboration:** Works with team.\n"
+    "- **Autonomy & Scope:** Handles tasks.\n"
+    "- **Leadership:** Suggests improvements.\n\n"
+    "### IC4 - Senior Engineer\n\n"
+    "**Role summary:** Leads work.\n\n"
+    "**Competencies:**\n\n"
+    "- **Subject Matter Expertise:** Designs systems.\n"
+    "- **Industry Knowledge:** Tracks trends.\n"
+    "- **Internal Collaboration:** Aligns cross-team.\n"
+    "- **Autonomy & Scope:** Owns projects.\n"
+    "- **Leadership:** Mentors others.\n\n"
+    "### IC5 - Staff Engineer\n\n"
+    "**Role summary:** Architecture.\n\n"
+    "**Competencies:**\n\n"
+    "- **Subject Matter Expertise:** Expert.\n"
+    "- **Industry Knowledge:** Industry leader.\n"
+    "- **Internal Collaboration:** Org-wide.\n"
+    "- **Autonomy & Scope:** Strategic.\n"
+    "- **Leadership:** Influences direction.\n\n"
+    "---\n\n"
+    "## Company Values\n\n"
+    "### Excellence\n\nWe strive for excellence.\n"
+)
+
+
+def test_framework_validate_valid(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({
+        "current_level": "IC3", "target_level": "IC4", "ceiling_level": "IC5",
+    }))
+    (valor_home / "career_framework.md").write_text(VALID_FRAMEWORK)
+    cmd_framework_validate(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["valid"] is True
+    assert result["errors"] == []
+    assert len(result["levels_found"]) == 3
+
+
+def test_framework_validate_template(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({}))
+    (valor_home / "career_framework.md").write_text(
+        "# Career Framework\n\n### [Level 1] - [Title]\n"
+    )
+    cmd_framework_validate(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["valid"] is False
+    assert any("template" in e.lower() for e in result["errors"])
+
+
+def test_framework_validate_missing_levels_section(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({}))
+    (valor_home / "career_framework.md").write_text(
+        "# Career Framework\n\n"
+        "### IC3 - Engineer\n\nSome content.\n"
+    )
+    cmd_framework_validate(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["valid"] is False
+    assert any("## Levels" in e for e in result["errors"])
+
+
+def test_framework_validate_missing_competency(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({
+        "current_level": "IC3", "target_level": "IC4", "ceiling_level": "IC5",
+    }))
+    framework_missing_leadership = (
+        "# Career Framework\n\n"
+        "## Levels\n\n"
+        "### IC3 - Engineer\n\n"
+        "**Competencies:**\n\n"
+        "- **Subject Matter Expertise:** Writes code.\n"
+        "- **Industry Knowledge:** Knows tools.\n"
+        "- **Internal Collaboration:** Works with team.\n"
+        "- **Autonomy & Scope:** Handles tasks.\n\n"
+        "### IC4 - Senior Engineer\n\n"
+        "**Competencies:**\n\n"
+        "- **Subject Matter Expertise:** Designs.\n"
+        "- **Industry Knowledge:** Tracks.\n"
+        "- **Internal Collaboration:** Aligns.\n"
+        "- **Autonomy & Scope:** Owns.\n"
+        "- **Leadership:** Mentors.\n\n"
+        "### IC5 - Staff Engineer\n\n"
+        "**Competencies:**\n\n"
+        "- **Subject Matter Expertise:** Expert.\n"
+        "- **Industry Knowledge:** Leader.\n"
+        "- **Internal Collaboration:** Org-wide.\n"
+        "- **Autonomy & Scope:** Strategic.\n"
+        "- **Leadership:** Influences.\n"
+    )
+    (valor_home / "career_framework.md").write_text(framework_missing_leadership)
+    cmd_framework_validate(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["valid"] is False
+    assert any("Leadership" in e and "IC3" in e for e in result["errors"])
+
+
+def test_framework_validate_level_mismatch(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({
+        "current_level": "L99", "target_level": "IC4", "ceiling_level": "IC5",
+    }))
+    (valor_home / "career_framework.md").write_text(VALID_FRAMEWORK)
+    cmd_framework_validate(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["valid"] is False
+    assert any("L99" in e for e in result["errors"])
+
+
+def test_framework_validate_no_file(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({}))
+    cmd_framework_validate(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["valid"] is False
+    assert any("not found" in e.lower() for e in result["errors"])
