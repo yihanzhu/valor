@@ -21,9 +21,13 @@ Career Coaching (5) and Evidence are always available (local).
 
 ## Data Gathering
 
-Gather data from all enabled sources in parallel. If an enabled source fails
-at runtime (e.g. `gh` not authenticated), note it once and suggest the user
-either fix the tool or set the integration to `false` in state.json.
+Gather data from all enabled sources in parallel using direct tool calls
+(Shell, WebSearch, etc.). Do not delegate data gathering to Task subagents --
+the commands are known, fast, and do not require discovery or exploration.
+
+If an enabled source fails at runtime (e.g. `gh` not authenticated), note it
+once and suggest the user either fix the tool or set the integration to `false`
+in state.json.
 
 ### 1. Jira Tickets
 
