@@ -34,6 +34,10 @@ This returns a JSON blob with all session-start context pre-computed:
 Use this context throughout the session. Do not read `~/.valor/state.json`
 directly unless you need a field not in the context output.
 
+**If any CLI command fails** (non-zero exit, traceback, or empty output),
+fall back to reading the underlying files directly (`~/.valor/state.json`,
+`~/.valor/career_framework.md`). Do not retry the same command repeatedly.
+
 **Level definitions:** When coaching or running a command that needs career
 framework details, run `python3 ~/.valor/evidence_cli.py framework-slice`
 to get just the relevant level sections (not the full file).
@@ -129,7 +133,8 @@ Do NOT coach during pure Q&A, exploration, or trivial edits.
 
 Use `context.levels` for the level names, then run
 `python3 ~/.valor/evidence_cli.py framework-slice` to get the competency
-definitions for those levels. Also read company values from the output.
+definitions for those levels and company values (both are included in the
+output).
 
 All coaching MUST be grounded in those definitions. Do not invent expectations
 beyond what is listed in the framework file. When coaching, reference

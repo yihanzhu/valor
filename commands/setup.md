@@ -269,5 +269,7 @@ Then suggest next steps:
 | User's ladder has different competency axes | Map to the closest of the five axes, explain the mapping |
 | User doesn't know their level code | Help them identify it from the framework descriptions |
 | framework-slice returns "Not found" | Level code mismatch -- check if heading uses a different format (e.g. "L3" vs "IC3") |
+| framework-validate reports missing `## Levels` | The file has level headings but no `## Levels` section marker -- add `## Levels` on its own line above the first `### [Level]` heading |
+| framework-validate reports missing values | Add `## Company Values` section with `### [Value Name]` subsections |
 | state-set fails | Fall back to telling the user to edit state.json manually |
 | User wants to change one section only | Re-run that section, skip the rest (check current state first) |

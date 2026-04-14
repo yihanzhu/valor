@@ -862,6 +862,18 @@ def test_state_set_boolean_json(cli_db, capsys):
     assert state["flag"] is True
 
 
+def test_state_set_increment_non_numeric(cli_db, capsys):
+    """Increment on a non-numeric existing value resets to the delta."""
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({"count": "oops"}))
+    cmd_state_set(argparse.Namespace(pairs=["count", "+1"]))
+    state = json.loads((valor_home / "state.json").read_text())
+    assert state["count"] == 1
+    stderr = capsys.readouterr().err
+    assert "not numeric" in stderr.lower() or "Warning" in stderr
+
+
 # --- cmd_framework_slice ---
 
 def test_framework_slice_extracts_levels(cli_db, capsys):
@@ -889,6 +901,34 @@ def test_framework_slice_extracts_levels(cli_db, capsys):
     assert "Leads features." in output
     assert "Drives architecture." in output
     assert "Org-wide impact." not in output
+
+
+def test_framework_slice_includes_values(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({
+        "current_level": "L3",
+        "target_level": "L4",
+        "ceiling_level": "L5",
+    }))
+    (valor_home / "career_framework.md").write_text(
+        "# Career Framework\n\n"
+        "## Levels\n\n"
+        "### L3\n\nDoes basic work.\n\n"
+        "### L4\n\nLeads features.\n\n"
+        "### L5\n\nDrives architecture.\n\n"
+        "---\n\n"
+        "## Company Values\n\n"
+        "### Excellence\n\nWe strive for excellence.\n\n"
+        "### Teamwork\n\nWe work together.\n"
+    )
+    cmd_framework_slice(argparse.Namespace())
+    output = capsys.readouterr().out
+    assert "### L3" in output
+    assert "### L4" in output
+    assert "### Excellence" in output
+    assert "We strive for excellence." in output
+    assert "### Teamwork" in output
 
 
 def test_framework_slice_prefix_match(cli_db, capsys):

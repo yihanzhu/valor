@@ -642,7 +642,12 @@ def cmd_state_set(args: argparse.Namespace) -> None:
         if val.startswith("+") or (val.startswith("-") and len(val) > 1):
             try:
                 delta = int(val)
-                state[key] = state.get(key, 0) + delta
+                existing = state.get(key, 0)
+                if isinstance(existing, bool) or not isinstance(existing, (int, float)):
+                    print(f"Warning: '{key}' is {type(existing).__name__}, not numeric. "
+                          f"Resetting to {delta}.", file=sys.stderr)
+                    existing = 0
+                state[key] = existing + delta
                 continue
             except ValueError:
                 pass
@@ -672,25 +677,50 @@ def cmd_framework_slice(args: argparse.Namespace) -> None:
 
     content = fw_path.read_text()
     lines = content.split("\n")
-    sections: dict[str, str] = {}
+    level_sections: dict[str, str] = {}
+    values_lines: list[str] = []
     current_heading = ""
     current_lines: list[str] = []
+    current_h2 = ""
+    in_values = False
 
     for line in lines:
-        if line.startswith("### "):
+        if line.startswith("## "):
             if current_heading:
-                sections[current_heading] = "\n".join(current_lines)
+                if in_values:
+                    values_lines.extend(current_lines)
+                else:
+                    level_sections[current_heading] = "\n".join(current_lines)
+                current_heading = ""
+                current_lines = []
+            section_name = line[3:].strip().lower()
+            in_values = "value" in section_name
+            if in_values:
+                values_lines.append(line)
+            current_h2 = section_name
+        elif line.startswith("### "):
+            if current_heading:
+                if in_values:
+                    values_lines.extend(current_lines)
+                else:
+                    level_sections[current_heading] = "\n".join(current_lines)
             current_heading = line[4:].strip()
             current_lines = [line]
         elif current_heading:
             current_lines.append(line)
+        elif in_values:
+            values_lines.append(line)
+
     if current_heading:
-        sections[current_heading] = "\n".join(current_lines)
+        if in_values:
+            values_lines.extend(current_lines)
+        else:
+            level_sections[current_heading] = "\n".join(current_lines)
 
     output_parts: list[str] = []
     for level in levels_to_find:
         matched = None
-        for heading, body in sections.items():
+        for heading, body in level_sections.items():
             if heading == level or heading.startswith(f"{level} ") or heading.startswith(f"{level} -"):
                 matched = body
                 break
@@ -698,6 +728,11 @@ def cmd_framework_slice(args: argparse.Namespace) -> None:
             output_parts.append(matched)
         else:
             output_parts.append(f"### {level}\n\n(Not found in career framework)")
+
+    if values_lines:
+        values_text = "\n".join(values_lines).strip()
+        if values_text:
+            output_parts.append(values_text)
 
     print("\n\n".join(output_parts))
 
