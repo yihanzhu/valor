@@ -4,25 +4,25 @@
 Provides a clean interface for agents and users to interact with the evidence
 SQLite database, session context, and state management.
 
-Usage:
-    python3 evidence_cli.py context
-    python3 evidence_cli.py state-set last_briefing_date 2026-04-13 briefing_count +1
-    python3 evidence_cli.py framework-slice
-    python3 evidence_cli.py setup-status
-    python3 evidence_cli.py framework-validate
-    python3 evidence_cli.py add --activity pr_review --competency collaboration \
-        --statement "Reviewed cross-team PR #892" --agent valor-morning-briefing
-    python3 evidence_cli.py list --days 7
-    python3 evidence_cli.py search "PR review"
-    python3 evidence_cli.py export --format markdown --days 7
-    python3 evidence_cli.py stats
-    python3 evidence_cli.py status
-    python3 evidence_cli.py backup
-    python3 evidence_cli.py schema-version
-    python3 evidence_cli.py weekly-summary-save --week-start 2026-04-06 \
-        --week-end 2026-04-12 --summary '{"subject_matter": 3}' --narrative "Good week"
-    python3 evidence_cli.py weekly-summary-list --limit 4
-    python3 evidence_cli.py weekly-summary-get --week-start 2026-04-06
+Subcommands:
+    context               Session-start context blob (JSON)
+    state-set             Patch state.json key-value pairs (+N for increments)
+    framework-slice       Extract career framework for configured levels + values
+    setup-status          Check what setup steps are complete (JSON)
+    framework-validate    Validate career_framework.md structure (JSON)
+    add                   Record an evidence entry
+    list                  List evidence entries with filters
+    search                Full-text search on evidence statements
+    export                Export evidence (markdown or JSON)
+    stats                 Evidence totals, by-competency, this-week, by-agent
+    status                Valor home, version, levels, coaching mode, integrations
+    backup                Copy DB to ~/.valor/backups/ (keeps last 10)
+    schema-version        Show schema migration history
+    feedback-add          Record feedback for a coaching annotation
+    feedback-stats        Show feedback statistics
+    weekly-summary-save   Persist a weekly reflection summary
+    weekly-summary-list   List saved weekly summaries
+    weekly-summary-get    Get a specific weekly summary by week-start date
 """
 
 from __future__ import annotations

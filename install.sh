@@ -638,7 +638,11 @@ else
     echo "           career framework, levels, and integrations."
 fi
 echo ""
-echo "Integrations (auto-detected, reconfigure via /valor-setup):"
+if [ "$TARGET" = "claude-code" ]; then
+    echo "Integrations (auto-detected, reconfigure via /valor-setup):"
+else
+    echo "Integrations (auto-detected, reconfigure by saying 'set up valor'):"
+fi
 # Parse detected integrations for display
 python3 -c "
 import json

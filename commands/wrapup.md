@@ -86,11 +86,11 @@ today), skip the reconciliation against priorities.
    - Jira tickets updated
    - Cross-team coordination planned
    - Follow-up actions discussed
-3. Ask the user to confirm which drafted/planned activities were executed:
+4. Ask the user to confirm which drafted/planned activities were executed:
    "I see you drafted a Slack message and discussed updating a Confluence
    page. Did you end up doing these? Any other work today not captured
    in our session?"
-4. For each confirmed activity not already in the evidence store, record it:
+5. For each confirmed activity not already in the evidence store, record it:
    ```bash
    python3 ~/.valor/evidence_cli.py add \
      --activity <type> \

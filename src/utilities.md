@@ -93,6 +93,10 @@ booleans), and plain strings.
 
 ## State.json Fields Reference
 
+Fields marked "Installer" are seeded on install. All other fields are created
+on first use by their respective commands. The CLI safely defaults missing
+fields, so a fresh `state.json` with only installer fields is valid.
+
 | Field | Set by | Description |
 |-------|--------|-------------|
 | `current_level` | User config | Current career level (e.g. "L3") |
@@ -100,7 +104,7 @@ booleans), and plain strings.
 | `ceiling_level` | User config | One above target, bounds coaching (e.g. "L5") |
 | `github_owner` | User config | GitHub org for PR search |
 | `jira_projects` | User config | List of Jira project keys |
-| `coaching_mode` | Quiet mode toggle | `"ambient"`, `"quiet"`, or `"off"` |
+| `coaching_mode` | Coaching toggle | `"ambient"` (default) or `"off"`. `"quiet"` is per-conversation only and not persisted. |
 | `last_briefing_date` | Morning briefing | Date of last briefing (YYYY-MM-DD) |
 | `last_briefing_timestamp` | Morning briefing | ISO 8601 datetime of last briefing |
 | `briefing_count` | Morning briefing | Total briefings run |
