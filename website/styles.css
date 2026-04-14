@@ -502,14 +502,15 @@ pre {
 
 @media (max-width: 760px) {
   .shell {
-    width: min(calc(100% - 20px), var(--max));
-    padding-top: 16px;
+    width: min(calc(100% - 16px), var(--max));
+    padding-top: 14px;
+    padding-bottom: 56px;
   }
 
   .header {
     align-items: flex-start;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
   }
 
   .header-nav,
@@ -519,12 +520,35 @@ pre {
   }
 
   .header-nav {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .header-nav a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(9, 20, 37, 0.54);
   }
 
   .artifact-header {
     align-items: flex-start;
     flex-direction: column;
+    padding: 18px 18px 14px;
+  }
+
+  .artifact-meta {
+    white-space: normal;
+  }
+
+  .artifact-grid {
+    padding: 14px;
+    gap: 10px;
   }
 
   .footer {
@@ -534,7 +558,7 @@ pre {
 
   .hero,
   .section {
-    padding: 22px;
+    padding: 20px;
   }
 
   .hero h1 {
@@ -546,18 +570,83 @@ pre {
     font-size: clamp(1.15rem, 5.8vw, 1.45rem);
   }
 
+  .lede,
+  .section-copy,
+  .support-note,
+  .flow-step p,
+  .info-card p,
+  .doc-card p,
+  .artifact-block p:last-child {
+    font-size: 0.95rem;
+  }
+
+  .flow-step,
+  .info-card,
+  .doc-card,
+  .artifact-block {
+    padding: 16px;
+  }
+
+  .install-wrap {
+    display: grid;
+    gap: 10px;
+  }
+
+  .install-snippet {
+    padding: 18px;
+  }
+
   .button {
     width: 100%;
   }
 
   .copy-button {
-    width: 40px;
+    position: static;
+    transform: none;
+    justify-self: end;
+    min-height: 42px;
+    width: 42px;
+    border-radius: 14px;
   }
 
   .flow-arrow {
     display: none;
   }
 
+  .footer-links {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 520px) {
+  .hero,
+  .section {
+    padding: 18px;
+    border-radius: 24px;
+  }
+
+  .hero h1 {
+    font-size: clamp(1.58rem, 10.5vw, 2.05rem);
+  }
+
+  .eyebrow,
+  .section-tag {
+    font-size: 0.68rem;
+  }
+
+  .install-snippet {
+    font-size: 0.84rem;
+    line-height: 1.55;
+  }
+
+  .panel-label {
+    margin-bottom: 10px;
+  }
+
+  .footer-links {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
