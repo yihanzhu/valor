@@ -62,13 +62,42 @@ carry-forward items that should be recalled the next time the user starts work.
 If no carry-forward memory files exist, skip this step.
 Note which carry-forward items were addressed and which remain open.
 
-### 1.5 Activity Reconciliation
+### 1.5 Cross-Session Transcript Scan
 
-Cross-reference the morning briefing's suggested priorities and today's
-session transcripts against the evidence store. Activities often get drafted
-or planned in a Cursor session but executed outside it (e.g., Slack messages
-sent, Confluence pages updated, follow-ups posted). These are real work that
-should be captured.
+Agent transcripts are siloed per workspace. The current conversation only
+sees its own session. To capture the full day's work, scan ALL workspaces.
+
+**Discover today's sessions:**
+
+```bash
+python3 ~/.valor/collect_transcripts.py --days 1 --json
+```
+
+This returns a JSON array of all sessions from the past 24 hours across
+every Cursor workspace. Each entry has: `uuid`, `workspace`, `title`,
+`query_preview`, `mtime`, `file`, `size_kb`.
+
+**Process other sessions:** For each session that is NOT the current
+conversation, dispatch a `Task` subagent (`model: fast`, `readonly: true`)
+to read and summarize the transcript. The subagent prompt should be:
+
+> Read the agent transcript at `{file_path}`. Summarize what was accomplished
+> in this session: tasks completed, decisions made, PRs created, messages
+> drafted, cross-team interactions, open threads. Be specific -- include file
+> paths, PR numbers, ticket IDs. Return a structured bullet list.
+
+Run subagents in parallel (batch them in a single message). If there are
+more than 5 other sessions, prioritize by `size_kb` (larger = more work).
+
+**Merge results:** Combine subagent summaries with the current conversation
+context (section 1.1) to form the complete picture of the day's work.
+
+### 1.6 Activity Reconciliation
+
+Cross-reference the morning briefing's suggested priorities, today's
+evidence store, and the cross-session transcript summaries (section 1.5).
+Activities often get drafted or planned in one session but executed outside
+it (e.g., Slack messages sent, Confluence pages updated, follow-ups posted).
 
 **Load morning priorities from state:** Read `today_priorities` from
 `~/.valor/state.json`. This list is set by the morning briefing and
@@ -80,7 +109,8 @@ today), skip the reconciliation against priorities.
 1. List today's evidence entries from the evidence store (section 1.3).
 2. Compare against `today_priorities` -- which priorities were addressed?
    Which were not? Note unaddressed ones as carry-forward candidates.
-3. Review agent transcripts from today's sessions for:
+3. Review the merged transcript summaries (current session + other sessions)
+   for work not yet in the evidence store:
    - Messages drafted for Slack, email, or other channels
    - Confluence pages created or updated
    - Jira tickets updated
@@ -89,7 +119,7 @@ today), skip the reconciliation against priorities.
 4. Ask the user to confirm which drafted/planned activities were executed:
    "I see you drafted a Slack message and discussed updating a Confluence
    page. Did you end up doing these? Any other work today not captured
-   in our session?"
+   in our sessions?"
 5. For each confirmed activity not already in the evidence store, record it:
    ```bash
    python3 ~/.valor/evidence_cli.py add \
@@ -101,7 +131,7 @@ today), skip the reconciliation against priorities.
    ```
 
 This reconciliation step ensures the evidence store reflects actual work done,
-not just work done inside sessions.
+not just work done inside the current session.
 
 ## 2. Summarize the Day
 
@@ -208,4 +238,5 @@ python3 ~/.valor/evidence_cli.py state-set \
 | No git activity today | Use conversation context and evidence store only |
 | Evidence store empty | Proceed with conversation context and git log |
 | Memory file unavailable | Skip memory recall; present wrap-up only |
+| Transcript script missing/fails | Skip cross-session scan; use current session + evidence store |
 | State update fails | Continue; wrap-up is still valid |

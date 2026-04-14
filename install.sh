@@ -249,12 +249,14 @@ check_drift() {
     # Check runtime files
     local runtime_sources=(
         "$SCRIPT_DIR/src/evidence_cli.py"
+        "$SCRIPT_DIR/src/collect_transcripts.py"
         "$SCRIPT_DIR/src/career_framework.md"
         "$SCRIPT_DIR/src/utilities.md"
         "$SCRIPT_DIR/src/coaching-ref.md"
     )
     local runtime_dests=(
         "$VALOR_HOME/evidence_cli.py"
+        "$VALOR_HOME/collect_transcripts.py"
         "$VALOR_HOME/career_framework.md"
         "$VALOR_HOME/utilities.md"
         "$VALOR_HOME/coaching-ref.md"
@@ -473,6 +475,9 @@ else:
 
     cp "$SCRIPT_DIR/src/evidence_cli.py" "$VALOR_HOME/evidence_cli.py"
     echo "  [OK] evidence_cli.py"
+
+    cp "$SCRIPT_DIR/src/collect_transcripts.py" "$VALOR_HOME/collect_transcripts.py"
+    echo "  [OK] collect_transcripts.py"
 
     if [ ! -f "$VALOR_HOME/career_framework.md" ]; then
         cp "$SCRIPT_DIR/src/career_framework.md" "$VALOR_HOME/career_framework.md"
