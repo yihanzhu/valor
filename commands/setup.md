@@ -75,6 +75,10 @@ Rules for transformation:
 - If the source has fewer than 5 competency axes, infer reasonable
   expectations from the role summary and adjacent levels
 - If the source has more than 5, merge related ones into the closest axis
+- **Preserve detail**: each competency description should be 2-4 sentences
+  that capture the specific expectations from the source. Do NOT compress
+  multi-sentence descriptions into one-liners. Valor coaching references
+  these descriptions directly -- more detail means better coaching.
 - Include at least 3 levels (current, target, ceiling) -- more is fine
 - Include company values if the user provides them, as `### [Value Name]`
   sections under a `## Company Values` heading
