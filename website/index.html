@@ -38,21 +38,28 @@
               Built for work use. Core memory, evidence, and career framework stay
               on your machine, not in a Valor backend.
             </p>
+            <div class="hero-badges" aria-label="Supported hosts">
+              <span class="badge">Claude Code</span>
+              <span class="badge">Codex CLI</span>
+              <span class="badge">Cursor</span>
+            </div>
             <div class="install-wrap hero-install">
-              <pre class="install-snippet" id="install-command"><code>curl -fsSL https://raw.githubusercontent.com/yihanzhu/valor/main/install.sh | bash -s -- --clone</code></pre>
-              <button class="copy-button" type="button" data-copy-target="install-command" aria-label="Copy install command" title="Copy install command">
-                <span class="copy-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" focusable="false">
-                    <path d="M9 9h9v11H9z"></path>
-                    <path d="M6 4h9v2H8v9H6z"></path>
-                  </svg>
-                </span>
-              </button>
+              <p class="install-label">One-line install</p>
+              <div class="install-card">
+                <pre class="install-snippet" id="install-command"><code>curl -fsSL https://raw.githubusercontent.com/yihanzhu/valor/main/install.sh | bash -s -- --clone</code></pre>
+                <button class="copy-button" type="button" data-copy-target="install-command" aria-label="Copy install command" title="Copy install command">
+                  <span class="copy-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M9 9h9v11H9z"></path>
+                      <path d="M6 4h9v2H8v9H6z"></path>
+                    </svg>
+                  </span>
+                </button>
+              </div>
             </div>
             <p class="support-note">
-              Installs for all agents. Use <code>--target claude-code</code>,
-              <code>--target codex</code>, or <code>--target cursor</code> for a
-              single host.
+              One install, shared local state. Use <code>--target ...</code> if you
+              only want one host.
             </p>
             <div class="hero-actions">
               <a class="button button-primary" href="https://github.com/yihanzhu/valor/blob/main/docs/getting-started.md" target="_blank" rel="noreferrer">Get started</a>
@@ -146,20 +153,20 @@
               <p class="artifact-meta">Tuesday · 8:42 AM</p>
             </div>
 
-            <div class="artifact-grid">
-              <article class="artifact-block">
+            <div class="artifact-list">
+              <article class="artifact-row">
                 <p class="artifact-kicker">Primary focus</p>
                 <p>Land the auth retry fix before noon and post the rollout note in the incident thread.</p>
               </article>
-              <article class="artifact-block">
+              <article class="artifact-row">
                 <p class="artifact-kicker">Review queue</p>
                 <p>PR #418 needs a migration note before review. PR #421 looks unblocked and ready to merge.</p>
               </article>
-              <article class="artifact-block">
+              <article class="artifact-row">
                 <p class="artifact-kicker">Carry-forward</p>
                 <p>Yesterday's wrap-up flagged session cache risk across two tickets touching the same path.</p>
               </article>
-              <article class="artifact-block">
+              <article class="artifact-row">
                 <p class="artifact-kicker">Coaching nudge</p>
                 <p>This is next-level coordination work: reduce merge risk early and leave a handoff others can reuse.</p>
               </article>

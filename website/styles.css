@@ -195,7 +195,38 @@ pre {
   line-height: 1.5;
 }
 
-.install-wrap {
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.badge,
+.install-label {
+  font-family: "JetBrains Mono", "SFMono-Regular", "Menlo", "Consolas", monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(9, 20, 37, 0.48);
+  color: var(--text-soft);
+  font-size: 0.71rem;
+}
+
+.install-label {
+  margin: 0 0 10px;
+  color: var(--gold);
+  font-size: 0.72rem;
+}
+
+.install-card {
   position: relative;
 }
 
@@ -317,21 +348,20 @@ pre {
   white-space: nowrap;
 }
 
-.artifact-grid {
+.artifact-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  padding: 18px;
+  gap: 0;
 }
 
-.artifact-block {
-  border: 1px solid rgba(121, 179, 255, 0.12);
-  border-radius: 18px;
-  background: rgba(10, 21, 39, 0.72);
-  padding: 18px;
+.artifact-row {
+  padding: 18px 24px;
 }
 
-.artifact-block p:last-child {
+.artifact-row + .artifact-row {
+  border-top: 1px solid rgba(121, 179, 255, 0.1);
+}
+
+.artifact-row p:last-child {
   margin: 0;
   color: var(--text-soft);
   line-height: 1.68;
@@ -493,7 +523,6 @@ pre {
   }
 
   .agents-grid,
-  .artifact-grid,
   .docs-grid,
   .workday-flow {
     grid-template-columns: 1fr;
@@ -508,32 +537,30 @@ pre {
   }
 
   .header {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 12px;
+    align-items: center;
+    flex-direction: row;
+    gap: 10px;
+    padding-bottom: 18px;
   }
 
-  .header-nav,
-  .hero-actions,
-  .footer-links {
+  .hero-actions {
     width: 100%;
   }
 
   .header-nav {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+    width: auto;
   }
 
   .header-nav a {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 40px;
-    padding: 0 10px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: rgba(9, 20, 37, 0.54);
+    font-size: 0.8rem;
+    white-space: nowrap;
   }
 
   .artifact-header {
@@ -546,14 +573,15 @@ pre {
     white-space: normal;
   }
 
-  .artifact-grid {
-    padding: 14px;
-    gap: 10px;
+  .artifact-row {
+    padding: 16px 18px;
   }
 
   .footer {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
   }
 
   .hero,
@@ -576,14 +604,13 @@ pre {
   .flow-step p,
   .info-card p,
   .doc-card p,
-  .artifact-block p:last-child {
+  .artifact-row p:last-child {
     font-size: 0.95rem;
   }
 
   .flow-step,
   .info-card,
-  .doc-card,
-  .artifact-block {
+  .doc-card {
     padding: 16px;
   }
 
@@ -614,7 +641,19 @@ pre {
   }
 
   .footer-links {
-    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+    width: auto;
+  }
+
+  .footer p,
+  .footer a {
+    font-size: 0.8rem;
+    white-space: nowrap;
   }
 }
 
@@ -639,13 +678,30 @@ pre {
     line-height: 1.55;
   }
 
+  .brand-text {
+    font-size: 0.95rem;
+  }
+
+  .header-nav {
+    gap: 8px;
+  }
+
+  .header-nav a {
+    font-size: 0.76rem;
+  }
+
   .panel-label {
     margin-bottom: 10px;
   }
 
   .footer-links {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    display: flex;
+    gap: 8px;
+  }
+
+  .footer p,
+  .footer a {
+    font-size: 0.76rem;
   }
 }
 
