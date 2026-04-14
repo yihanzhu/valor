@@ -48,6 +48,7 @@ hardcoding one.
 | **Task Identifier**   | `/valor-tasks` or "what should I work on"      | High-impact work prioritized by career growth potential                         |
 | **Evening Wrap-up**   | Auto after 5pm, or `/valor-wrapup`             | Day summary, carry-forward items, and career reflection                         |
 | **1:1 Prep**          | `/valor-prep` or "prep for 1:1"                | Evidence-grounded prep document for manager 1:1s                                |
+| **Setup**             | `/valor-setup` or "set up valor"               | Guided career framework, level, and integration configuration                  |
 
 
 Beyond the discrete commands, Valor also supports **ambient coaching**. After a
@@ -135,29 +136,20 @@ configuration, and integration options, see
 
 ## First-Time Setup
 
-After install, configure two local files:
+After install, open your agent and run `/valor-setup` (or say "set up valor").
+The guided setup walks you through:
 
-**1. Career framework**: `~/.valor/career_framework.md`
+1. **Career framework** -- paste your company's career ladder (from a Google
+   Sheet, Confluence page, or any doc) and Valor structures it automatically
+2. **Level selection** -- pick your current and target levels
+3. **Integrations** -- configure GitHub org, Jira projects, and disable
+   tools you don't use
 
-Fill in your company's levels, competencies, and values. Valor uses these
-definitions for coaching instead of imposing its own career ladder.
+No career ladder handy? The setup can generate a generic engineering ladder
+to start with. You can re-run `/valor-setup` anytime to reconfigure.
 
-**2. State config**: `~/.valor/state.json`
-
-Example:
-
-```json
-{
-  "current_level": "L3",
-  "target_level": "L4",
-  "ceiling_level": "L5",
-  "github_owner": "YourGitHubOrg",
-  "jira_projects": ["PROJ1", "PROJ2"]
-}
-```
-
-When you get promoted, update the three level fields. The framework file can
-stay the same.
+When you get promoted, re-run setup or update the three level fields in
+`~/.valor/state.json` directly.
 
 ## Prerequisites
 
@@ -191,6 +183,7 @@ Commands:
 - `/valor-tasks`
 - `/valor-wrapup`
 - `/valor-prep`
+- `/valor-setup`
 
 Natural language also works:
 
@@ -201,6 +194,7 @@ Natural language also works:
 - "what should I work on"
 - "wrap up"
 - "prep for 1:1"
+- "set up valor"
 
 Ambient coaching controls:
 

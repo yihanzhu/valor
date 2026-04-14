@@ -8,6 +8,7 @@ Usage:
     python3 evidence_cli.py context
     python3 evidence_cli.py state-set last_briefing_date 2026-04-13 briefing_count +1
     python3 evidence_cli.py framework-slice
+    python3 evidence_cli.py setup-status
     python3 evidence_cli.py add --activity pr_review --competency collaboration \
         --statement "Reviewed cross-team PR #892" --agent valor-morning-briefing
     python3 evidence_cli.py list --days 7
@@ -700,6 +701,49 @@ def cmd_framework_slice(args: argparse.Namespace) -> None:
     print("\n\n".join(output_parts))
 
 
+TEMPLATE_MARKER = "[Level 1] - [Title]"
+
+
+def cmd_setup_status(args: argparse.Namespace) -> None:
+    state = _read_state()
+    fw_path = VALOR_HOME / "career_framework.md"
+
+    fw_exists = fw_path.exists()
+    fw_is_template = False
+    fw_levels: list[str] = []
+
+    if fw_exists:
+        content = fw_path.read_text()
+        fw_is_template = TEMPLATE_MARKER in content
+        in_levels_section = False
+        for line in content.split("\n"):
+            if line.startswith("## "):
+                section = line[3:].strip().lower()
+                in_levels_section = section == "levels"
+            elif line.startswith("### ") and in_levels_section:
+                heading = line[4:].strip()
+                if not heading.startswith("["):
+                    fw_levels.append(heading)
+
+    current = state.get("current_level", "")
+    target = state.get("target_level", "")
+    ceiling = state.get("ceiling_level", "")
+
+    result = {
+        "framework_exists": fw_exists,
+        "framework_is_template": fw_is_template,
+        "framework_levels": fw_levels,
+        "levels_configured": bool(current and target and ceiling),
+        "current_level": current,
+        "target_level": target,
+        "ceiling_level": ceiling,
+        "github_owner": state.get("github_owner", ""),
+        "jira_projects": state.get("jira_projects", []),
+        "integrations": state.get("integrations", {}),
+    }
+    print(json.dumps(result, indent=2))
+
+
 def cmd_schema_version(args: argparse.Namespace) -> None:
     conn = get_conn()
     ensure_schema(conn)
@@ -793,6 +837,8 @@ def main() -> None:
                              help="Key-value pairs (e.g. last_briefing_date 2026-04-13 briefing_count +1)")
     sub.add_parser("framework-slice",
                    help="Extract career framework sections for configured levels")
+    sub.add_parser("setup-status",
+                   help="Check what setup steps are complete (JSON)")
 
     args = parser.parse_args()
     commands = {
@@ -812,6 +858,7 @@ def main() -> None:
         "context": cmd_context,
         "state-set": cmd_state_set,
         "framework-slice": cmd_framework_slice,
+        "setup-status": cmd_setup_status,
     }
     commands[args.command](args)
 

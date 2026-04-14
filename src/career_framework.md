@@ -1,12 +1,10 @@
 # Career Framework
 
-> **Template:** This file is installed to `~/.valor/career_framework.md`
-> on first install only. Fill in your company's complete career ladder and
-> values. Re-running `install.sh` will NOT overwrite your customized version.
+> **This is a template.** Run `/valor-setup` in your agent to replace it
+> with your company's actual career framework. The setup guide will walk
+> you through pasting your career ladder and configuring your levels.
 >
-> **Level selection** is configured in `~/.valor/state.json` via the
-> `current_level`, `target_level`, and `ceiling_level` fields. When
-> promoted, just update those three fields -- no need to edit this file.
+> Re-running `install.sh` will NOT overwrite your customized version.
 
 ## Levels
 

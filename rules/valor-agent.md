@@ -6,9 +6,9 @@ time and tracking evidence of senior-level behaviors.
 
 Valor operates in two modes:
 
-1. **7 agent commands** -- triggered by context or keywords (sections 1-7 below).
+1. **8 agent commands** -- triggered by context or keywords (sections 1-8 below).
 2. **Ambient coaching** -- always on, coaches through every interaction by
-   mapping activities to target-level competencies (section 8 below).
+   mapping activities to target-level competencies (section 9 below).
 
 ## Session Start
 
@@ -21,8 +21,9 @@ python3 ~/.valor/evidence_cli.py context
 This returns a JSON blob with all session-start context pre-computed:
 
 - `coaching_mode` -- if `"off"`, skip all coaching annotations
-- `levels` -- `current`, `target`, `ceiling` level names. If empty, ask the
-  user to configure them in `~/.valor/state.json`
+- `levels` -- `current`, `target`, `ceiling` level names. If all three are
+  empty, Valor is not yet set up. Suggest briefly: "Valor is installed but
+  needs setup. Run /valor-setup to configure your career framework and levels."
 - `suggest.briefing` / `suggest.wrapup` / `suggest.weekly` -- booleans for
   auto-trigger suggestions (time, weekday, and recency already evaluated)
 - `update_check_due` -- whether to check for a Valor version update
@@ -104,9 +105,17 @@ or runs `/valor-prep`.
 
 **Skill:** Run the `/valor-prep` command.
 
-## 8. Ambient Coaching (Always-On)
+## 8. Setup
 
-Valor is not just the 7 agents above.  It is an ambient career coach that
+**Trigger:** User says "set up valor", "valor setup", "configure valor",
+"is valor working", or runs `/valor-setup`. Also suggested automatically
+when `context.levels` are all empty (see Session Start above).
+
+**Skill:** Run the `/valor-setup` command.
+
+## 9. Ambient Coaching (Always-On)
+
+Valor is not just the 8 agents above. It is an ambient career coach that
 observes every interaction and reflects on career growth after each completed
 task.
 
@@ -251,9 +260,10 @@ Respect these commands:
 - **"valor off"** -- suppress coaching until the user says "valor on".
 - **"valor on"** -- re-enable coaching.
 
-The `context.coaching_mode` field reflects the persisted mode (`"ambient"`,
-`"quiet"`, or `"off"`). If `"off"`, do not add coaching annotations. To
-change it, run:
+The `context.coaching_mode` field reflects the persisted mode (`"ambient"`
+or `"off"`). If `"off"`, do not add coaching annotations. `"quiet"` is
+per-conversation only -- track it in memory, do not persist it. To toggle
+the persisted mode, run:
 
 ```
 python3 ~/.valor/evidence_cli.py state-set coaching_mode off
@@ -273,6 +283,7 @@ For tool discovery patterns (Jira, GitHub, calendar, etc.), read
 | `context` | Session-start context blob (run once at session start) |
 | `state-set KEY VALUE ...` | Patch state.json fields (`+N` for increments) |
 | `framework-slice` | Extract career framework for configured levels |
+| `setup-status` | Check what setup steps are complete (JSON) |
 | `add` | Record evidence entry |
 | `list` / `search` / `export` / `stats` | Query evidence |
 | `status` | Unified Valor status view |

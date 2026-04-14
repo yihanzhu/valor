@@ -19,59 +19,33 @@ bash install.sh --target cursor           # Cursor only
 This creates `~/.valor/` for local state and evidence, and installs Valor's
 rule and commands into your coding agent.
 
-## 2. Configure Your Career Framework
+## 2. Run Setup
 
-Edit `~/.valor/career_framework.md` with your company's career ladder. The
-template has placeholder sections -- fill in your actual levels, competencies,
-and values.
+Open your agent and run `/valor-setup` (or say "set up valor"). The guided
+setup walks you through:
 
-If your company uses a standard engineering ladder (IC1-IC6 or L3-L8), map
-each level to the five competency areas:
+1. **Career framework** -- paste your company's career ladder and Valor
+   converts it into the right format with the five competency axes
+2. **Level selection** -- pick your current level and the one you're targeting
+3. **Integrations** -- configure GitHub org, Jira projects, and disable
+   tools you don't use
 
-- **Subject Matter Expertise** -- technical depth, code quality, system design
-- **Industry Knowledge** -- awareness of tools, methods, and trends
-- **Internal Collaboration** -- cross-team work, alignment, communication
-- **Autonomy & Scope** -- independent execution, design ownership
-- **Leadership** -- go-to expertise, mentoring, process improvement
+If you don't have your career ladder handy, the setup can generate a generic
+engineering ladder to start with. You can always re-run `/valor-setup` later.
 
-## 3. Set Your Levels
+### Manual setup (alternative)
 
-Edit `~/.valor/state.json`:
+If you prefer to configure manually:
 
-```json
-{
-  "current_level": "L3",
-  "target_level": "L4",
-  "ceiling_level": "L5"
-}
-```
+- Edit `~/.valor/career_framework.md` with your company's levels,
+  competencies, and values
+- Set `current_level`, `target_level`, `ceiling_level` in
+  `~/.valor/state.json` to match your framework's level codes
+- Disable integrations you don't have in `state.json` under `integrations`
 
-- `current_level`: where you are now
-- `target_level`: what you're working toward (coaching targets this)
-- `ceiling_level`: one above target (prevents over-coaching)
-
-When you get promoted, update these three fields.
-
-## 4. Disable Integrations You Don't Have
-
-The installer auto-detects GitHub (`gh` CLI) and sets the rest to `true`.
-Disable integrations you don't have in `~/.valor/state.json`:
-
-```json
-{
-  "integrations": {
-    "github": true,
-    "jira": false,
-    "calendar": false,
-    "news": false
-  }
-}
-```
-
-Disabled integrations are skipped silently -- no probing, no error messages.
 See [docs/integrations.md](integrations.md) for details on each integration.
 
-## 5. Try It Out
+## 3. Try It Out
 
 ### Ambient coaching (automatic)
 
@@ -111,7 +85,7 @@ python3 ~/.valor/evidence_cli.py export --days 7 --format markdown
 python3 ~/.valor/evidence_cli.py weekly-summary-list --limit 4
 ```
 
-## 6. Add Integrations Later
+## 4. Add Integrations Later
 
 As you connect more tools, enable them in `state.json`:
 

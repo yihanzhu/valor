@@ -25,6 +25,7 @@ from src.evidence_cli import (
     cmd_context,
     cmd_state_set,
     cmd_framework_slice,
+    cmd_setup_status,
     iso_week_bounds,
 )
 
@@ -934,3 +935,60 @@ def test_framework_slice_no_levels_configured(cli_db):
     (valor_home / "state.json").write_text(json.dumps({}))
     with pytest.raises(SystemExit):
         cmd_framework_slice(argparse.Namespace())
+
+
+# --- cmd_setup_status ---
+
+def test_setup_status_unedited_template(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({}))
+    (valor_home / "career_framework.md").write_text(
+        "# Career Framework\n\n"
+        "### [Level 1] - [Title]\n\nPlaceholder.\n\n"
+        "### [Level 2] - [Title]\n\nPlaceholder.\n"
+    )
+    cmd_setup_status(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["framework_exists"] is True
+    assert result["framework_is_template"] is True
+    assert result["framework_levels"] == []
+    assert result["levels_configured"] is False
+
+
+def test_setup_status_configured_framework(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({
+        "current_level": "L3",
+        "target_level": "L4",
+        "ceiling_level": "L5",
+        "github_owner": "MyOrg",
+        "jira_projects": ["PROJ"],
+    }))
+    (valor_home / "career_framework.md").write_text(
+        "# Career Framework\n\n"
+        "## Levels\n\n"
+        "### L3 - Engineer\n\nDoes work.\n\n"
+        "### L4 - Senior Engineer\n\nLeads work.\n\n"
+        "### L5 - Staff Engineer\n\nArchitecture.\n"
+    )
+    cmd_setup_status(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["framework_is_template"] is False
+    assert result["framework_levels"] == [
+        "L3 - Engineer", "L4 - Senior Engineer", "L5 - Staff Engineer"
+    ]
+    assert result["levels_configured"] is True
+    assert result["github_owner"] == "MyOrg"
+    assert result["jira_projects"] == ["PROJ"]
+
+
+def test_setup_status_no_framework_file(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({}))
+    cmd_setup_status(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["framework_exists"] is False
+    assert result["framework_levels"] == []
