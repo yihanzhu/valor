@@ -135,14 +135,14 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-# --- Handle --target all by re-invoking for each target ---
-if [ "$TARGET" = "all" ]; then
+RULE_SOURCE="$SCRIPT_DIR/rules/valor-agent.md"
+
+# --- Handle --target all --check by re-invoking per target (detailed output) ---
+if [ "$TARGET" = "all" ] && [ "$CHECK_ONLY" = true ]; then
     overall_exit=0
-    check_flag=""
-    [ "$CHECK_ONLY" = true ] && check_flag="--check"
     for t in claude-code codex cursor; do
         echo ""
-        bash "$SCRIPT_DIR/install.sh" --target "$t" $check_flag || overall_exit=$?
+        bash "$SCRIPT_DIR/install.sh" --target "$t" --check || overall_exit=$?
         echo ""
     done
     exit "$overall_exit"
@@ -158,12 +158,12 @@ elif [ "$TARGET" = "codex" ]; then
 elif [ "$TARGET" = "claude-code" ]; then
     CLAUDE_DIR="$HOME/.claude"
     CLAUDE_COMMANDS="$CLAUDE_DIR/commands"
+elif [ "$TARGET" = "all" ]; then
+    : # install path handled after function definitions below
 else
-    echo "Unknown target: $TARGET (use 'claude-code', 'codex', or 'cursor')"
+    echo "Unknown target: $TARGET (use 'claude-code', 'codex', 'cursor', or 'all')"
     exit 1
 fi
-
-RULE_SOURCE="$SCRIPT_DIR/rules/valor-agent.md"
 
 # --- Auto-detect available integrations ---
 # Only GitHub can be detected (gh CLI + auth). Jira, calendar, and news
@@ -402,28 +402,23 @@ check_drift() {
     return "$drift_count"
 }
 
-if [ "$CHECK_ONLY" = true ]; then
-    echo "=== Valor Drift Check ($TARGET) ==="
-    echo ""
-    check_drift
-    exit $?
-fi
+# --- Functions for --target all (single-pass install) ---
 
-echo "=== Valor Installer ($TARGET) ==="
-echo ""
+install_shared() {
+    echo "Shared:"
 
-# 1. Create ~/.valor/ for state and evidence storage
-mkdir -p "$VALOR_HOME"
-mkdir -p "$VALOR_HOME/carry-forward"
+    mkdir -p "$VALOR_HOME"
+    mkdir -p "$VALOR_HOME/carry-forward"
 
-DETECTED_INTEGRATIONS=$(detect_integrations)
+    local detected_intg
+    detected_intg=$(detect_integrations)
 
-STATE_SCHEMA_VERSION=3
+    local schema_version=3
 
-if [ ! -f "$VALOR_HOME/state.json" ]; then
-    cat > "$VALOR_HOME/state.json" <<STATEJSON
+    if [ ! -f "$VALOR_HOME/state.json" ]; then
+        cat > "$VALOR_HOME/state.json" <<STATEJSON
 {
-  "state_schema_version": $STATE_SCHEMA_VERSION,
+  "state_schema_version": $schema_version,
   "current_level": "",
   "target_level": "",
   "ceiling_level": "",
@@ -435,30 +430,26 @@ if [ ! -f "$VALOR_HOME/state.json" ]; then
   "user_work_areas_pinned": [],
   "github_owner": "",
   "jira_projects": [],
-  "integrations": $DETECTED_INTEGRATIONS,
+  "integrations": $detected_intg,
   "last_update_check": "",
   "update_check_interval_hours": 24
 }
 STATEJSON
-    echo "[OK] Created $VALOR_HOME/state.json (integrations auto-detected)"
-    echo "     ⚠️  Edit this file to set current_level, target_level, ceiling_level,"
-    echo "        github_owner, and jira_projects for your setup."
-else
-    # Migrate state.json to current schema
-    python3 -c "
+        echo "  [OK] state.json (created)"
+    else
+        local migrate_msg
+        migrate_msg=$(python3 -c "
 import json, sys
 state = json.loads(open(sys.argv[1]).read())
 target_version = int(sys.argv[2])
 current_version = state.get('state_schema_version', 1)
 changed = False
-# v1 -> v2: add integrations and state_schema_version
 if current_version < 2:
     if 'integrations' not in state:
         state['integrations'] = json.loads(sys.argv[3])
         changed = True
     if 'state_schema_version' not in state:
         changed = True
-# v2 -> v3: add auto-update fields
 if current_version < 3:
     if 'last_update_check' not in state:
         state['last_update_check'] = ''
@@ -471,103 +462,28 @@ if state.get('state_schema_version', 1) < target_version:
     changed = True
 if changed:
     open(sys.argv[1], 'w').write(json.dumps(state, indent=2))
-    print(f'[OK] state.json migrated to schema v{target_version}')
+    print(f'migrated to schema v{target_version}')
 else:
-    print('[OK] state.json already up to date')
-" "$VALOR_HOME/state.json" "$STATE_SCHEMA_VERSION" "$DETECTED_INTEGRATIONS"
-fi
-
-# 2. Copy evidence CLI and career framework to ~/.valor/
-cp "$SCRIPT_DIR/src/evidence_cli.py" "$VALOR_HOME/evidence_cli.py"
-echo "[OK] Installed evidence CLI -> $VALOR_HOME/evidence_cli.py"
-if [ ! -f "$VALOR_HOME/career_framework.md" ]; then
-    cp "$SCRIPT_DIR/src/career_framework.md" "$VALOR_HOME/career_framework.md"
-    echo "[OK] Installed career framework template -> $VALOR_HOME/career_framework.md"
-    echo "     ⚠️  Edit this file with your company's levels, competencies, and values."
-else
-    echo "[OK] Career framework exists (not overwritten) -> $VALOR_HOME/career_framework.md"
-fi
-cp "$SCRIPT_DIR/src/utilities.md" "$VALOR_HOME/utilities.md"
-echo "[OK] Installed utilities reference -> $VALOR_HOME/utilities.md"
-
-# 3. Install agent-specific files
-if [ "$TARGET" = "cursor" ]; then
-    mkdir -p "$AGENT_RULES"
-    generate_cursor_rule "$RULE_SOURCE" "$AGENT_RULES/valor-agent.mdc"
-    echo "[OK] Generated rule -> $AGENT_RULES/valor-agent.mdc"
-
-elif [ "$TARGET" = "codex" ]; then
-    mkdir -p "$CODEX_DIR"
-
-    MARKER_START="# --- BEGIN VALOR ---"
-    MARKER_END="# --- END VALOR ---"
-
-    if [ -f "$CODEX_DIR/AGENTS.md" ]; then
-        if grep -q "$MARKER_START" "$CODEX_DIR/AGENTS.md" 2>/dev/null; then
-            tmp_file=$(mktemp)
-            sed "/$MARKER_START/,/$MARKER_END/d" "$CODEX_DIR/AGENTS.md" > "$tmp_file"
-            mv "$tmp_file" "$CODEX_DIR/AGENTS.md"
-            echo "[OK] Removed old Valor section from AGENTS.md"
-        fi
+    print('up to date')
+" "$VALOR_HOME/state.json" "$schema_version" "$detected_intg" 2>/dev/null || echo "ok")
+        echo "  [OK] state.json ($migrate_msg)"
     fi
 
-    {
-        echo ""
-        echo "$MARKER_START"
-        generate_codex_rule_content "$RULE_SOURCE"
-        echo "$MARKER_END"
-    } >> "$CODEX_DIR/AGENTS.md"
-    echo "[OK] Installed Valor agent rule -> $CODEX_DIR/AGENTS.md (appended)"
+    cp "$SCRIPT_DIR/src/evidence_cli.py" "$VALOR_HOME/evidence_cli.py"
+    echo "  [OK] evidence_cli.py"
 
-elif [ "$TARGET" = "claude-code" ]; then
-    mkdir -p "$CLAUDE_DIR"
-    mkdir -p "$CLAUDE_COMMANDS"
-
-    MARKER_START="# --- BEGIN VALOR ---"
-    MARKER_END="# --- END VALOR ---"
-
-    if [ -f "$CLAUDE_DIR/CLAUDE.md" ]; then
-        if grep -q "$MARKER_START" "$CLAUDE_DIR/CLAUDE.md" 2>/dev/null; then
-            tmp_file=$(mktemp)
-            sed "/$MARKER_START/,/$MARKER_END/d" "$CLAUDE_DIR/CLAUDE.md" > "$tmp_file"
-            mv "$tmp_file" "$CLAUDE_DIR/CLAUDE.md"
-            echo "[OK] Removed old Valor section from CLAUDE.md"
-        fi
+    if [ ! -f "$VALOR_HOME/career_framework.md" ]; then
+        cp "$SCRIPT_DIR/src/career_framework.md" "$VALOR_HOME/career_framework.md"
+        echo "  [OK] career_framework.md (template installed)"
+    else
+        echo "  [OK] career_framework.md (exists, not overwritten)"
     fi
 
-    {
-        echo ""
-        echo "$MARKER_START"
-        cat "$RULE_SOURCE"
-        echo "$MARKER_END"
-    } >> "$CLAUDE_DIR/CLAUDE.md"
-    echo "[OK] Installed Valor agent rule -> $CLAUDE_DIR/CLAUDE.md (appended)"
+    cp "$SCRIPT_DIR/src/utilities.md" "$VALOR_HOME/utilities.md"
+    echo "  [OK] utilities.md"
 
-    for entry in "${COMMAND_MAP[@]}"; do
-        IFS=':' read -r src_name cc_name skill_name description <<< "$entry"
-        cp "$SCRIPT_DIR/commands/$src_name.md" "$CLAUDE_COMMANDS/$cc_name.md"
-        echo "[OK] Installed command -> $CLAUDE_COMMANDS/$cc_name.md"
-    done
-
-fi
-
-# Install skills (Codex and Cursor share the same generate_skill pipeline)
-if [ "$TARGET" = "codex" ] || [ "$TARGET" = "cursor" ]; then
-    SKILLS_ROOT=""
-    [ "$TARGET" = "codex" ] && SKILLS_ROOT="$CODEX_SKILLS"
-    [ "$TARGET" = "cursor" ] && SKILLS_ROOT="$AGENT_SKILLS"
-
-    for entry in "${COMMAND_MAP[@]}"; do
-        IFS=':' read -r src_name cc_name skill_name description <<< "$entry"
-        mkdir -p "$SKILLS_ROOT/$skill_name"
-        generate_skill "$SCRIPT_DIR/commands/$src_name.md" \
-            "$SKILLS_ROOT/$skill_name/SKILL.md" "$skill_name" "$description"
-        echo "[OK] Generated skill -> $SKILLS_ROOT/$skill_name/"
-    done
-fi
-
-# 4. Record installed version
-python3 -c "
+    # Record installed version
+    python3 -c "
 import json
 from datetime import datetime
 from pathlib import Path
@@ -578,85 +494,190 @@ if p.exists():
     state['installed_at'] = datetime.now().isoformat(timespec='seconds')
     p.write_text(json.dumps(state, indent=2))
 " 2>/dev/null
+}
 
-# 5. Post-install verification
-echo ""
-echo "=== Post-Install Verification ==="
-echo ""
-if check_drift; then
-    echo ""
-    echo "=== Installation Complete ($TARGET) ==="
-else
-    echo ""
-    echo "=== Installation Complete (with warnings) ==="
-fi
+install_target_compact() {
+    local t="$1"
+    local label=""
+    local cmd_count=${#COMMAND_MAP[@]}
 
-echo ""
-if [ "$TARGET" = "claude-code" ]; then
-    echo "Valor agents installed for Claude Code:"
-    echo "  1. Morning Briefing   -- auto-suggests before 11am, or /valor-briefing"
-    echo "  2. PR Review Coach    -- /valor-pr-review"
-    echo "  3. Design Doc Coach   -- /valor-design-doc"
-    echo "  4. Weekly Reflection   -- auto-suggests Friday, or /valor-weekly"
-    echo "  5. Task Identifier    -- /valor-tasks"
-    echo "  6. Evening Wrap-up   -- auto-suggests after 5pm, or /valor-wrapup"
-    echo "  7. 1:1 Prep           -- /valor-prep"
-    echo "  8. Setup              -- /valor-setup (run this first!)"
-    echo "  9. Ambient Coaching   -- always on (say 'valor quiet' to suppress)"
-elif [ "$TARGET" = "codex" ]; then
-    echo "Valor agents installed for Codex CLI:"
-    echo "  1. Morning Briefing   -- auto-suggests before 11am, or say 'morning briefing'"
-    echo "  2. PR Review Coach    -- say 'review PR #NNN' or 'help me review'"
-    echo "  3. Design Doc Coach   -- say 'design doc for TICKET' or 'how should I approach'"
-    echo "  4. Weekly Reflection   -- auto-suggests Friday, or say 'weekly reflection'"
-    echo "  5. Task Identifier    -- say 'what should I work on' or 'find me work'"
-    echo "  6. Evening Wrap-up   -- auto-suggests after 5pm, or say 'wrap up'"
-    echo "  7. 1:1 Prep           -- say 'prep for 1:1' or '1:1 prep'"
-    echo "  8. Setup              -- say 'set up valor' (run this first!)"
-    echo "  9. Ambient Coaching   -- always on (say 'valor quiet' to suppress)"
+    case "$t" in
+        claude-code)
+            label="Claude Code"
+            local cdir="$HOME/.claude"
+            local ccmds="$cdir/commands"
+            mkdir -p "$cdir" "$ccmds"
+
+            local marker_s="# --- BEGIN VALOR ---"
+            local marker_e="# --- END VALOR ---"
+            if [ -f "$cdir/CLAUDE.md" ] && grep -q "$marker_s" "$cdir/CLAUDE.md" 2>/dev/null; then
+                local tmp_f
+                tmp_f=$(mktemp)
+                sed "/$marker_s/,/$marker_e/d" "$cdir/CLAUDE.md" > "$tmp_f"
+                mv "$tmp_f" "$cdir/CLAUDE.md"
+            fi
+            { echo ""; echo "$marker_s"; cat "$RULE_SOURCE"; echo "$marker_e"; } >> "$cdir/CLAUDE.md"
+
+            for entry in "${COMMAND_MAP[@]}"; do
+                IFS=':' read -r src_name cc_name skill_name description <<< "$entry"
+                cp "$SCRIPT_DIR/commands/$src_name.md" "$ccmds/$cc_name.md"
+            done
+
+            echo "$label:"
+            echo "  [OK] Agent rule -> ~/.claude/CLAUDE.md"
+            echo "  [OK] $cmd_count commands -> ~/.claude/commands/"
+            ;;
+        codex)
+            label="Codex CLI"
+            local cdir="$HOME/.codex"
+            local cskills="$cdir/skills"
+            mkdir -p "$cdir"
+
+            local marker_s="# --- BEGIN VALOR ---"
+            local marker_e="# --- END VALOR ---"
+            if [ -f "$cdir/AGENTS.md" ] && grep -q "$marker_s" "$cdir/AGENTS.md" 2>/dev/null; then
+                local tmp_f
+                tmp_f=$(mktemp)
+                sed "/$marker_s/,/$marker_e/d" "$cdir/AGENTS.md" > "$tmp_f"
+                mv "$tmp_f" "$cdir/AGENTS.md"
+            fi
+            { echo ""; echo "$marker_s"; generate_codex_rule_content "$RULE_SOURCE"; echo "$marker_e"; } >> "$cdir/AGENTS.md"
+
+            for entry in "${COMMAND_MAP[@]}"; do
+                IFS=':' read -r src_name cc_name skill_name description <<< "$entry"
+                mkdir -p "$cskills/$skill_name"
+                generate_skill "$SCRIPT_DIR/commands/$src_name.md" \
+                    "$cskills/$skill_name/SKILL.md" "$skill_name" "$description"
+            done
+
+            echo "$label:"
+            echo "  [OK] Agent rule -> ~/.codex/AGENTS.md"
+            echo "  [OK] $cmd_count skills -> ~/.codex/skills/"
+            ;;
+        cursor)
+            label="Cursor"
+            local crules="$HOME/.cursor/rules"
+            local cskills="$HOME/.cursor/skills"
+            mkdir -p "$crules"
+
+            generate_cursor_rule "$RULE_SOURCE" "$crules/valor-agent.mdc"
+
+            for entry in "${COMMAND_MAP[@]}"; do
+                IFS=':' read -r src_name cc_name skill_name description <<< "$entry"
+                mkdir -p "$cskills/$skill_name"
+                generate_skill "$SCRIPT_DIR/commands/$src_name.md" \
+                    "$cskills/$skill_name/SKILL.md" "$skill_name" "$description"
+            done
+
+            echo "$label:"
+            echo "  [OK] Agent rule -> ~/.cursor/rules/valor-agent.mdc"
+            echo "  [OK] $cmd_count skills -> ~/.cursor/skills/"
+            ;;
+    esac
+}
+
+# Run check_drift for a target, only print DRIFT/MISSING lines (silent if clean)
+check_drift_quiet() {
+    local t="$1"
+    local saved_target="$TARGET"
+    TARGET="$t"
+    case "$t" in
+        cursor)
+            AGENT_RULES="$HOME/.cursor/rules"
+            AGENT_SKILLS="$HOME/.cursor/skills"
+            ;;
+        codex)
+            CODEX_DIR="$HOME/.codex"
+            CODEX_SKILLS="$CODEX_DIR/skills"
+            ;;
+        claude-code)
+            CLAUDE_DIR="$HOME/.claude"
+            CLAUDE_COMMANDS="$CLAUDE_DIR/commands"
+            ;;
+    esac
+    local output
+    output=$(check_drift 2>&1) || true
+    echo "$output" | grep -E '^\[(DRIFT|MISSING)' || true
+    TARGET="$saved_target"
+}
+
+print_summary_all() {
     echo ""
-    echo "Agent rule: $CODEX_DIR/AGENTS.md"
-    echo "Skills:     $CODEX_SKILLS/valor-*/"
-else
-    echo "Valor agents installed for Cursor:"
-    echo "  1. Morning Briefing   -- auto-suggests before 11am, or say 'morning briefing'"
-    echo "  2. PR Review Coach    -- say 'review PR #NNN' or 'help me review'"
-    echo "  3. Design Doc Coach   -- say 'design doc for TICKET' or 'how should I approach'"
-    echo "  4. Weekly Reflection   -- auto-suggests Friday, or say 'weekly reflection'"
-    echo "  5. Task Identifier    -- say 'what should I work on' or 'find me work'"
-    echo "  6. Evening Wrap-up   -- auto-suggests after 5pm, or say 'wrap up'"
-    echo "  7. 1:1 Prep           -- say 'prep for 1:1' or '1:1 prep'"
-    echo "  8. Setup              -- say 'set up valor' (run this first!)"
-    echo "  9. Ambient Coaching   -- always on (say 'valor quiet' to suppress)"
-fi
-echo ""
-if [ "$TARGET" = "claude-code" ]; then
-    echo "Next step: open your agent and run /valor-setup to configure your"
-    echo "           career framework, levels, and integrations."
-else
-    echo "Next step: open your agent and say 'set up valor' to configure your"
-    echo "           career framework, levels, and integrations."
-fi
-echo ""
-if [ "$TARGET" = "claude-code" ]; then
-    echo "Integrations (auto-detected, reconfigure via /valor-setup):"
-else
-    echo "Integrations (auto-detected, reconfigure by saying 'set up valor'):"
-fi
-# Parse detected integrations for display
-python3 -c "
+    echo "=== Installed (v$VALOR_VERSION) ==="
+    echo ""
+    echo "Agents:"
+    echo "  1. Morning Briefing  -- auto-suggests before 11am"
+    echo "  2. PR Review Coach   -- 'review PR #NNN'"
+    echo "  3. Design Doc Coach  -- 'design doc for TICKET'"
+    echo "  4. Weekly Reflection -- auto-suggests Friday"
+    echo "  5. Task Identifier   -- 'what should I work on'"
+    echo "  6. Evening Wrap-up   -- auto-suggests after 5pm"
+    echo "  7. 1:1 Prep          -- 'prep for 1:1'"
+    echo "  8. Setup             -- /valor-setup or 'set up valor'"
+    echo "  9. Ambient Coaching  -- always on ('valor quiet' to suppress)"
+    echo ""
+    echo "Next step: run /valor-setup (or say 'set up valor') in your agent"
+    echo ""
+    echo "Integrations:"
+    python3 -c "
 import json
 from pathlib import Path
 state = json.loads((Path.home() / '.valor' / 'state.json').read_text())
 intg = state.get('integrations', {})
-labels = {'github': 'GitHub (gh CLI)', 'jira': 'Jira/Atlassian', 'calendar': 'Google Calendar', 'news': 'Web news'}
-for key, label in labels.items():
-    status = 'enabled' if intg.get(key, False) else 'disabled'
+parts = []
+for key, label in [('github', 'GitHub'), ('jira', 'Jira'), ('calendar', 'Calendar'), ('news', 'News')]:
     icon = '✓' if intg.get(key, False) else '✗'
-    print(f'  {icon} {label}: {status}')
-" 2>/dev/null || echo "  (could not read integrations from state.json)"
+    parts.append(f'{icon} {label}')
+print('  ' + '    '.join(parts))
+" 2>/dev/null || echo "  (could not read integrations)"
+    echo ""
+    echo "Data: $VALOR_HOME/"
+}
+
+# --- Handle --target all install (single-pass, compact output) ---
+if [ "$TARGET" = "all" ]; then
+    echo ""
+    echo "=== Valor Installer ==="
+    echo ""
+    install_shared
+    echo ""
+    for t in claude-code codex cursor; do
+        install_target_compact "$t"
+    done
+    # Quiet drift check -- only show problems (deduplicate shared-file lines)
+    drift_issues=""
+    for t in claude-code codex cursor; do
+        drift_issues+="$(check_drift_quiet "$t")"$'\n'
+    done
+    drift_issues=$(echo "$drift_issues" | sort -u | sed '/^$/d')
+    if [ -n "$drift_issues" ]; then
+        echo ""
+        echo "Drift detected:"
+        echo "$drift_issues"
+    fi
+    print_summary_all
+    exit 0
+fi
+
+# --- Single-target flow below ---
+
+if [ "$CHECK_ONLY" = true ]; then
+    echo "=== Valor Drift Check ($TARGET) ==="
+    echo ""
+    check_drift
+    exit $?
+fi
+
+echo "=== Valor Installer ($TARGET) ==="
 echo ""
-echo "State & evidence stored at: $VALOR_HOME/"
-echo "Evidence CLI: python3 $VALOR_HOME/evidence_cli.py stats"
+install_shared
 echo ""
-echo "Tip: Run './install.sh --target $TARGET --check' anytime to verify installed files match the repo."
+install_target_compact "$TARGET"
+# Quiet drift check -- only show problems
+drift_issues=$(check_drift_quiet "$TARGET")
+if [ -n "$drift_issues" ]; then
+    echo ""
+    echo "Drift detected:"
+    echo "$drift_issues"
+fi
+print_summary_all

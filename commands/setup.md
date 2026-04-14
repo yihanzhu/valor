@@ -256,8 +256,23 @@ Calendar:         [enabled/disabled]
 News:             [enabled/disabled]
 ```
 
-Then suggest next steps:
+Then show the available agents and suggest next steps:
+
+```
+Your Valor agents:
+  1. Morning Briefing  -- auto-suggests before 11am
+  2. PR Review Coach   -- 'review PR #NNN'
+  3. Design Doc Coach  -- 'design doc for TICKET'
+  4. Weekly Reflection -- auto-suggests Friday
+  5. Task Identifier   -- 'what should I work on'
+  6. Evening Wrap-up   -- auto-suggests after 5pm
+  7. 1:1 Prep          -- 'prep for 1:1'
+  8. Setup             -- /valor-setup or 'set up valor'
+  9. Ambient Coaching  -- always on ('valor quiet' to suppress)
+```
+
 - "Try: 'morning briefing' to see your first briefing"
+- "Agents 1, 4, and 6 auto-suggest at the right time -- just start a conversation"
 - "Say 'valor quiet' anytime to suppress coaching for a conversation"
 - "Say 'valor off' to disable coaching entirely (re-enable with 'valor on')"
 
