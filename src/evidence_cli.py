@@ -7,6 +7,7 @@ SQLite database, session context, and state management.
 Subcommands:
     context               Session-start context blob (JSON)
     state-set             Patch state.json key-value pairs (+N for increments)
+    state-migrate         Persist pending state.json schema migrations
     framework-slice       Extract career framework for configured levels + values
     setup-status          Check what setup steps are complete (JSON)
     framework-validate    Validate career_framework.md structure (JSON)
@@ -38,6 +39,10 @@ from pathlib import Path
 
 DB_PATH = Path.home() / ".valor" / "evidence.sqlite"
 BACKUP_DIR = Path.home() / ".valor" / "backups"
+
+STATE_SCHEMA_VERSION = 4
+
+ROUTINE_SLOTS = ("briefing", "wrapup", "weekly", "prep")
 
 VALID_COMPETENCIES = (
     "subject_matter",
@@ -519,17 +524,49 @@ def cmd_weekly_summary_get(args: argparse.Namespace) -> None:
 VALOR_HOME = Path.home() / ".valor"
 
 
+def _migrate_state_in_memory(state: dict) -> dict:
+    """Return state with current-schema keys ensured.
+
+    Non-destructive: only adds missing keys, never overwrites existing values.
+    Idempotent — safe to call on already-migrated state.
+    """
+    if "routines" not in state or not isinstance(state.get("routines"), dict):
+        state["routines"] = {}
+    if "manager" not in state:
+        state["manager"] = None
+    if "host" not in state:
+        state["host"] = None
+    state["state_schema_version"] = STATE_SCHEMA_VERSION
+    return state
+
+
 def _read_state() -> dict:
     state_path = VALOR_HOME / "state.json"
     if state_path.exists():
-        return json.loads(state_path.read_text())
-    return {}
+        state = json.loads(state_path.read_text())
+    else:
+        state = {}
+    return _migrate_state_in_memory(state)
 
 
 def _write_state(state: dict) -> None:
     state_path = VALOR_HOME / "state.json"
     state_path.parent.mkdir(parents=True, exist_ok=True)
     state_path.write_text(json.dumps(state, indent=2))
+
+
+def cmd_state_migrate(args: argparse.Namespace) -> None:
+    """Persist any pending state.json schema migrations.
+
+    Reads state (which auto-migrates in memory), then writes it back so the
+    on-disk file matches the current schema. Idempotent.
+    """
+    state = _read_state()
+    _write_state(state)
+    print(json.dumps({
+        "status": "ok",
+        "state_schema_version": state.get("state_schema_version"),
+    }))
 
 
 def cmd_context(args: argparse.Namespace) -> None:
@@ -606,6 +643,12 @@ def cmd_context(args: argparse.Namespace) -> None:
         except ValueError:
             pass
 
+    routines_state = state.get("routines", {}) or {}
+    routines_enabled = sorted(
+        slot for slot in ROUTINE_SLOTS
+        if routines_state.get(slot, {}).get("enabled")
+    )
+
     result = {
         "coaching_mode": state.get("coaching_mode", "ambient"),
         "levels": levels,
@@ -627,6 +670,13 @@ def cmd_context(args: argparse.Namespace) -> None:
         "github_owner": state.get("github_owner", ""),
         "jira_projects": state.get("jira_projects", []),
         "user_work_areas": work_areas,
+        "host": state.get("host") or "",
+        "manager_set": bool(
+            (state.get("manager") or {}).get("email")
+            or (state.get("manager") or {}).get("name")
+        ),
+        "routines_enabled": routines_enabled,
+        "state_schema_version": state.get("state_schema_version", STATE_SCHEMA_VERSION),
     }
     print(json.dumps(result, indent=2))
 
@@ -763,6 +813,20 @@ def cmd_setup_status(args: argparse.Namespace) -> None:
     target = state.get("target_level", "")
     ceiling = state.get("ceiling_level", "")
 
+    routines = state.get("routines", {}) or {}
+    routines_summary = {
+        slot: {
+            "enabled": bool(routines.get(slot, {}).get("enabled")),
+            "task_id": routines.get(slot, {}).get("task_id", ""),
+            "cron": routines.get(slot, {}).get("cron", ""),
+            "host": routines.get(slot, {}).get("host", ""),
+            "last_provisioned_at": routines.get(slot, {}).get("last_provisioned_at", ""),
+        }
+        for slot in ROUTINE_SLOTS
+    }
+
+    manager = state.get("manager") or {}
+
     result = {
         "framework_exists": fw_exists,
         "framework_is_template": fw_is_template,
@@ -774,6 +838,9 @@ def cmd_setup_status(args: argparse.Namespace) -> None:
         "github_owner": state.get("github_owner", ""),
         "jira_projects": state.get("jira_projects", []),
         "integrations": state.get("integrations", {}),
+        "manager_set": bool(manager and (manager.get("email") or manager.get("name"))),
+        "host": state.get("host") or "",
+        "routines": routines_summary,
     }
     print(json.dumps(result, indent=2))
 
@@ -982,6 +1049,8 @@ def main() -> None:
                    help="Check what setup steps are complete (JSON)")
     sub.add_parser("framework-validate",
                    help="Validate career_framework.md structure (JSON)")
+    sub.add_parser("state-migrate",
+                   help="Persist any pending state.json schema migrations (idempotent)")
 
     args = parser.parse_args()
     commands = {
@@ -1000,6 +1069,7 @@ def main() -> None:
         "weekly-summary-get": cmd_weekly_summary_get,
         "context": cmd_context,
         "state-set": cmd_state_set,
+        "state-migrate": cmd_state_migrate,
         "framework-slice": cmd_framework_slice,
         "setup-status": cmd_setup_status,
         "framework-validate": cmd_framework_validate,

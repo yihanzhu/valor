@@ -24,10 +24,13 @@ from src.evidence_cli import (
     cmd_weekly_summary_get,
     cmd_context,
     cmd_state_set,
+    cmd_state_migrate,
     cmd_framework_slice,
     cmd_setup_status,
     cmd_framework_validate,
     iso_week_bounds,
+    STATE_SCHEMA_VERSION,
+    _migrate_state_in_memory,
 )
 
 
@@ -1033,6 +1036,155 @@ def test_setup_status_no_framework_file(cli_db, capsys):
     result = json.loads(capsys.readouterr().out)
     assert result["framework_exists"] is False
     assert result["framework_levels"] == []
+
+
+def test_setup_status_includes_routines_and_manager_fields(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({}))
+    cmd_setup_status(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    # New v4 fields are always present in the output, even with empty state.
+    assert result["manager_set"] is False
+    assert result["host"] == ""
+    assert set(result["routines"].keys()) == {"briefing", "wrapup", "weekly", "prep"}
+    for slot in ("briefing", "wrapup", "weekly", "prep"):
+        assert result["routines"][slot]["enabled"] is False
+        assert result["routines"][slot]["task_id"] == ""
+
+
+def test_setup_status_reflects_configured_routines_and_manager(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({
+        "manager": {"email": "manager@example.com", "name": "Sam"},
+        "host": "claude-code",
+        "routines": {
+            "briefing": {
+                "enabled": True,
+                "host": "claude-code",
+                "task_id": "valor-morning-briefing",
+                "cron": "0 9 * * 1-5",
+                "last_provisioned_at": "2026-04-30T09:00:00-04:00",
+            },
+        },
+    }))
+    cmd_setup_status(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["manager_set"] is True
+    assert result["host"] == "claude-code"
+    assert result["routines"]["briefing"]["enabled"] is True
+    assert result["routines"]["briefing"]["task_id"] == "valor-morning-briefing"
+    assert result["routines"]["briefing"]["cron"] == "0 9 * * 1-5"
+    # Slots not configured stay falsey.
+    assert result["routines"]["prep"]["enabled"] is False
+
+
+# --- cmd_state_migrate / _migrate_state_in_memory ---
+
+
+def test_migrate_state_in_memory_adds_missing_v4_fields():
+    state = {"current_level": "L3"}
+    migrated = _migrate_state_in_memory(state)
+    assert migrated["routines"] == {}
+    assert migrated["manager"] is None
+    assert migrated["host"] is None
+    assert migrated["state_schema_version"] == STATE_SCHEMA_VERSION
+    # Existing keys are preserved.
+    assert migrated["current_level"] == "L3"
+
+
+def test_migrate_state_in_memory_preserves_existing_values():
+    state = {
+        "manager": {"email": "manager@example.com", "name": "Sam"},
+        "host": "claude-code",
+        "routines": {"briefing": {"enabled": True}},
+        "state_schema_version": 4,
+    }
+    migrated = _migrate_state_in_memory(state)
+    assert migrated["manager"] == {"email": "manager@example.com", "name": "Sam"}
+    assert migrated["host"] == "claude-code"
+    assert migrated["routines"] == {"briefing": {"enabled": True}}
+
+
+def test_migrate_state_in_memory_repairs_non_dict_routines():
+    """Defensive: if routines is somehow not a dict, replace with empty dict."""
+    state = {"routines": "garbage"}
+    migrated = _migrate_state_in_memory(state)
+    assert migrated["routines"] == {}
+
+
+def test_state_migrate_persists_v4_fields(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    state_path = valor_home / "state.json"
+    state_path.write_text(json.dumps({"current_level": "L3"}))
+    cmd_state_migrate(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["status"] == "ok"
+    assert result["state_schema_version"] == STATE_SCHEMA_VERSION
+
+    on_disk = json.loads(state_path.read_text())
+    assert on_disk["routines"] == {}
+    assert on_disk["manager"] is None
+    assert on_disk["host"] is None
+    assert on_disk["state_schema_version"] == STATE_SCHEMA_VERSION
+    assert on_disk["current_level"] == "L3"
+
+
+def test_state_migrate_is_idempotent(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    state_path = valor_home / "state.json"
+    state_path.write_text(json.dumps({
+        "manager": {"email": "manager@example.com"},
+        "routines": {"briefing": {"enabled": True}},
+        "host": "claude-code",
+        "state_schema_version": STATE_SCHEMA_VERSION,
+    }))
+    cmd_state_migrate(argparse.Namespace())
+    capsys.readouterr()  # discard
+    cmd_state_migrate(argparse.Namespace())
+    capsys.readouterr()
+    on_disk = json.loads(state_path.read_text())
+    assert on_disk["manager"] == {"email": "manager@example.com"}
+    assert on_disk["routines"] == {"briefing": {"enabled": True}}
+    assert on_disk["host"] == "claude-code"
+
+
+def test_state_migrate_handles_missing_state_file(cli_db, capsys):
+    """If no state.json exists yet, migrate should create one with defaults."""
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    state_path = valor_home / "state.json"
+    if state_path.exists():
+        state_path.unlink()
+    cmd_state_migrate(argparse.Namespace())
+    capsys.readouterr()
+    on_disk = json.loads(state_path.read_text())
+    assert on_disk["routines"] == {}
+    assert on_disk["manager"] is None
+    assert on_disk["host"] is None
+
+
+def test_context_includes_routines_enabled_and_manager_set(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({
+        "manager": {"email": "manager@example.com", "name": "Sam"},
+        "host": "claude-code",
+        "routines": {
+            "briefing": {"enabled": True, "task_id": "valor-morning-briefing"},
+            "wrapup": {"enabled": False, "task_id": ""},
+            "prep": {"enabled": True, "task_id": "valor-prep"},
+        },
+    }))
+    cmd_context(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["manager_set"] is True
+    assert result["host"] == "claude-code"
+    assert result["routines_enabled"] == ["briefing", "prep"]
+    assert result["state_schema_version"] == STATE_SCHEMA_VERSION
 
 
 # --- cmd_framework_validate ---
