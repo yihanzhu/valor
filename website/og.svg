@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0c0e15"/>
+      <stop offset="100%" stop-color="#06070a"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="0%" r="55%">
+      <stop offset="0%" stop-color="#f4d177" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#f4d177" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe09a"/>
+      <stop offset="100%" stop-color="#f4d177"/>
+    </linearGradient>
+    <pattern id="grid" x="0" y="0" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" fill="none" stroke="#ffffff" stroke-opacity="0.04" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <!-- mark -->
+  <g transform="translate(96 200)">
+    <path d="M0 0 L42 130 L62 60 L82 130 L124 0"
+          fill="none"
+          stroke="url(#accent)"
+          stroke-width="14"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="260" y="320"
+        font-family="Inter, system-ui, -apple-system, sans-serif"
+        font-weight="800"
+        font-size="148"
+        letter-spacing="-6"
+        fill="#ffffff">valor</text>
+
+  <!-- tagline -->
+  <text x="96" y="400"
+        font-family="Inter, system-ui, -apple-system, sans-serif"
+        font-weight="600"
+        font-size="42"
+        letter-spacing="-1"
+        fill="#e9edf4">The career layer that lives inside your <tspan fill="#f4d177">coding agent</tspan>.</text>
+
+  <text x="96" y="450"
+        font-family="Inter, system-ui, -apple-system, sans-serif"
+        font-weight="400"
+        font-size="26"
+        fill="#a3acc0">Local-first coaching for Claude Code, Codex CLI, and Cursor.</text>
+
+  <!-- terminal pill -->
+  <g transform="translate(96 510)">
+    <rect width="1008" height="64" rx="12" fill="#11141b" stroke="#ffffff" stroke-opacity="0.14"/>
+    <circle cx="28" cy="32" r="6" fill="#ff5f56"/>
+    <circle cx="50" cy="32" r="6" fill="#ffbd2e"/>
+    <circle cx="72" cy="32" r="6" fill="#27c93f"/>
+    <text x="108" y="41"
+          font-family="JetBrains Mono, ui-monospace, Menlo, monospace"
+          font-size="22"
+          fill="#e9edf4"><tspan fill="#f4d177">$</tspan> curl -fsSL https://valor.sh/install.sh | bash -s -- --clone</text>
+  </g>
+
+  <!-- version -->
+  <text x="1104" y="80"
+        font-family="JetBrains Mono, ui-monospace, Menlo, monospace"
+        font-size="20"
+        text-anchor="end"
+        fill="#6c7689">v0.4.0 · Apache-2.0</text>
+</svg>
