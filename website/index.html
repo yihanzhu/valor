@@ -112,7 +112,7 @@
               <div class="chat-body">
                 <div class="chat-user">
                   <span class="chat-role">You</span>
-                  <span class="chat-msg">/valor-briefing</span>
+                  <span class="chat-msg">start my day</span>
                 </div>
                 <div class="chat-agent">
                   <span class="chat-role chat-role-agent">Valor</span>
@@ -185,8 +185,8 @@
         <div class="container">
           <header class="band-head">
             <p class="eyebrow">Features</p>
-            <h2 id="features-h">Slash commands inside your agent. No new app to open.</h2>
-            <p class="band-lede">Eight on-demand workflows plus ambient coaching, all running against a local evidence store. No dashboards, no telemetry.</p>
+            <h2 id="features-h">Just talk to your agent. Valor knows what you mean.</h2>
+            <p class="band-lede">Eight on-demand workflows plus ambient coaching, triggered by natural language. No commands to memorize. All running against a local evidence store — no dashboards, no telemetry.</p>
           </header>
 
           <div class="feature-row">
@@ -194,9 +194,10 @@
               <p class="feature-tag">Morning</p>
               <h3>Start the day with priorities, not inbox.</h3>
               <p>
-                <code>/valor-briefing</code> pulls open Jira tickets, your PR queue,
-                today's calendar, and yesterday's carry-forward — then proposes a
-                focus order grounded in your target-level competencies.
+                Say <em>"start my day"</em> and Valor pulls open Jira tickets,
+                your PR queue, today's calendar, and yesterday's carry-forward
+                — then proposes a focus order grounded in your target-level
+                competencies.
               </p>
               <a class="link-arrow" href="https://github.com/yihanzhu/valor/blob/main/commands/briefing.md" rel="noreferrer">See the spec <span aria-hidden="true">→</span></a>
             </div>
@@ -208,7 +209,7 @@
               <div class="chat-body">
                 <div class="chat-user">
                   <span class="chat-role">You</span>
-                  <span class="chat-msg">/valor-briefing</span>
+                  <span class="chat-msg">start my day</span>
                 </div>
                 <div class="chat-agent">
                   <span class="chat-role chat-role-agent">Valor</span>
@@ -238,9 +239,10 @@
               <p class="feature-tag">In flow</p>
               <h3>Senior-level review, before you hit "Request changes".</h3>
               <p>
-                <code>/valor-pr-review</code> walks architecture, blast radius,
-                test gaps, and tone of the review itself. <code>/valor-design-doc</code>
-                does the same for design — options, trade-offs, and what to
+                Ask your agent to <em>"help me review PR #418"</em> and Valor
+                walks architecture, blast radius, test gaps, and tone of the
+                review itself. Say <em>"design doc for PROJ-123"</em> and you
+                get the same for design — options, trade-offs, and what to
                 explicitly punt.
               </p>
               <a class="link-arrow" href="https://github.com/yihanzhu/valor/blob/main/commands/pr-review.md" rel="noreferrer">PR review playbook <span aria-hidden="true">→</span></a>
@@ -253,7 +255,7 @@
               <div class="chat-body">
                 <div class="chat-user">
                   <span class="chat-role">You</span>
-                  <span class="chat-msg">/valor-pr-review #418</span>
+                  <span class="chat-msg">help me review PR #418</span>
                 </div>
                 <div class="chat-agent">
                   <span class="chat-role chat-role-agent">Valor</span>
@@ -282,9 +284,9 @@
               <p class="feature-tag">Wrap-up</p>
               <h3>End the day with carry-forward, not loose ends.</h3>
               <p>
-                <code>/valor-wrapup</code> reads the day's conversation, git
-                history, and evidence — then writes a handoff file you (or
-                tomorrow-you) can pick up cold.
+                Say <em>"wrap up"</em> or <em>"call it a day"</em> and Valor
+                reads the day's conversation, git history, and evidence — then
+                writes a handoff file you (or tomorrow-you) can pick up cold.
               </p>
               <a class="link-arrow" href="https://github.com/yihanzhu/valor/blob/main/commands/wrapup.md" rel="noreferrer">Wrap-up spec <span aria-hidden="true">→</span></a>
             </div>
@@ -296,7 +298,7 @@
               <div class="chat-body">
                 <div class="chat-user">
                   <span class="chat-role">You</span>
-                  <span class="chat-msg">/valor-wrapup</span>
+                  <span class="chat-msg">wrap up</span>
                 </div>
                 <div class="chat-agent">
                   <span class="chat-role chat-role-agent">Valor</span>
@@ -345,20 +347,20 @@
             <li class="rail-step">
               <p class="rail-num">02</p>
               <h3>Configure in your agent</h3>
-              <p>Paste your career ladder. Pick your level. Done.</p>
+              <p>Say <em>"set up valor"</em>. Paste your career ladder. Pick your level. Done.</p>
               <div class="rail-slash">
-                <span class="rail-slash-pill">/valor-setup</span>
+                <span class="rail-phrase-pill">set up valor</span>
                 <p class="rail-slash-note">guided framework, level &amp; integrations</p>
               </div>
             </li>
             <li class="rail-step">
               <p class="rail-num">03</p>
               <h3>Use it as you work</h3>
-              <p>Ambient coaching plus on-demand workflows — all inside your agent.</p>
+              <p>Talk to your agent like normal. Ambient coaching runs alongside.</p>
               <div class="rail-slash">
-                <span class="rail-slash-pill">/valor-briefing</span>
-                <span class="rail-slash-pill">/valor-weekly</span>
-                <span class="rail-slash-pill">/valor-prep</span>
+                <span class="rail-phrase-pill">start my day</span>
+                <span class="rail-phrase-pill">wrap up</span>
+                <span class="rail-phrase-pill">prep for 1:1</span>
               </div>
             </li>
           </ol>

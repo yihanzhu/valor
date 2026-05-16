@@ -656,13 +656,20 @@ em { font-style: normal; color: var(--accent-bright); }
 }
 .chat-role-agent { color: var(--accent); }
 .chat-msg {
-  font-family: var(--font-mono);
-  font-size: 0.88rem;
-  color: var(--accent-bright);
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text);
 }
 .chat-msg::before {
-  content: "›  ";
+  content: "“";
   color: var(--text-dim);
+  margin-right: 2px;
+}
+.chat-msg::after {
+  content: "”";
+  color: var(--text-dim);
+  margin-left: 2px;
 }
 .chat-out > * { margin: 0; }
 .chat-out > * + * { margin-top: 10px; }
@@ -929,6 +936,28 @@ em { font-style: normal; color: var(--accent-bright); }
   content: "›";
   color: var(--text-dim);
   margin-right: 5px;
+}
+.rail-phrase-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: rgba(244, 209, 119, 0.08);
+  color: var(--accent-bright);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+.rail-phrase-pill::before {
+  content: "“";
+  color: var(--text-dim);
+  margin-right: 3px;
+}
+.rail-phrase-pill::after {
+  content: "”";
+  color: var(--text-dim);
+  margin-left: 3px;
 }
 .rail-slash-note {
   flex-basis: 100%;

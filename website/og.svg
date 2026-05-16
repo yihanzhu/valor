@@ -60,9 +60,9 @@
     <circle cx="50" cy="32" r="6" fill="#ffbd2e"/>
     <circle cx="72" cy="32" r="6" fill="#27c93f"/>
     <text x="108" y="41"
-          font-family="JetBrains Mono, ui-monospace, Menlo, monospace"
+          font-family="Inter, system-ui, -apple-system, sans-serif"
           font-size="22"
-          fill="#a3acc0"><tspan fill="#6c7689">YOU  ›</tspan> <tspan fill="#ffe09a">/valor-briefing</tspan>   <tspan fill="#6c7689">·  claude code</tspan></text>
+          fill="#a3acc0"><tspan fill="#6c7689" font-family="JetBrains Mono, ui-monospace, Menlo, monospace">YOU  ›</tspan>  <tspan fill="#ffe09a" font-weight="500">“start my day”</tspan>   <tspan fill="#6c7689" font-family="JetBrains Mono, ui-monospace, Menlo, monospace">·  claude code</tspan></text>
   </g>
 
   <!-- version -->
