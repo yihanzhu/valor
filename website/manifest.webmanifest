@@ -1,0 +1,12 @@
+{
+  "name": "Valor",
+  "short_name": "Valor",
+  "description": "Local-first career coach inside Claude Code, Codex CLI, and Cursor.",
+  "start_url": "/",
+  "display": "minimal-ui",
+  "background_color": "#08090c",
+  "theme_color": "#08090c",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

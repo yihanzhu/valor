@@ -3,290 +3,617 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Valor | Local-First Career-Growth Layer for Developers</title>
-    <meta
-      name="description"
-      content="Valor is a local-first, device-local career-growth layer for developers. It lives inside the coding agents users already prefer."
-    >
-    <meta name="theme-color" content="#07101d">
+    <title>Valor — the career layer for developers</title>
+    <meta name="description" content="Valor is a local-first career coach that lives inside Claude Code, Codex CLI, and Cursor. Capture evidence, get senior-level coaching, and grow without filling out another HR form.">
+    <meta name="theme-color" content="#08090c">
+    <link rel="canonical" href="https://valor.sh/">
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+    <link rel="apple-touch-icon" href="./favicon.svg">
+    <link rel="manifest" href="./manifest.webmanifest">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Valor — the career layer for developers">
+    <meta property="og:description" content="Local-first career coach inside Claude Code, Codex CLI, and Cursor. Evidence, coaching, growth — no HR forms.">
+    <meta property="og:url" content="https://valor.sh/">
+    <meta property="og:site_name" content="Valor">
+    <meta property="og:image" content="./og.svg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Valor — the career layer for developers">
+    <meta name="twitter:description" content="Local-first career coach inside Claude Code, Codex CLI, and Cursor.">
+    <meta name="twitter:image" content="./og.svg">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
-    <div class="shell">
-      <header class="header">
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header" id="top">
+      <div class="container header-row">
         <a class="brand" href="#top" aria-label="Valor home">
-          <span class="brand-text">Valor</span>
+          <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 4l6 16 3-8 3 8 6-16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="brand-text">valor</span>
+          <span class="brand-version">v0.4.0</span>
         </a>
-        <nav class="header-nav" aria-label="Primary">
-          <a href="https://github.com/yihanzhu/valor/blob/main/README.md" target="_blank" rel="noreferrer">Docs</a>
-          <a href="https://github.com/yihanzhu/valor/blob/main/PRIVACY.md" target="_blank" rel="noreferrer">Privacy</a>
-          <a href="https://github.com/yihanzhu/valor" target="_blank" rel="noreferrer">GitHub</a>
+        <nav class="site-nav" aria-label="Primary">
+          <a href="#install">Install</a>
+          <a href="#features">Features</a>
+          <a href="#workflow">Workflow</a>
+          <a href="https://github.com/yihanzhu/valor/blob/main/docs/getting-started.md" rel="noreferrer">Docs</a>
+          <a class="nav-github" href="https://github.com/yihanzhu/valor" rel="noreferrer" aria-label="GitHub repository">
+            <svg viewBox="0 0 16 16" aria-hidden="true" width="16" height="16"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.08.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.42 7.42 0 014 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            <span id="gh-stars" class="nav-github-stars" aria-hidden="true">★</span>
+          </a>
         </nav>
-      </header>
+      </div>
+    </header>
 
-      <main id="top">
-        <section class="hero">
+    <main id="main">
+      <section class="hero">
+        <div class="container hero-inner">
           <div class="hero-copy">
-            <p class="eyebrow">Local-first · Device-local · Agent-integrated</p>
-            <h1>Career coaching that lives where developers already work.</h1>
+            <p class="kicker">
+              <span class="kicker-dot" aria-hidden="true"></span>
+              v0.4.0 · Apache-2.0 · Local-first
+            </p>
+            <h1 class="display">
+              The career layer that lives inside your
+              <span class="accent">coding agent</span>.
+            </h1>
             <p class="lede">
-              Valor runs inside Claude Code, Codex CLI, and Cursor to turn daily
-              execution into reusable evidence, better reflection, and clearer
-              next-level growth.
+              Valor runs inside Claude Code, Codex CLI, and Cursor. It turns
+              your daily work into evidence, gives senior-level coaching in
+              the flow, and maps it to <em>your</em> career framework — without
+              another HR form.
             </p>
-            <p class="support-note">
-              Built for work use. Core memory, evidence, and career framework stay
-              on your machine, not in a Valor backend.
-            </p>
-            <div class="hero-badges" aria-label="Supported hosts">
-              <span class="badge">Claude Code</span>
-              <span class="badge">Codex CLI</span>
-              <span class="badge">Cursor</span>
-            </div>
-            <div class="install-wrap hero-install">
-              <p class="install-label">One-line install</p>
-              <div class="install-card">
-                <pre class="install-snippet" id="install-command"><code>curl -fsSL https://raw.githubusercontent.com/yihanzhu/valor/main/install.sh | bash -s -- --clone</code></pre>
-                <button class="copy-button" type="button" data-copy-target="install-command" aria-label="Copy install command" title="Copy install command">
-                  <span class="copy-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" focusable="false">
-                      <path d="M9 9h9v11H9z"></path>
-                      <path d="M6 4h9v2H8v9H6z"></path>
-                    </svg>
-                  </span>
-                </button>
+
+            <div class="hero-install">
+              <div class="term term-compact" data-term="hero">
+                <div class="term-head">
+                  <span class="tl tl-r" aria-hidden="true"></span>
+                  <span class="tl tl-y" aria-hidden="true"></span>
+                  <span class="tl tl-g" aria-hidden="true"></span>
+                  <span class="term-title">install — bash</span>
+                  <button class="term-copy" type="button" data-copy-for="hero" aria-label="Copy install command">
+                    <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 9h10v11H9zM6 4h10v2H8v10H6z"/></svg>
+                    <span class="term-copy-label">copy</span>
+                  </button>
+                </div>
+                <pre class="term-body"><code data-copy-source><span class="prompt">$</span> <span class="cmd">curl</span> <span class="flag">-fsSL</span> <span class="str">https://raw.githubusercontent.com/yihanzhu/valor/main/install.sh</span> | <span class="cmd">bash</span> <span class="flag">-s</span> <span class="arg">--</span> <span class="flag">--clone</span></code></pre>
               </div>
             </div>
-            <p class="support-note">
-              One install, shared local state. Use <code>--target ...</code> if you
-              only want one host.
-            </p>
+
             <div class="hero-actions">
-              <a class="button button-primary" href="https://github.com/yihanzhu/valor/blob/main/docs/getting-started.md" target="_blank" rel="noreferrer">Get started</a>
-              <a class="button button-secondary" href="https://github.com/yihanzhu/valor" target="_blank" rel="noreferrer">GitHub</a>
+              <a class="btn btn-primary" href="https://github.com/yihanzhu/valor/blob/main/docs/getting-started.md" rel="noreferrer">
+                Get started
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </a>
+              <a class="btn btn-ghost" href="https://github.com/yihanzhu/valor" rel="noreferrer">
+                <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.08.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.42 7.42 0 014 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                <span>Star on GitHub</span>
+                <span class="btn-stars" id="gh-stars-btn" aria-hidden="true">★</span>
+              </a>
             </div>
-          </div>
-        </section>
 
-        <section class="section" id="why">
-          <div class="section-head">
-            <p class="section-tag">Why teams try it</p>
-            <h2>It captures the work that normal career tooling misses.</h2>
-            <p class="section-copy">
-              Valor is designed around the reality that modern engineering work
-              already flows through coding agents. Instead of adding another HR
-              system or manual brag doc, it uses that workflow as the coaching
-              surface.
-            </p>
+            <ul class="hero-meta" aria-label="Quick facts">
+              <li><span class="meta-num">0</span><span class="meta-label">runtime deps</span></li>
+              <li><span class="meta-num">3</span><span class="meta-label">agents supported</span></li>
+              <li><span class="meta-num">100%</span><span class="meta-label">local data</span></li>
+            </ul>
           </div>
 
-          <div class="difference-grid">
-            <article class="info-card">
-              <h3>Ambient coaching</h3>
-              <p>
-                Valor shows up in the flow of work itself, so reviews, debugging,
-                and planning become growth moments instead of end-of-week recall.
-              </p>
-            </article>
-            <article class="info-card">
-              <h3>Evidence over vibes</h3>
-              <p>
-                Valor turns reviews, design work, debugging, and coordination
-                into structured evidence you can reuse for weekly reflection and
-                1:1 prep.
-              </p>
-            </article>
-            <article class="info-card">
-              <h3>Bring your own framework</h3>
-              <p>
-                Valor adapts to your company ladder, target level, and growth
-                expectations instead of forcing a generic career rubric.
-              </p>
-            </article>
-          </div>
-        </section>
-
-        <section class="section" id="workday">
-          <div class="section-head">
-            <p class="section-tag">Across the workday</p>
-            <h2>A simple loop that compounds over time.</h2>
-          </div>
-
-          <div class="workday-flow" aria-label="Valor daily loop">
-            <article class="flow-step">
-              <p class="panel-label">01</p>
-              <h3>Morning briefing</h3>
-              <p>Tickets, PRs, calendar, coaching.</p>
-            </article>
-            <div class="flow-arrow" aria-hidden="true">→</div>
-            <article class="flow-step">
-              <p class="panel-label">02</p>
-              <h3>In-flow coaching</h3>
-              <p>Map meaningful work to target-level signals.</p>
-            </article>
-            <div class="flow-arrow" aria-hidden="true">→</div>
-            <article class="flow-step">
-              <p class="panel-label">03</p>
-              <h3>Wrap-up</h3>
-              <p>Save context and carry tomorrow forward.</p>
-            </article>
-          </div>
-        </section>
-
-        <section class="section" id="example">
-          <div class="section-head">
-            <p class="section-tag">What It Looks Like</p>
-            <h2>Useful output, not another dashboard.</h2>
-            <p class="section-copy">
-              A good Valor interaction should help you decide what to do next,
-              surface the risk, and connect the work to growth without making
-              you fill out more process.
-            </p>
-          </div>
-
-          <div class="artifact-shell" aria-label="Sample Valor morning briefing">
-            <div class="artifact-header">
-              <div>
-                <p class="artifact-label">Sample output</p>
-                <h3>Morning briefing</h3>
+          <aside class="hero-side" aria-hidden="true">
+            <div class="term term-side">
+              <div class="term-head">
+                <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+                <span class="term-title">~/projects/auth — valor briefing</span>
               </div>
-              <p class="artifact-meta">Tuesday · 8:42 AM</p>
+              <pre class="term-body"><code><span class="prompt">$</span> <span class="cmd">/valor-briefing</span>
+
+<span class="out-key">▸ Primary focus</span>
+  Land the auth retry fix before noon.
+  Post the rollout note in the incident thread.
+
+<span class="out-key">▸ Review queue</span>
+  <span class="out-ok">PR #418</span> needs a migration note before review.
+  <span class="out-ok">PR #421</span> looks unblocked and ready to merge.
+
+<span class="out-key">▸ Carry-forward</span>
+  Yesterday's wrap flagged session-cache risk
+  across two tickets touching <span class="str">/auth/session.py</span>.
+
+<span class="out-key">▸ Coaching nudge</span>
+  This is <span class="accent-text">next-level coordination work</span>:
+  reduce merge risk early and leave a
+  handoff others can reuse.</code></pre>
             </div>
-
-            <div class="artifact-list">
-              <article class="artifact-row">
-                <p class="artifact-kicker">Primary focus</p>
-                <p>Land the auth retry fix before noon and post the rollout note in the incident thread.</p>
-              </article>
-              <article class="artifact-row">
-                <p class="artifact-kicker">Review queue</p>
-                <p>PR #418 needs a migration note before review. PR #421 looks unblocked and ready to merge.</p>
-              </article>
-              <article class="artifact-row">
-                <p class="artifact-kicker">Carry-forward</p>
-                <p>Yesterday's wrap-up flagged session cache risk across two tickets touching the same path.</p>
-              </article>
-              <article class="artifact-row">
-                <p class="artifact-kicker">Coaching nudge</p>
-                <p>This is next-level coordination work: reduce merge risk early and leave a handoff others can reuse.</p>
-              </article>
-            </div>
-          </div>
-        </section>
-
-        <section class="section" id="agents">
-          <div class="section-head">
-            <p class="section-tag">Plus on-demand agents</p>
-            <h2>Deeper guidance when you need it.</h2>
-            <p class="section-copy">
-              The repo currently ships eight guided workflows, plus the ambient
-              coaching layer that rides alongside normal development work.
-            </p>
-          </div>
-
-          <div class="agents-grid" aria-label="Valor agents">
-            <article class="flow-step">
-              <h3>Weekly Reflection</h3>
-              <p>Competency review and 1:1 narrative.</p>
-            </article>
-            <article class="flow-step">
-              <h3>PR Review Coach</h3>
-              <p>Senior-level code review guidance.</p>
-            </article>
-            <article class="flow-step">
-              <h3>Design Doc Coach</h3>
-              <p>Structured options and trade-offs.</p>
-            </article>
-            <article class="flow-step">
-              <h3>Task Identifier</h3>
-              <p>High-impact work, ranked by growth.</p>
-            </article>
-            <article class="flow-step">
-              <h3>1:1 Prep</h3>
-              <p>Evidence-grounded manager sync.</p>
-            </article>
-            <article class="flow-step">
-              <h3>Setup</h3>
-              <p>Career framework, level, and integration setup.</p>
-            </article>
-          </div>
-        </section>
-
-        <section class="section" id="docs">
-          <div class="section-head">
-            <p class="section-tag">Read the docs</p>
-            <h2>Start where you need depth.</h2>
-          </div>
-
-          <div class="docs-grid">
-            <a class="doc-card" href="https://github.com/yihanzhu/valor/blob/main/docs/getting-started.md" target="_blank" rel="noreferrer">
-              <span class="panel-label">Guide</span>
-              <h3>Getting Started</h3>
-              <p>Install Valor, run setup, and try the first workflows.</p>
-            </a>
-            <a class="doc-card" href="https://github.com/yihanzhu/valor/blob/main/docs/architecture.md" target="_blank" rel="noreferrer">
-              <span class="panel-label">Reference</span>
-              <h3>Architecture</h3>
-              <p>See the install model, local state, agent flow, and update path.</p>
-            </a>
-            <a class="doc-card" href="https://github.com/yihanzhu/valor/blob/main/docs/integrations.md" target="_blank" rel="noreferrer">
-              <span class="panel-label">Reference</span>
-              <h3>Integrations</h3>
-              <p>Understand GitHub, Jira, calendar, and news support.</p>
-            </a>
-            <a class="doc-card" href="https://github.com/yihanzhu/valor/blob/main/PRIVACY.md" target="_blank" rel="noreferrer">
-              <span class="panel-label">Trust</span>
-              <h3>Privacy Model</h3>
-              <p>Review what stays local and what depends on your host assistant.</p>
-            </a>
-            <a class="doc-card" href="https://github.com/yihanzhu/valor/blob/main/ROADMAP.md" target="_blank" rel="noreferrer">
-              <span class="panel-label">Direction</span>
-              <h3>Roadmap</h3>
-              <p>Track shipped phases and the next local-first ideas under discussion.</p>
-            </a>
-            <a class="doc-card" href="https://github.com/yihanzhu/valor/blob/main/README.md" target="_blank" rel="noreferrer">
-              <span class="panel-label">Overview</span>
-              <h3>README</h3>
-              <p>Start from the root overview, install flow, and command guide.</p>
-            </a>
-          </div>
-        </section>
-      </main>
-
-      <footer class="footer">
-        <p class="footer-credit">
-          &copy; 2026
-          <a href="https://yihanzhu.com" target="_blank" rel="noreferrer">Yihan Zhu</a>
-        </p>
-        <div class="footer-links">
-          <a href="https://github.com/yihanzhu/valor/blob/main/README.md" target="_blank" rel="noreferrer">Docs</a>
-          <a href="https://github.com/yihanzhu/valor/blob/main/PRIVACY.md" target="_blank" rel="noreferrer">Privacy</a>
-          <a href="https://github.com/yihanzhu/valor" target="_blank" rel="noreferrer">GitHub</a>
+          </aside>
         </div>
-      </footer>
-    </div>
+        <div class="hero-glow" aria-hidden="true"></div>
+      </section>
+
+      <section class="band" id="install" aria-labelledby="install-h">
+        <div class="container">
+          <header class="band-head">
+            <p class="eyebrow">Install</p>
+            <h2 id="install-h">Up and running in under a minute.</h2>
+            <p class="band-lede">One installer, all three hosts. Local state lives in <code>~/.valor/</code>.</p>
+          </header>
+
+          <div class="tabs" data-tabs>
+            <div class="tab-buttons" role="tablist" aria-label="Install methods">
+              <button class="tab-btn is-active" role="tab" aria-selected="true" aria-controls="tab-quick" id="tab-quick-btn" data-tab="quick">Quick install</button>
+              <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-clone" id="tab-clone-btn" data-tab="clone">Git clone</button>
+              <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-target" id="tab-target-btn" data-tab="target">Per-host</button>
+              <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-upgrade" id="tab-upgrade-btn" data-tab="upgrade">Upgrade</button>
+            </div>
+
+            <div class="tab-panel is-active" id="tab-quick" role="tabpanel" aria-labelledby="tab-quick-btn" data-panel="quick">
+              <div class="term" data-term="t-quick">
+                <div class="term-head">
+                  <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+                  <span class="term-title">bash</span>
+                  <button class="term-copy" type="button" data-copy-for="t-quick" aria-label="Copy command"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 9h10v11H9zM6 4h10v2H8v10H6z"/></svg><span class="term-copy-label">copy</span></button>
+                </div>
+                <pre class="term-body"><code data-copy-source><span class="comment"># one-line install — clones to ~/.valor/repo, installs for all hosts</span>
+<span class="prompt">$</span> <span class="cmd">curl</span> <span class="flag">-fsSL</span> <span class="str">https://raw.githubusercontent.com/yihanzhu/valor/main/install.sh</span> | <span class="cmd">bash</span> <span class="flag">-s</span> <span class="arg">--</span> <span class="flag">--clone</span></code></pre>
+              </div>
+              <p class="tab-note">Installs Valor for Claude Code, Codex CLI, and Cursor in one go. Auto-checks for daily updates.</p>
+            </div>
+
+            <div class="tab-panel" id="tab-clone" role="tabpanel" aria-labelledby="tab-clone-btn" data-panel="clone" hidden>
+              <div class="term" data-term="t-clone">
+                <div class="term-head">
+                  <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+                  <span class="term-title">bash</span>
+                  <button class="term-copy" type="button" data-copy-for="t-clone" aria-label="Copy command"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 9h10v11H9zM6 4h10v2H8v10H6z"/></svg><span class="term-copy-label">copy</span></button>
+                </div>
+                <pre class="term-body"><code data-copy-source><span class="prompt">$</span> <span class="cmd">git</span> clone <span class="str">https://github.com/yihanzhu/valor.git</span> ~/.valor/repo
+<span class="prompt">$</span> <span class="cmd">cd</span> ~/.valor/repo
+<span class="prompt">$</span> <span class="cmd">bash</span> install.sh</code></pre>
+              </div>
+              <p class="tab-note">Inspect the installer before running it. Same result as the one-liner, with the source on disk.</p>
+            </div>
+
+            <div class="tab-panel" id="tab-target" role="tabpanel" aria-labelledby="tab-target-btn" data-panel="target" hidden>
+              <div class="term" data-term="t-target">
+                <div class="term-head">
+                  <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+                  <span class="term-title">bash</span>
+                  <button class="term-copy" type="button" data-copy-for="t-target" aria-label="Copy command"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 9h10v11H9zM6 4h10v2H8v10H6z"/></svg><span class="term-copy-label">copy</span></button>
+                </div>
+                <pre class="term-body"><code data-copy-source><span class="prompt">$</span> <span class="cmd">bash</span> install.sh <span class="flag">--target</span> <span class="arg">claude-code</span>   <span class="comment"># Claude Code only</span>
+<span class="prompt">$</span> <span class="cmd">bash</span> install.sh <span class="flag">--target</span> <span class="arg">codex</span>         <span class="comment"># Codex CLI only</span>
+<span class="prompt">$</span> <span class="cmd">bash</span> install.sh <span class="flag">--target</span> <span class="arg">cursor</span>        <span class="comment"># Cursor only</span></code></pre>
+              </div>
+              <p class="tab-note">Only install Valor for the agent you actually use. Switch on or off later by re-running.</p>
+            </div>
+
+            <div class="tab-panel" id="tab-upgrade" role="tabpanel" aria-labelledby="tab-upgrade-btn" data-panel="upgrade" hidden>
+              <div class="term" data-term="t-upgrade">
+                <div class="term-head">
+                  <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+                  <span class="term-title">bash</span>
+                  <button class="term-copy" type="button" data-copy-for="t-upgrade" aria-label="Copy command"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 9h10v11H9zM6 4h10v2H8v10H6z"/></svg><span class="term-copy-label">copy</span></button>
+                </div>
+                <pre class="term-body"><code data-copy-source><span class="prompt">$</span> <span class="cmd">cd</span> ~/.valor/repo <span class="op">&amp;&amp;</span> <span class="cmd">bash</span> install.sh <span class="flag">--upgrade</span></code></pre>
+              </div>
+              <p class="tab-note">Manual upgrade. Valor also auto-applies minor and patch releases when you start a new session.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="band band-features" id="features" aria-labelledby="features-h">
+        <div class="container">
+          <header class="band-head">
+            <p class="eyebrow">Features</p>
+            <h2 id="features-h">Eight workflows. One running coaching loop.</h2>
+            <p class="band-lede">Every command runs against your local evidence store. No dashboards, no telemetry.</p>
+          </header>
+
+          <div class="feature-row">
+            <div class="feature-copy">
+              <p class="feature-tag">Morning</p>
+              <h3>Start the day with priorities, not inbox.</h3>
+              <p>
+                <code>/valor-briefing</code> pulls open Jira tickets, your PR queue,
+                today's calendar, and yesterday's carry-forward — then proposes a
+                focus order grounded in your target-level competencies.
+              </p>
+              <a class="link-arrow" href="https://github.com/yihanzhu/valor/blob/main/commands/briefing.md" rel="noreferrer">See the spec <span aria-hidden="true">→</span></a>
+            </div>
+            <div class="term" data-term="f-briefing">
+              <div class="term-head">
+                <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+                <span class="term-title">claude-code — /valor-briefing</span>
+                <button class="term-copy" type="button" data-copy-for="f-briefing" aria-label="Copy command"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 9h10v11H9zM6 4h10v2H8v10H6z"/></svg></button>
+              </div>
+              <pre class="term-body"><code data-copy-source><span class="prompt">$</span> <span class="cmd">/valor-briefing</span>
+
+<span class="out-key">Tickets (Jira)</span>
+  <span class="out-ok">●</span> AUTH-412   Retry storm under load        <span class="dim">In Progress</span>
+  <span class="out-warn">●</span> AUTH-418   Session cache invalidation    <span class="dim">In Review</span>
+
+<span class="out-key">Pull requests</span>
+  <span class="dim">#418</span> auth: retry policy w/ jittered backoff
+  <span class="dim">#421</span> deps: bump httpx 0.27 → 0.28
+
+<span class="out-key">Coaching nudge</span>
+  Add a one-line rollback note to <span class="str">#418</span>. That's
+  the <span class="accent-text">L5 coordination signal</span> your framework
+  weights most this quarter.</code></pre>
+            </div>
+          </div>
+
+          <div class="feature-row feature-row-reverse">
+            <div class="feature-copy">
+              <p class="feature-tag">In flow</p>
+              <h3>Senior-level review, before you hit "Request changes".</h3>
+              <p>
+                <code>/valor-pr-review</code> walks architecture, blast radius,
+                test gaps, and tone of the review itself. <code>/valor-design-doc</code>
+                does the same for design — options, trade-offs, and what to
+                explicitly punt.
+              </p>
+              <a class="link-arrow" href="https://github.com/yihanzhu/valor/blob/main/commands/pr-review.md" rel="noreferrer">PR review playbook <span aria-hidden="true">→</span></a>
+            </div>
+            <div class="term" data-term="f-review">
+              <div class="term-head">
+                <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+                <span class="term-title">cursor — /valor-pr-review</span>
+                <button class="term-copy" type="button" data-copy-for="f-review" aria-label="Copy command"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 9h10v11H9zM6 4h10v2H8v10H6z"/></svg></button>
+              </div>
+              <pre class="term-body"><code data-copy-source><span class="prompt">$</span> <span class="cmd">/valor-pr-review</span> <span class="arg">#418</span>
+
+<span class="out-key">Architecture</span>
+  Retry policy lives in the wrong layer.
+  Move from <span class="str">api.client</span> → <span class="str">net.transport</span>.
+  <span class="dim">Why: future RPCs need it too.</span>
+
+<span class="out-key">Test gaps</span>
+  <span class="out-warn">!</span> No coverage for jitter bounds.
+  <span class="out-warn">!</span> Backoff cap untested above 30s.
+
+<span class="out-key">Tone check</span>
+  Comment on line 84 reads sharper than
+  intended — soften to a question.
+
+<span class="out-ok">✓</span> Logged as evidence: <span class="dim">code_review · subject_matter</span></code></pre>
+            </div>
+          </div>
+
+          <div class="feature-row">
+            <div class="feature-copy">
+              <p class="feature-tag">Evidence</p>
+              <h3>Your work, queryable. Locally.</h3>
+              <p>
+                Every command writes structured evidence to
+                <code>~/.valor/evidence.sqlite</code>. Export it for weekly
+                reflection, 1:1 prep, or self-review — no cloud, no scraping.
+              </p>
+              <a class="link-arrow" href="https://github.com/yihanzhu/valor/blob/main/docs/architecture.md" rel="noreferrer">Architecture <span aria-hidden="true">→</span></a>
+            </div>
+            <div class="term" data-term="f-evidence">
+              <div class="term-head">
+                <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+                <span class="term-title">~/.valor — evidence_cli.py</span>
+                <button class="term-copy" type="button" data-copy-for="f-evidence" aria-label="Copy command"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 9h10v11H9zM6 4h10v2H8v10H6z"/></svg></button>
+              </div>
+              <pre class="term-body"><code data-copy-source><span class="prompt">$</span> <span class="cmd">python3</span> ~/.valor/evidence_cli.py stats
+
+<span class="out-key">Last 7 days</span>
+  code_written       <span class="num">23</span>   <span class="bar">█████████████</span>
+  code_reviewed       <span class="num">9</span>   <span class="bar">█████</span>
+  design_discussion   <span class="num">6</span>   <span class="bar">███</span>
+  debugging           <span class="num">4</span>   <span class="bar">██</span>
+
+<span class="out-key">By competency</span>
+  subject_matter   <span class="num">18</span>
+  execution        <span class="num">12</span>
+  collaboration     <span class="num">8</span>
+  leadership        <span class="num">4</span>
+
+<span class="prompt">$</span> <span class="cmd">python3</span> ~/.valor/evidence_cli.py export <span class="flag">--days</span> 7 <span class="flag">--format</span> markdown
+<span class="out-ok">✓</span> wrote <span class="str">~/.valor/exports/2026-05-16.md</span></code></pre>
+            </div>
+          </div>
+
+          <div class="feature-row feature-row-reverse">
+            <div class="feature-copy">
+              <p class="feature-tag">Wrap-up</p>
+              <h3>End the day with carry-forward, not loose ends.</h3>
+              <p>
+                <code>/valor-wrapup</code> reads the day's conversation, git
+                history, and evidence — then writes a handoff file you (or
+                tomorrow-you) can pick up cold.
+              </p>
+              <a class="link-arrow" href="https://github.com/yihanzhu/valor/blob/main/commands/wrapup.md" rel="noreferrer">Wrap-up spec <span aria-hidden="true">→</span></a>
+            </div>
+            <div class="term" data-term="f-wrap">
+              <div class="term-head">
+                <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+                <span class="term-title">codex — /valor-wrapup</span>
+                <button class="term-copy" type="button" data-copy-for="f-wrap" aria-label="Copy command"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 9h10v11H9zM6 4h10v2H8v10H6z"/></svg></button>
+              </div>
+              <pre class="term-body"><code data-copy-source><span class="prompt">$</span> <span class="cmd">/valor-wrapup</span>
+
+<span class="out-key">Shipped today</span>
+  <span class="out-ok">✓</span> Merged <span class="str">#421</span> (httpx bump, 2 reviews)
+  <span class="out-ok">✓</span> Drafted rollback note on <span class="str">#418</span>
+  <span class="out-ok">✓</span> 1:1 with E. — confirmed L5 target
+
+<span class="out-key">Carry forward → tomorrow</span>
+  <span class="out-warn">→</span> Land <span class="str">#418</span> before standup
+  <span class="out-warn">→</span> Reply to AUTH-412 thread (Sami)
+
+<span class="out-key">Reflection</span>
+  Strong execution day. Light on the
+  <span class="accent-text">cross-team alignment</span> axis — flag for
+  Friday's weekly.
+
+<span class="out-ok">✓</span> Saved to <span class="str">~/.valor/carry-forward/2026-05-16.md</span></code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="band band-workflow" id="workflow" aria-labelledby="workflow-h">
+        <div class="container">
+          <header class="band-head">
+            <p class="eyebrow">Workflow</p>
+            <h2 id="workflow-h">Install → setup → use. That's it.</h2>
+          </header>
+
+          <ol class="rail">
+            <li class="rail-step">
+              <p class="rail-num">01</p>
+              <h3>Install</h3>
+              <p>One command, all hosts. Or pick a target.</p>
+              <pre class="rail-snippet"><code><span class="prompt">$</span> <span class="cmd">curl</span> <span class="flag">-fsSL</span> ...install.sh | <span class="cmd">bash</span> <span class="flag">-s --clone</span></code></pre>
+            </li>
+            <li class="rail-step">
+              <p class="rail-num">02</p>
+              <h3>Setup</h3>
+              <p>Paste your career ladder. Pick your level. Done.</p>
+              <pre class="rail-snippet"><code><span class="prompt">›</span> <span class="cmd">/valor-setup</span>
+<span class="out">guided framework + level + integrations</span></code></pre>
+            </li>
+            <li class="rail-step">
+              <p class="rail-num">03</p>
+              <h3>Use</h3>
+              <p>Briefings, reviews, wrap-ups — in your agent.</p>
+              <pre class="rail-snippet"><code><span class="prompt">›</span> <span class="cmd">/valor-briefing</span>
+<span class="prompt">›</span> <span class="cmd">/valor-weekly</span>
+<span class="prompt">›</span> <span class="cmd">/valor-prep</span></code></pre>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="band band-compat" aria-labelledby="compat-h">
+        <div class="container">
+          <header class="band-head band-head-center">
+            <p class="eyebrow">Compatibility</p>
+            <h2 id="compat-h">Three hosts. Every major platform.</h2>
+          </header>
+
+          <div class="compat-grid">
+            <div class="compat-group">
+              <p class="compat-label">Hosts</p>
+              <div class="badges">
+                <span class="chip">Claude Code</span>
+                <span class="chip">Codex CLI</span>
+                <span class="chip">Cursor</span>
+              </div>
+            </div>
+            <div class="compat-group">
+              <p class="compat-label">Operating systems</p>
+              <div class="badges">
+                <span class="chip">macOS</span>
+                <span class="chip">Linux</span>
+                <span class="chip">Windows · WSL</span>
+              </div>
+            </div>
+            <div class="compat-group">
+              <p class="compat-label">Runtime</p>
+              <div class="badges">
+                <span class="chip">Python 3.9+</span>
+                <span class="chip">stdlib only</span>
+                <span class="chip">no cloud</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="band band-oss" aria-labelledby="oss-h">
+        <div class="container">
+          <header class="band-head">
+            <p class="eyebrow">Open source</p>
+            <h2 id="oss-h">Inspect every file. Fork if you want.</h2>
+            <p class="band-lede">
+              Apache-2.0. Plain Python and Markdown. Local state stays on your machine,
+              by design — see <a href="https://github.com/yihanzhu/valor/blob/main/PRIVACY.md" rel="noreferrer">PRIVACY.md</a>
+              for the exact trust boundary.
+            </p>
+          </header>
+
+          <div class="oss-grid">
+            <a class="oss-card" href="https://github.com/yihanzhu/valor" rel="noreferrer">
+              <p class="oss-num" id="oss-stars">★ —</p>
+              <p class="oss-label">stars</p>
+            </a>
+            <a class="oss-card" href="https://github.com/yihanzhu/valor/graphs/contributors" rel="noreferrer">
+              <p class="oss-num" id="oss-contrib">—</p>
+              <p class="oss-label">contributors</p>
+            </a>
+            <a class="oss-card" href="https://github.com/yihanzhu/valor/issues" rel="noreferrer">
+              <p class="oss-num" id="oss-issues">—</p>
+              <p class="oss-label">open issues</p>
+            </a>
+            <a class="oss-card" href="https://github.com/yihanzhu/valor/blob/main/LICENSE" rel="noreferrer">
+              <p class="oss-num">Apache 2.0</p>
+              <p class="oss-label">license</p>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="band band-cta" aria-labelledby="cta-h">
+        <div class="container cta-inner">
+          <h2 id="cta-h">Ready to grow without filling out forms?</h2>
+          <div class="term term-compact cta-term" data-term="cta">
+            <div class="term-head">
+              <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+              <span class="term-title">install</span>
+              <button class="term-copy" type="button" data-copy-for="cta" aria-label="Copy install command"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 9h10v11H9zM6 4h10v2H8v10H6z"/></svg><span class="term-copy-label">copy</span></button>
+            </div>
+            <pre class="term-body"><code data-copy-source><span class="prompt">$</span> <span class="cmd">curl</span> <span class="flag">-fsSL</span> <span class="str">https://raw.githubusercontent.com/yihanzhu/valor/main/install.sh</span> | <span class="cmd">bash</span> <span class="flag">-s</span> <span class="arg">--</span> <span class="flag">--clone</span></code></pre>
+          </div>
+          <div class="cta-actions">
+            <a class="btn btn-primary" href="https://github.com/yihanzhu/valor/blob/main/docs/getting-started.md" rel="noreferrer">Read the docs</a>
+            <a class="btn btn-ghost" href="https://github.com/yihanzhu/valor" rel="noreferrer">GitHub</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-row">
+        <div class="footer-brand">
+          <span class="brand">
+            <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4l6 16 3-8 3 8 6-16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span class="brand-text">valor</span>
+          </span>
+          <p class="footer-version">v0.4.0 · Apache-2.0</p>
+          <p class="footer-copy">© <span id="year">2026</span> <a href="https://yihanzhu.com" rel="noreferrer">Yihan Zhu</a></p>
+        </div>
+        <div class="footer-cols">
+          <div class="footer-col">
+            <p class="footer-head">Project</p>
+            <a href="https://github.com/yihanzhu/valor" rel="noreferrer">GitHub</a>
+            <a href="https://github.com/yihanzhu/valor/blob/main/ROADMAP.md" rel="noreferrer">Roadmap</a>
+            <a href="https://github.com/yihanzhu/valor/blob/main/LICENSE" rel="noreferrer">License</a>
+          </div>
+          <div class="footer-col">
+            <p class="footer-head">Docs</p>
+            <a href="https://github.com/yihanzhu/valor/blob/main/docs/getting-started.md" rel="noreferrer">Getting started</a>
+            <a href="https://github.com/yihanzhu/valor/blob/main/docs/architecture.md" rel="noreferrer">Architecture</a>
+            <a href="https://github.com/yihanzhu/valor/blob/main/docs/integrations.md" rel="noreferrer">Integrations</a>
+          </div>
+          <div class="footer-col">
+            <p class="footer-head">Community</p>
+            <a href="https://github.com/yihanzhu/valor/issues" rel="noreferrer">Issues</a>
+            <a href="https://github.com/yihanzhu/valor/blob/main/CONTRIBUTING.md" rel="noreferrer">Contributing</a>
+            <a href="https://github.com/yihanzhu/valor/blob/main/PRIVACY.md" rel="noreferrer">Privacy</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
     <script>
-      for (const button of document.querySelectorAll("[data-copy-target]")) {
-        button.addEventListener("click", async () => {
-          const target = document.getElementById(button.dataset.copyTarget);
-          if (!target) return;
-
-          const text = target.innerText.trim();
-          const original = button.innerHTML;
-
+      // copy buttons — works for any [data-copy-for] paired with [data-copy-source]
+      function plainText(node) {
+        // Walk the code element and reconstruct text without span chrome.
+        return node.innerText.replace(/^\s*\$\s/gm, "").replace(/^\s*›\s/gm, "").trim();
+      }
+      function copyTextFor(key) {
+        const term = document.querySelector(`[data-term="${key}"]`);
+        if (!term) return null;
+        const source = term.querySelector("[data-copy-source]");
+        if (!source) return null;
+        const lines = source.innerText.split("\n");
+        const cmds = lines
+          .filter((l) => /^\s*\$|^\s*›/.test(l))
+          .map((l) => l.replace(/^\s*[\$›]\s?/, ""))
+          .join("\n");
+        return cmds || source.innerText.trim();
+      }
+      document.querySelectorAll("[data-copy-for]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const text = copyTextFor(btn.dataset.copyFor);
+          if (!text) return;
           try {
             await navigator.clipboard.writeText(text);
-            button.classList.add("copied");
+            btn.classList.add("is-copied");
+            const label = btn.querySelector(".term-copy-label");
+            const original = label ? label.textContent : null;
+            if (label) label.textContent = "copied";
+            setTimeout(() => {
+              btn.classList.remove("is-copied");
+              if (label && original) label.textContent = original;
+            }, 1500);
           } catch {
-            button.classList.add("failed");
+            btn.classList.add("is-failed");
+            setTimeout(() => btn.classList.remove("is-failed"), 1500);
           }
-
-          window.setTimeout(() => {
-            button.classList.remove("copied", "failed");
-            button.innerHTML = original;
-          }, 1600);
         });
-      }
+      });
+
+      // tab switcher
+      document.querySelectorAll("[data-tabs]").forEach((scope) => {
+        const buttons = scope.querySelectorAll(".tab-btn");
+        const panels = scope.querySelectorAll(".tab-panel");
+        buttons.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const target = btn.dataset.tab;
+            buttons.forEach((b) => {
+              const active = b.dataset.tab === target;
+              b.classList.toggle("is-active", active);
+              b.setAttribute("aria-selected", active ? "true" : "false");
+            });
+            panels.forEach((p) => {
+              const active = p.dataset.panel === target;
+              p.classList.toggle("is-active", active);
+              if (active) p.removeAttribute("hidden");
+              else p.setAttribute("hidden", "");
+            });
+          });
+        });
+      });
+
+      // year
+      document.getElementById("year").textContent = new Date().getFullYear();
+
+      // GitHub stats (best-effort, fails quietly)
+      (async () => {
+        try {
+          const r = await fetch("https://api.github.com/repos/yihanzhu/valor", { headers: { Accept: "application/vnd.github+json" } });
+          if (!r.ok) return;
+          const data = await r.json();
+          const stars = typeof data.stargazers_count === "number" ? data.stargazers_count : null;
+          const issues = typeof data.open_issues_count === "number" ? data.open_issues_count : null;
+          if (stars !== null) {
+            const fmt = (n) => (n >= 1000 ? (n / 1000).toFixed(1) + "k" : String(n));
+            const headerEl = document.getElementById("gh-stars");
+            if (headerEl) headerEl.textContent = "★ " + fmt(stars);
+            const btnEl = document.getElementById("gh-stars-btn");
+            if (btnEl) btnEl.textContent = fmt(stars);
+            const ossEl = document.getElementById("oss-stars");
+            if (ossEl) ossEl.textContent = "★ " + fmt(stars);
+          }
+          if (issues !== null) {
+            const el = document.getElementById("oss-issues");
+            if (el) el.textContent = String(issues);
+          }
+        } catch {}
+        try {
+          const r = await fetch("https://api.github.com/repos/yihanzhu/valor/contributors?per_page=1&anon=1", { headers: { Accept: "application/vnd.github+json" } });
+          if (!r.ok) return;
+          const link = r.headers.get("Link") || "";
+          const m = link.match(/&page=(\d+)>; rel="last"/);
+          const count = m ? parseInt(m[1], 10) : (await r.json()).length;
+          const el = document.getElementById("oss-contrib");
+          if (el && Number.isFinite(count)) el.textContent = String(count);
+        } catch {}
+      })();
     </script>
   </body>
 </html>
