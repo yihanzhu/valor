@@ -67,10 +67,10 @@
               <span class="accent">coding agent</span>.
             </h1>
             <p class="lede">
-              Valor runs inside Claude Code, Codex CLI, and Cursor. It turns
-              your daily work into evidence, gives senior-level coaching in
-              the flow, and maps it to <em>your</em> career framework — without
-              another HR form.
+              Valor isn't a CLI you run — it's a layer that runs <em>inside</em>
+              Claude Code, Codex CLI, and Cursor. Slash commands and ambient
+              coaching turn daily work into evidence, mapped to <em>your</em>
+              career framework.
             </p>
 
             <div class="hero-install">
@@ -109,29 +109,36 @@
           </div>
 
           <aside class="hero-side" aria-hidden="true">
-            <div class="term term-side">
-              <div class="term-head">
+            <div class="chat chat-side">
+              <div class="chat-head">
                 <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
-                <span class="term-title">~/projects/auth — valor briefing</span>
+                <span class="chat-title"><span class="dot"></span>claude code · ~/projects/auth</span>
               </div>
-              <pre class="term-body"><code><span class="prompt">$</span> <span class="cmd">/valor-briefing</span>
+              <div class="chat-body">
+                <div class="chat-user">
+                  <span class="chat-role">You</span>
+                  <span class="chat-msg">/valor-briefing</span>
+                </div>
+                <div class="chat-agent">
+                  <span class="chat-role chat-role-agent">Valor</span>
+                  <div class="chat-out">
+                    <h4>Primary focus</h4>
+                    <p>Land the auth retry fix before noon. Post the rollout note in the incident thread.</p>
 
-<span class="out-key">▸ Primary focus</span>
-  Land the auth retry fix before noon.
-  Post the rollout note in the incident thread.
+                    <h4>Review queue</h4>
+                    <ul>
+                      <li><code>PR #418</code> needs a migration note before review.</li>
+                      <li><code>PR #421</code> looks unblocked and ready to merge.</li>
+                    </ul>
 
-<span class="out-key">▸ Review queue</span>
-  <span class="out-ok">PR #418</span> needs a migration note before review.
-  <span class="out-ok">PR #421</span> looks unblocked and ready to merge.
+                    <h4>Carry-forward</h4>
+                    <p>Yesterday's wrap flagged session-cache risk across two tickets touching <code>/auth/session.py</code>.</p>
 
-<span class="out-key">▸ Carry-forward</span>
-  Yesterday's wrap flagged session-cache risk
-  across two tickets touching <span class="str">/auth/session.py</span>.
-
-<span class="out-key">▸ Coaching nudge</span>
-  This is <span class="accent-text">next-level coordination work</span>:
-  reduce merge risk early and leave a
-  handoff others can reuse.</code></pre>
+                    <h4>Coaching nudge</h4>
+                    <p>This is <span class="accent-text">next-level coordination work</span> — reduce merge risk early and leave a handoff others can reuse.</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </aside>
         </div>
@@ -214,8 +221,8 @@
         <div class="container">
           <header class="band-head">
             <p class="eyebrow">Features</p>
-            <h2 id="features-h">Eight workflows. One running coaching loop.</h2>
-            <p class="band-lede">Every command runs against your local evidence store. No dashboards, no telemetry.</p>
+            <h2 id="features-h">Slash commands inside your agent. No new app to open.</h2>
+            <p class="band-lede">Eight on-demand workflows plus ambient coaching, all running against a local evidence store. No dashboards, no telemetry.</p>
           </header>
 
           <div class="feature-row">
@@ -229,26 +236,36 @@
               </p>
               <a class="link-arrow" href="https://github.com/yihanzhu/valor/blob/main/commands/briefing.md" rel="noreferrer">See the spec <span aria-hidden="true">→</span></a>
             </div>
-            <div class="term" data-term="f-briefing">
-              <div class="term-head">
+            <div class="chat">
+              <div class="chat-head">
                 <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
-                <span class="term-title">claude-code — /valor-briefing</span>
-                <button class="term-copy" type="button" data-copy-for="f-briefing" aria-label="Copy command"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 9h10v11H9zM6 4h10v2H8v10H6z"/></svg></button>
+                <span class="chat-title"><span class="dot"></span>claude code</span>
               </div>
-              <pre class="term-body"><code data-copy-source><span class="prompt">$</span> <span class="cmd">/valor-briefing</span>
+              <div class="chat-body">
+                <div class="chat-user">
+                  <span class="chat-role">You</span>
+                  <span class="chat-msg">/valor-briefing</span>
+                </div>
+                <div class="chat-agent">
+                  <span class="chat-role chat-role-agent">Valor</span>
+                  <div class="chat-out">
+                    <h4>Tickets <span style="color:var(--text-dim);font-weight:400">(Jira)</span></h4>
+                    <ul>
+                      <li><span class="ok">●</span> <code>AUTH-412</code> Retry storm under load — In Progress</li>
+                      <li><span class="warn">●</span> <code>AUTH-418</code> Session cache invalidation — In Review</li>
+                    </ul>
 
-<span class="out-key">Tickets (Jira)</span>
-  <span class="out-ok">●</span> AUTH-412   Retry storm under load        <span class="dim">In Progress</span>
-  <span class="out-warn">●</span> AUTH-418   Session cache invalidation    <span class="dim">In Review</span>
+                    <h4>Pull requests</h4>
+                    <ul>
+                      <li><code>#418</code> auth: retry policy with jittered backoff</li>
+                      <li><code>#421</code> deps: bump httpx 0.27 → 0.28</li>
+                    </ul>
 
-<span class="out-key">Pull requests</span>
-  <span class="dim">#418</span> auth: retry policy w/ jittered backoff
-  <span class="dim">#421</span> deps: bump httpx 0.27 → 0.28
-
-<span class="out-key">Coaching nudge</span>
-  Add a one-line rollback note to <span class="str">#418</span>. That's
-  the <span class="accent-text">L5 coordination signal</span> your framework
-  weights most this quarter.</code></pre>
+                    <h4>Coaching nudge</h4>
+                    <p>Add a one-line rollback note to <code>#418</code>. That's the <span class="accent-text">L5 coordination signal</span> your framework weights most this quarter.</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -264,39 +281,47 @@
               </p>
               <a class="link-arrow" href="https://github.com/yihanzhu/valor/blob/main/commands/pr-review.md" rel="noreferrer">PR review playbook <span aria-hidden="true">→</span></a>
             </div>
-            <div class="term" data-term="f-review">
-              <div class="term-head">
+            <div class="chat">
+              <div class="chat-head">
                 <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
-                <span class="term-title">cursor — /valor-pr-review</span>
-                <button class="term-copy" type="button" data-copy-for="f-review" aria-label="Copy command"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 9h10v11H9zM6 4h10v2H8v10H6z"/></svg></button>
+                <span class="chat-title"><span class="dot"></span>cursor · valor</span>
               </div>
-              <pre class="term-body"><code data-copy-source><span class="prompt">$</span> <span class="cmd">/valor-pr-review</span> <span class="arg">#418</span>
+              <div class="chat-body">
+                <div class="chat-user">
+                  <span class="chat-role">You</span>
+                  <span class="chat-msg">/valor-pr-review #418</span>
+                </div>
+                <div class="chat-agent">
+                  <span class="chat-role chat-role-agent">Valor</span>
+                  <div class="chat-out">
+                    <h4>Architecture</h4>
+                    <p>Retry policy lives in the wrong layer. Move from <code>api.client</code> → <code>net.transport</code>. Future RPCs will need it too.</p>
 
-<span class="out-key">Architecture</span>
-  Retry policy lives in the wrong layer.
-  Move from <span class="str">api.client</span> → <span class="str">net.transport</span>.
-  <span class="dim">Why: future RPCs need it too.</span>
+                    <h4>Test gaps</h4>
+                    <ul>
+                      <li><span class="warn">!</span> No coverage for jitter bounds.</li>
+                      <li><span class="warn">!</span> Backoff cap untested above 30s.</li>
+                    </ul>
 
-<span class="out-key">Test gaps</span>
-  <span class="out-warn">!</span> No coverage for jitter bounds.
-  <span class="out-warn">!</span> Backoff cap untested above 30s.
+                    <h4>Tone check</h4>
+                    <p>Comment on line 84 reads sharper than intended — soften to a question.</p>
 
-<span class="out-key">Tone check</span>
-  Comment on line 84 reads sharper than
-  intended — soften to a question.
-
-<span class="out-ok">✓</span> Logged as evidence: <span class="dim">code_review · subject_matter</span></code></pre>
+                    <p class="footnote"><span class="ok">✓</span> Logged as evidence · code_review · subject_matter</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           <div class="feature-row">
             <div class="feature-copy">
-              <p class="feature-tag">Evidence</p>
+              <p class="feature-tag">Evidence · optional CLI</p>
               <h3>Your work, queryable. Locally.</h3>
               <p>
-                Every command writes structured evidence to
-                <code>~/.valor/evidence.sqlite</code>. Export it for weekly
-                reflection, 1:1 prep, or self-review — no cloud, no scraping.
+                Every in-agent command writes structured evidence to
+                <code>~/.valor/evidence.sqlite</code>. When you want raw access
+                — for self-review, scripting, or 1:1 prep outside an agent —
+                there's a small Python CLI alongside the integrations.
               </p>
               <a class="link-arrow" href="https://github.com/yihanzhu/valor/blob/main/docs/architecture.md" rel="noreferrer">Architecture <span aria-hidden="true">→</span></a>
             </div>
@@ -336,29 +361,39 @@
               </p>
               <a class="link-arrow" href="https://github.com/yihanzhu/valor/blob/main/commands/wrapup.md" rel="noreferrer">Wrap-up spec <span aria-hidden="true">→</span></a>
             </div>
-            <div class="term" data-term="f-wrap">
-              <div class="term-head">
+            <div class="chat">
+              <div class="chat-head">
                 <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
-                <span class="term-title">codex — /valor-wrapup</span>
-                <button class="term-copy" type="button" data-copy-for="f-wrap" aria-label="Copy command"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 9h10v11H9zM6 4h10v2H8v10H6z"/></svg></button>
+                <span class="chat-title"><span class="dot"></span>codex cli · valor</span>
               </div>
-              <pre class="term-body"><code data-copy-source><span class="prompt">$</span> <span class="cmd">/valor-wrapup</span>
+              <div class="chat-body">
+                <div class="chat-user">
+                  <span class="chat-role">You</span>
+                  <span class="chat-msg">/valor-wrapup</span>
+                </div>
+                <div class="chat-agent">
+                  <span class="chat-role chat-role-agent">Valor</span>
+                  <div class="chat-out">
+                    <h4>Shipped today</h4>
+                    <ul>
+                      <li><span class="ok">✓</span> Merged <code>#421</code> (httpx bump, 2 reviews)</li>
+                      <li><span class="ok">✓</span> Drafted rollback note on <code>#418</code></li>
+                      <li><span class="ok">✓</span> 1:1 with E. — confirmed L5 target</li>
+                    </ul>
 
-<span class="out-key">Shipped today</span>
-  <span class="out-ok">✓</span> Merged <span class="str">#421</span> (httpx bump, 2 reviews)
-  <span class="out-ok">✓</span> Drafted rollback note on <span class="str">#418</span>
-  <span class="out-ok">✓</span> 1:1 with E. — confirmed L5 target
+                    <h4>Carry forward → tomorrow</h4>
+                    <ul>
+                      <li><span class="warn">→</span> Land <code>#418</code> before standup</li>
+                      <li><span class="warn">→</span> Reply to AUTH-412 thread (Sami)</li>
+                    </ul>
 
-<span class="out-key">Carry forward → tomorrow</span>
-  <span class="out-warn">→</span> Land <span class="str">#418</span> before standup
-  <span class="out-warn">→</span> Reply to AUTH-412 thread (Sami)
+                    <h4>Reflection</h4>
+                    <p>Strong execution day. Light on the <span class="accent-text">cross-team alignment</span> axis — flag for Friday's weekly.</p>
 
-<span class="out-key">Reflection</span>
-  Strong execution day. Light on the
-  <span class="accent-text">cross-team alignment</span> axis — flag for
-  Friday's weekly.
-
-<span class="out-ok">✓</span> Saved to <span class="str">~/.valor/carry-forward/2026-05-16.md</span></code></pre>
+                    <p class="footnote"><span class="ok">✓</span> Saved to <code>~/.valor/carry-forward/2026-05-16.md</code></p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -373,25 +408,29 @@
 
           <ol class="rail">
             <li class="rail-step">
-              <p class="rail-num">01</p>
+              <p class="rail-num">01 · in your terminal</p>
               <h3>Install</h3>
               <p>One command, all hosts. Or pick a target.</p>
               <pre class="rail-snippet"><code><span class="prompt">$</span> <span class="cmd">curl</span> <span class="flag">-fsSL</span> ...install.sh | <span class="cmd">bash</span> <span class="flag">-s --clone</span></code></pre>
             </li>
             <li class="rail-step">
-              <p class="rail-num">02</p>
+              <p class="rail-num">02 · in your agent</p>
               <h3>Setup</h3>
               <p>Paste your career ladder. Pick your level. Done.</p>
-              <pre class="rail-snippet"><code><span class="prompt">›</span> <span class="cmd">/valor-setup</span>
-<span class="out">guided framework + level + integrations</span></code></pre>
+              <div class="rail-slash">
+                <span class="rail-slash-pill">/valor-setup</span>
+                <p class="rail-slash-note">guided framework, level &amp; integrations</p>
+              </div>
             </li>
             <li class="rail-step">
-              <p class="rail-num">03</p>
+              <p class="rail-num">03 · in your agent</p>
               <h3>Use</h3>
-              <p>Briefings, reviews, wrap-ups — in your agent.</p>
-              <pre class="rail-snippet"><code><span class="prompt">›</span> <span class="cmd">/valor-briefing</span>
-<span class="prompt">›</span> <span class="cmd">/valor-weekly</span>
-<span class="prompt">›</span> <span class="cmd">/valor-prep</span></code></pre>
+              <p>Briefings, reviews, wrap-ups — as you work.</p>
+              <div class="rail-slash">
+                <span class="rail-slash-pill">/valor-briefing</span>
+                <span class="rail-slash-pill">/valor-weekly</span>
+                <span class="rail-slash-pill">/valor-prep</span>
+              </div>
             </li>
           </ol>
         </div>

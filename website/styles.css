@@ -465,6 +465,151 @@ em { font-style: normal; color: var(--accent-bright); }
 .term-body .accent-text { color: var(--accent-bright); }
 
 /* ============================================================
+   Chat frame — for in-agent conversation examples
+   Same window chrome as .term, but the body renders as a
+   chat thread (user message + agent reply in markdown style).
+   ============================================================ */
+.chat {
+  position: relative;
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #11141b, #0d1019);
+  overflow: hidden;
+  box-shadow: 0 14px 36px -20px rgba(0,0,0,0.65);
+}
+.chat-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  background: linear-gradient(180deg, #1a1d27, #14171f);
+  border-bottom: 1px solid var(--line);
+  position: relative;
+}
+.chat-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  max-width: 70%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chat-title .dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--ok);
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.chat-body {
+  padding: 16px 20px 20px;
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+.chat-user,
+.chat-agent {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr);
+  gap: 12px;
+  align-items: flex-start;
+}
+.chat-user {
+  padding: 10px 0 14px;
+  border-bottom: 1px dashed var(--line);
+}
+.chat-agent {
+  padding-top: 16px;
+}
+.chat-role {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  padding-top: 2px;
+  user-select: none;
+}
+.chat-role-agent { color: var(--accent); }
+.chat-msg {
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  color: var(--accent-bright);
+}
+.chat-msg::before {
+  content: "›  ";
+  color: var(--text-dim);
+}
+.chat-out > * { margin: 0; }
+.chat-out > * + * { margin-top: 10px; }
+.chat-out h4 {
+  font-family: var(--font-sans);
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: var(--text);
+  margin-top: 14px;
+}
+.chat-out h4:first-child { margin-top: 0; }
+.chat-out p {
+  color: var(--text-soft);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+.chat-out ul {
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+.chat-out li {
+  position: relative;
+  padding-left: 18px;
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.chat-out li::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 0.65em;
+  width: 6px;
+  height: 1px;
+  background: var(--text-dim);
+}
+.chat-out code {
+  font-family: var(--font-mono);
+  font-size: 0.84em;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  color: var(--accent-bright);
+}
+.chat-out .ok   { color: var(--ok); font-weight: 600; }
+.chat-out .warn { color: var(--warn); font-weight: 600; }
+.chat-out .err  { color: var(--err); font-weight: 600; }
+.chat-out .accent-text { color: var(--accent-bright); font-style: italic; }
+.chat-out .footnote {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+/* ============================================================
    Bands (sections)
    ============================================================ */
 .band {
@@ -647,6 +792,36 @@ em { font-style: normal; color: var(--accent-bright); }
 .rail-snippet .cmd { color: #fff; }
 .rail-snippet .flag { color: var(--azure); }
 .rail-snippet .out { color: var(--text-dim); }
+
+.rail-slash {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  align-items: center;
+}
+.rail-slash-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 11px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: rgba(244, 209, 119, 0.08);
+  color: var(--accent-bright);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+.rail-slash-pill::before {
+  content: "›";
+  color: var(--text-dim);
+  margin-right: 5px;
+}
+.rail-slash-note {
+  flex-basis: 100%;
+  margin: 4px 0 0;
+  color: var(--text-dim);
+  font-size: 0.82rem;
+}
+.rail-step .rail-num { white-space: nowrap; }
 
 /* ============================================================
    Compatibility band
