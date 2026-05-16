@@ -446,6 +446,121 @@ em { font-style: normal; color: var(--accent-bright); }
 
 .term-compact .term-body { padding: 14px 18px; font-size: 0.88rem; white-space: pre-wrap; word-break: break-word; }
 
+/* ============================================================
+   Install card — minimal, non-CLI-feeling install snippet.
+   Used for one-time setup commands. No mac chrome, no $ prompt.
+   ============================================================ */
+.install-label {
+  margin: 0 0 8px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+.install-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 12px 12px 18px;
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(244, 209, 119, 0.04), rgba(244, 209, 119, 0)),
+    var(--code-bg);
+  overflow: hidden;
+  min-width: 0;
+}
+.install-card .install-cmd {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
+  padding: 4px 0;
+}
+.install-card .install-cmd::-webkit-scrollbar { height: 4px; }
+.install-card .install-cmd::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 999px; }
+.install-card-lg {
+  padding: 16px 16px 16px 22px;
+}
+.install-card-lg .install-cmd { font-size: 0.95rem; }
+.install-copy {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.install-copy:hover { background: var(--accent); color: #1a1306; border-color: var(--accent); }
+.install-copy.is-copied { background: var(--ok); color: #0a1a10; border-color: var(--ok); }
+.install-copy.is-failed { background: var(--err); color: #2a0a0a; border-color: var(--err); }
+.install-copy svg { opacity: 0.85; }
+
+.setup-notes {
+  list-style: none;
+  padding: 0;
+  margin: 28px 0 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.setup-notes li {
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-soft);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+.setup-note-label {
+  display: block;
+  margin-bottom: 6px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.7rem;
+  color: var(--accent);
+}
+
+.rail-install {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--code-bg);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text);
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
+}
+.rail-install::-webkit-scrollbar { height: 4px; }
+.rail-install::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 999px; }
+
+.cta-lede {
+  margin: 0 0 28px;
+  color: var(--text-soft);
+  font-size: 1.02rem;
+}
+.cta-install { max-width: 680px; margin: 0 auto 28px; text-align: left; }
+
 /* syntax tokens — pre-rendered, no runtime highlighter */
 .term-body .prompt   { color: var(--accent); user-select: none; }
 .term-body .cmd      { color: #ffffff; font-weight: 500; }
@@ -1010,6 +1125,7 @@ em { font-style: normal; color: var(--accent-bright); }
   .rail { grid-template-columns: 1fr; }
   .compat-grid { grid-template-columns: 1fr; }
   .oss-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .setup-notes { grid-template-columns: 1fr; }
 
   .footer-row { grid-template-columns: 1fr; gap: 32px; }
 }
