@@ -51,9 +51,9 @@
         font-family="Inter, system-ui, -apple-system, sans-serif"
         font-weight="400"
         font-size="26"
-        fill="#a3acc0">Local-first coaching for Claude Code, Codex CLI, and Cursor.</text>
+        fill="#a3acc0">Slash commands and ambient coaching in Claude Code, Codex CLI, and Cursor.</text>
 
-  <!-- terminal pill -->
+  <!-- chat pill -->
   <g transform="translate(96 510)">
     <rect width="1008" height="64" rx="12" fill="#11141b" stroke="#ffffff" stroke-opacity="0.14"/>
     <circle cx="28" cy="32" r="6" fill="#ff5f56"/>
@@ -62,7 +62,7 @@
     <text x="108" y="41"
           font-family="JetBrains Mono, ui-monospace, Menlo, monospace"
           font-size="22"
-          fill="#e9edf4"><tspan fill="#f4d177">$</tspan> curl -fsSL https://valor.sh/install.sh | bash -s -- --clone</text>
+          fill="#a3acc0"><tspan fill="#6c7689">YOU  ›</tspan> <tspan fill="#ffe09a">/valor-briefing</tspan>   <tspan fill="#6c7689">·  claude code</tspan></text>
   </g>
 
   <!-- version -->
