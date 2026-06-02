@@ -40,7 +40,7 @@ from pathlib import Path
 DB_PATH = Path.home() / ".valor" / "evidence.sqlite"
 BACKUP_DIR = Path.home() / ".valor" / "backups"
 
-STATE_SCHEMA_VERSION = 5
+STATE_SCHEMA_VERSION = 6
 
 ROUTINE_SLOTS = ("briefing", "wrapup", "weekly", "prep")
 
@@ -580,6 +580,22 @@ def _migrate_state_in_memory(state: dict) -> dict:
         state.get("escalate_in_one_on_one"), list
     ):
         state["escalate_in_one_on_one"] = []
+    # v6: day-planning config (plan.py). `calendar_auto_write` is the write
+    # kill switch (read is gated separately by integrations.calendar). Workday
+    # bounds + deep-block threshold tune the gap-fit pass.
+    if "planning" not in state or not isinstance(state.get("planning"), dict):
+        state["planning"] = {
+            "calendar_auto_write": True,
+            "workday_start": "09:00",
+            "workday_end": "18:00",
+            "deep_min_hours": 2.0,
+        }
+    else:
+        plan = state["planning"]
+        plan.setdefault("calendar_auto_write", True)
+        plan.setdefault("workday_start", "09:00")
+        plan.setdefault("workday_end", "18:00")
+        plan.setdefault("deep_min_hours", 2.0)
     state["state_schema_version"] = STATE_SCHEMA_VERSION
     return state
 
@@ -725,6 +741,12 @@ def cmd_context(args: argparse.Namespace) -> None:
             "escalation_threshold": (state.get("verification") or {}).get("escalation_threshold", 3),
         },
         "escalate_in_one_on_one_count": len(state.get("escalate_in_one_on_one", []) or []),
+        "planning": {
+            "calendar_auto_write": bool((state.get("planning") or {}).get("calendar_auto_write", True)),
+            "workday_start": (state.get("planning") or {}).get("workday_start", "09:00"),
+            "workday_end": (state.get("planning") or {}).get("workday_end", "18:00"),
+            "deep_min_hours": (state.get("planning") or {}).get("deep_min_hours", 2.0),
+        },
         "state_schema_version": state.get("state_schema_version", STATE_SCHEMA_VERSION),
     }
     print(json.dumps(result, indent=2))

@@ -153,6 +153,63 @@ entirely and behave as before.
 The gate normalizes case/whitespace, but different wording forks a new counter.
 Reuse the same identifier every run for the same claim.
 
+## Day Planning & Calendar Write
+
+A ranked list of priorities is not a plan: a 1.5h pre-meeting gap and a
+no-meeting afternoon are not interchangeable. After the briefing's **Suggested
+Priorities**, fit them to the day's real calendar and (optionally) write the
+blocks back as events. Skipped entirely if `integrations.calendar` is `false`.
+
+### plan.py subcommands
+
+| Subcommand | Purpose |
+|------------|---------|
+| `fit --events JSON --priorities JSON [--now ISO] [--workday-start HH:MM] [--workday-end HH:MM] [--deep-hours N]` | Fit priorities to calendar gaps; returns a time-blocked schedule (JSON) |
+| `shape --text "..."` | Classify one priority's task shape (debug) |
+
+`--events`/`--priorities` accept inline JSON, `@file`, or `-` (stdin).
+
+### Protocol
+
+1. **Fetch today's calendar** (the same read discovery as the briefing Calendar
+   section). Keep only accepted/tentative meetings; drop declined. Build busy
+   blocks as `[{"start": ISO, "end": ISO, "summary": "..."}]`.
+2. **Fit** — pass the busy blocks and the **post-gate** priorities (exclude any
+   the Verification Gate demoted to "unverified — confirm or drop?") to:
+   ```bash
+   python3 ~/.valor/plan.py fit --events "$EVENTS" --priorities "$PRIORITIES"
+   ```
+   It classifies each priority's shape (merge/review/publish → `fragmented_ok`;
+   code/design/research/draft → `deep_only`; else `either`), classifies gaps
+   (`deep` ≥ `deep_min_hours`, else `fragmented`), and assigns greedily —
+   `deep_only` only lands in deep gaps; `fragmented_ok` prefers fragmented gaps
+   so deep blocks stay free for deep work.
+3. **Present** the `blocks` as a "Day Plan" section (time-blocked). Surface each
+   `unassigned` item as "push to your next deep block" (for `deep_only`, the
+   next no-meeting / ≥`deep_min_hours` window).
+
+### Calendar write (optional)
+
+Only if `context.planning.calendar_auto_write` is `true` **and** a calendar
+**writer** is available (discover create/update/delete-event MCP tools, or a
+calendar slash command with write; if none, skip write — present the markdown
+plan only and note it once).
+
+- **Write one event per block.** Title `Valor: <priority, truncated to 60>`.
+  Put an idempotency token in the description: `valor:task:<sha1(YYYY-MM-DD + "|"
+  + lowercased priority)>`, plus `valor:shape:<shape>`, and for artifact-claim
+  priorities the verify `valor:claim:<claim_hash>`. No reminders.
+- **Idempotent:** before creating, search today's events for the same
+  `valor:task:` token. If found, update it in place (the time may have shifted);
+  else create. Never create a second event for the same task.
+- **Skip unverified:** do NOT write an event for a priority the gate demoted —
+  it stays in the markdown "Needs Confirmation" note only.
+- **Cleanup (done = gone):** for a Valor event whose `valor:claim:` now verifies
+  **resolved**, delete it — the task got done, so it leaves the calendar. Leave
+  `unresolved` ones in place (they're real reminders).
+- **Never touch non-Valor events.** Only act on events whose description carries
+  a `valor:` token. Do not auto-create anything for unverified claims.
+
 ## State Management
 
 State file: `~/.valor/state.json`
@@ -204,5 +261,6 @@ fields, so a fresh `state.json` with only installer fields is valid.
 | `integrations` | Installer / User config | Object with boolean flags for github, jira, calendar, news |
 | `verification` | Installer | Object: `enabled` (gate kill switch), `escalation_threshold` (consecutive misses before 1:1 escalation, default 3), `ttl_overrides` (per-type cache TTL hours) |
 | `escalate_in_one_on_one` | Carry-forward audit | List of claims that failed repeated verification; surfaced by 1:1 prep |
+| `planning` | Installer | Object: `calendar_auto_write` (write kill switch; read is gated by `integrations.calendar`), `workday_start`/`workday_end` (HH:MM), `deep_min_hours` (deep-block threshold, default 2) |
 | `installed_version` | Installer | Valor version at last install (semver) |
 | `installed_at` | Installer | ISO 8601 timestamp of last install |
