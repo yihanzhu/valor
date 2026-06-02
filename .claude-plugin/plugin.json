@@ -1,0 +1,11 @@
+{
+  "name": "valor",
+  "description": "Career coach commands for developers. For the full experience (ambient coaching, auto-triggers, evidence recording), install with: bash install.sh from the repo root.",
+  "version": "0.3.0",
+  "author": {
+    "name": "Yihan Zhu"
+  },
+  "homepage": "https://github.com/yihanzhu/valor",
+  "repository": "https://github.com/yihanzhu/valor",
+  "license": "Apache-2.0"
+}

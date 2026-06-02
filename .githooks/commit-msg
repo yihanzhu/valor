@@ -1,0 +1,4 @@
+#!/bin/sh
+# Valor company-info hygiene gate — scans the commit message.
+root="$(git rev-parse --show-toplevel)"
+exec python3 "$root/scripts/check_hygiene.py" --mode msg --commit-msg-file "$1" --denylist "$root/.hygiene/denylist.local"

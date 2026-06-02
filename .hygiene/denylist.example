@@ -1,0 +1,21 @@
+# Valor company-info denylist — EXAMPLE / TEMPLATE
+#
+# Valor is public, so committed files must never contain your employer name,
+# internal Jira project keys, colleague names, or non-placeholder emails.
+# This scanner blocks those — but the list of real terms must NOT be committed
+# (or the guard itself becomes the leak). So:
+#
+#   1. Copy this file to `.hygiene/denylist.local`  (git-ignored — never committed).
+#   2. Replace the placeholders below with YOUR real terms.
+#   3. For CI, set the SAME content as a repo secret named HYGIENE_DENYLIST
+#      (Settings -> Secrets and variables -> Actions). One regex per line.
+#
+# Format: one case-insensitive regex per line. Blank lines and `#` comments ignored.
+# Tip: anchor with \b and include the key shape to avoid false positives
+# (e.g. `\bACME-\d+` rather than a bare `ACME`).
+#
+# Placeholders — replace, do not ship as-is:
+# acme-corp                # employer / org name
+# \bACME-\d+               # internal Jira project keys
+# \bJane Roe\b             # colleague names
+# \binternal-codename\b    # internal project / repo codenames

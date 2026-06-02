@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.env
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db
+venv/
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+.claude/
+CLAUDE.md
+!/CLAUDE.md
+.DS_Store
+
+# Company-info denylist holds real sensitive terms — must never be committed.
+# Committed template: .hygiene/denylist.example. CI uses the HYGIENE_DENYLIST secret.
+.hygiene/denylist.local

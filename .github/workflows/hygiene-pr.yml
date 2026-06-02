@@ -1,0 +1,27 @@
+name: hygiene-pr
+
+# PR titles and descriptions live on GitHub, not in git, so the file/commit
+# scans in tests.yml can't see them — and that is one way a past leak escaped.
+# This workflow scans them. It runs ONLY on pull_request, so it produces exactly
+# one definitive (never "skipped") check per PR — safe to mark required in
+# branch protection.
+on:
+  pull_request:
+
+jobs:
+  hygiene-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Scan PR title and description for company info
+        env:
+          HYGIENE_DENYLIST: ${{ secrets.HYGIENE_DENYLIST }}
+          # Passed via env (never interpolated into the shell) to avoid injection.
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s\n%s\n' "$PR_TITLE" "$PR_BODY" > pr_meta.txt
+          python scripts/check_hygiene.py --mode text --input-file pr_meta.txt --redact

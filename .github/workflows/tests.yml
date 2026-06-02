@@ -1,0 +1,42 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dev dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Lint
+        run: ruff check src tests scripts
+      - name: Run tests
+        run: python -m pytest -q
+      - name: Compile sources
+        run: python -m compileall src tests scripts
+
+  hygiene:
+    # Company-info guard: fails if any committed file contains an employer name,
+    # internal Jira key, colleague name, or non-placeholder email. Exact terms
+    # come from the HYGIENE_DENYLIST secret (never committed); generic patterns
+    # are built in. Make this a required check in branch protection to block merge.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Scan tracked files for company info
+        env:
+          HYGIENE_DENYLIST: ${{ secrets.HYGIENE_DENYLIST }}
+        run: python scripts/check_hygiene.py --mode ci

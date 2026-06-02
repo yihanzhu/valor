@@ -1,0 +1,6 @@
+#!/bin/sh
+# Valor company-info hygiene gate — scans staged content before each commit.
+# Activate once per clone:  git config core.hooksPath .githooks
+# Bypass (don't, unless you're certain):  git commit --no-verify
+root="$(git rev-parse --show-toplevel)"
+exec python3 "$root/scripts/check_hygiene.py" --mode staged --denylist "$root/.hygiene/denylist.local"

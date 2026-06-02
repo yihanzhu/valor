@@ -1,0 +1,3 @@
+# Runtime dependencies only.
+# Valor's local core currently uses only the Python standard library.
+# Development and test dependencies live in requirements-dev.txt.

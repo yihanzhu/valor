@@ -1,0 +1,13 @@
+{
+  "name": "valor-marketplace",
+  "owner": {
+    "name": "Yihan Zhu"
+  },
+  "plugins": [
+    {
+      "name": "valor",
+      "source": ".",
+      "description": "Career coach commands for developers -- briefings, PR reviews, design docs, reflections, and more. Install with install.sh for the full ambient experience."
+    }
+  ]
+}
