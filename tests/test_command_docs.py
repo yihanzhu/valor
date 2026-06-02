@@ -98,6 +98,37 @@ def test_installer_seeds_verification_state():
     assert '"escalate_in_one_on_one"' in text
 
 
+# --- Day-planning wiring (Phase 2) ---
+
+def test_briefing_invokes_day_planning():
+    """Briefing must run the gap-fit pass and gate calendar writes."""
+    text = Path("commands/briefing.md").read_text()
+    assert "plan.py" in text, "briefing does not invoke the day-planning pass"
+    assert "Day Plan" in text
+    assert "calendar_auto_write" in text, "briefing ignores the write kill switch"
+    assert "integrations.calendar" in text
+
+
+def test_utilities_documents_day_planning():
+    text = Path("src/utilities.md").read_text()
+    assert "Day Planning & Calendar Write" in text
+    assert "plan.py fit" in text
+    assert "valor:task:" in text   # idempotency token
+    assert "calendar_auto_write" in text
+
+
+def test_installer_syncs_plan_script():
+    """plan.py must be copied into ~/.valor by the installer."""
+    text = Path("install.sh").read_text()
+    assert 'src/plan.py" "$VALOR_HOME/plan.py' in text
+
+
+def test_installer_seeds_planning_state():
+    text = Path("install.sh").read_text()
+    assert '"planning"' in text
+    assert '"calendar_auto_write"' in text
+
+
 # --- Install script tests ---
 
 def test_install_script_syntax():

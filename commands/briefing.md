@@ -270,7 +270,39 @@ Cross-reference items across sections (link tickets to meetings, PRs to tickets)
 resolved items are dropped (or shown as just-completed); unconfirmable ones are
 listed under a short "Needs Confirmation" note as "unverified — confirm or
 drop?", never as numbered priorities with a day count.]
+
+### Day Plan
+[Time-blocked schedule from the §7 day-planning pass. Omit if calendar is off.]
+- [HH:MM]–[HH:MM] — [priority] *(deep)*
+- [HH:MM]–[HH:MM] — [priority] *(fragmented)*
+[**Push to next deep block:** [unassigned deep_only items], if any]
+[*Calendar: N events written/updated* — only if auto-write ran]
 ```
+
+## Day Plan & Calendar (§7 — after priorities)
+
+Turn the ranked priorities into a time-blocked plan fit to today's calendar,
+and (optionally) write the blocks back as events so the user sees their to-dos
+without re-asking. Skip this whole section if `context.integrations.calendar`
+is `false`.
+
+Follow the full protocol in `~/.valor/utilities.md` ("Day Planning & Calendar
+Write"). In short:
+
+1. Reuse the calendar you already fetched (§3): accepted/tentative meetings only.
+2. Fit the **post-gate** priorities (exclude any the §6 gate demoted to
+   "unverified") to the day's gaps:
+   ```bash
+   python3 ~/.valor/plan.py fit --events "$EVENTS" --priorities "$PRIORITIES"
+   ```
+   Render `blocks` as the **Day Plan** section above; surface `unassigned`
+   `deep_only` items as "push to your next deep block".
+3. **Calendar write** — only if `context.planning.calendar_auto_write` is `true`
+   AND a calendar writer is available: create/update one event per block
+   (idempotent via the `valor:task:` token; never duplicate), **skip unverified
+   claims**, delete Valor events whose claim has since verified **resolved**, and
+   never touch non-Valor events. If no writer exists, present the plan only and
+   note it once.
 
 ## Monday / Return-from-Absence Mode
 

@@ -250,6 +250,7 @@ check_drift() {
     local runtime_sources=(
         "$SCRIPT_DIR/src/evidence_cli.py"
         "$SCRIPT_DIR/src/verify.py"
+        "$SCRIPT_DIR/src/plan.py"
         "$SCRIPT_DIR/src/collect_transcripts.py"
         "$SCRIPT_DIR/src/career_framework.md"
         "$SCRIPT_DIR/src/utilities.md"
@@ -258,6 +259,7 @@ check_drift() {
     local runtime_dests=(
         "$VALOR_HOME/evidence_cli.py"
         "$VALOR_HOME/verify.py"
+        "$VALOR_HOME/plan.py"
         "$VALOR_HOME/collect_transcripts.py"
         "$VALOR_HOME/career_framework.md"
         "$VALOR_HOME/utilities.md"
@@ -419,7 +421,7 @@ install_shared() {
     local detected_intg
     detected_intg=$(detect_integrations)
 
-    local schema_version=5
+    local schema_version=6
 
     if [ ! -f "$VALOR_HOME/state.json" ]; then
         cat > "$VALOR_HOME/state.json" <<STATEJSON
@@ -444,7 +446,13 @@ install_shared() {
     "escalation_threshold": 3,
     "ttl_overrides": {}
   },
-  "escalate_in_one_on_one": []
+  "escalate_in_one_on_one": [],
+  "planning": {
+    "calendar_auto_write": true,
+    "workday_start": "09:00",
+    "workday_end": "18:00",
+    "deep_min_hours": 2.0
+  }
 }
 STATEJSON
         echo "  [OK] state.json (created)"
@@ -478,6 +486,10 @@ if not isinstance(state.get('verification'), dict):
 if not isinstance(state.get('escalate_in_one_on_one'), list):
     state['escalate_in_one_on_one'] = []
     changed = True
+# v6: day-planning config (presence-based so it self-heals).
+if not isinstance(state.get('planning'), dict):
+    state['planning'] = {'calendar_auto_write': True, 'workday_start': '09:00', 'workday_end': '18:00', 'deep_min_hours': 2.0}
+    changed = True
 if state.get('state_schema_version', 1) < target_version:
     state['state_schema_version'] = target_version
     changed = True
@@ -495,6 +507,9 @@ else:
 
     cp "$SCRIPT_DIR/src/verify.py" "$VALOR_HOME/verify.py"
     echo "  [OK] verify.py"
+
+    cp "$SCRIPT_DIR/src/plan.py" "$VALOR_HOME/plan.py"
+    echo "  [OK] plan.py"
 
     cp "$SCRIPT_DIR/src/collect_transcripts.py" "$VALOR_HOME/collect_transcripts.py"
     echo "  [OK] collect_transcripts.py"

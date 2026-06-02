@@ -1114,7 +1114,24 @@ def test_migrate_state_in_memory_adds_v5_verification_fields():
     assert migrated["verification"]["escalation_threshold"] == 3
     assert migrated["verification"]["ttl_overrides"] == {}
     assert migrated["escalate_in_one_on_one"] == []
-    assert migrated["state_schema_version"] == 5
+    assert migrated["state_schema_version"] == STATE_SCHEMA_VERSION
+
+
+def test_migrate_state_in_memory_adds_v6_planning_fields():
+    migrated = _migrate_state_in_memory({"current_level": "L3"})
+    assert migrated["planning"]["calendar_auto_write"] is True
+    assert migrated["planning"]["workday_start"] == "09:00"
+    assert migrated["planning"]["workday_end"] == "18:00"
+    assert migrated["planning"]["deep_min_hours"] == 2.0
+    assert migrated["state_schema_version"] == 6
+
+
+def test_migrate_state_in_memory_preserves_planning_overrides():
+    state = {"planning": {"calendar_auto_write": False, "workday_start": "08:00"}}
+    migrated = _migrate_state_in_memory(state)
+    assert migrated["planning"]["calendar_auto_write"] is False
+    assert migrated["planning"]["workday_start"] == "08:00"
+    assert migrated["planning"]["workday_end"] == "18:00"  # missing sub-key filled
 
 
 def test_migrate_state_in_memory_preserves_verification_overrides():
@@ -1246,6 +1263,29 @@ def test_context_verification_defaults_when_absent(cli_db, capsys):
     result = json.loads(capsys.readouterr().out)
     assert result["verification"]["enabled"] is True
     assert result["escalate_in_one_on_one_count"] == 0
+
+
+def test_context_includes_planning_block(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({
+        "planning": {"calendar_auto_write": False, "workday_start": "08:30"},
+    }))
+    cmd_context(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["planning"]["calendar_auto_write"] is False
+    assert result["planning"]["workday_start"] == "08:30"
+    assert result["planning"]["workday_end"] == "18:00"  # default for missing key
+
+
+def test_context_planning_defaults_when_absent(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({"current_level": "L3"}))
+    cmd_context(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["planning"]["calendar_auto_write"] is True
+    assert result["planning"]["deep_min_hours"] == 2.0
 
 
 # --- cmd_framework_validate ---
