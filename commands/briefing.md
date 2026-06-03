@@ -289,7 +289,11 @@ is `false`.
 Follow the full protocol in `~/.valor/utilities.md` ("Day Planning & Calendar
 Write"). In short:
 
-1. Reuse the calendar you already fetched (§3): accepted/tentative meetings only.
+1. Reuse the calendar you already fetched (§3); drop declined. Build events with
+   each event's **`type`** (`default`/`focusTime`/`outOfOffice`/`workingLocation`)
+   so plan.py leaves focus-time free for deep work and blocks only real meetings
+   + OOO. If the calendar tool exposes the user's working hours, pass
+   `--workday-start/--workday-end`; otherwise plan.py uses `state.planning`.
 2. Fit the **post-gate** priorities (exclude any the §6 gate demoted to
    "unverified") to the day's gaps:
    ```bash

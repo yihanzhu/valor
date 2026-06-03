@@ -77,6 +77,49 @@ def test_window_starts_at_now_not_workday_start():
     assert r["gaps"][0]["start"] == T("14:00")
 
 
+# --- event types (focus time / OOO / working-location) ---
+def test_focus_time_is_not_busy():
+    # Focus time is a deep-work slot to fill, not a meeting that blocks.
+    ev = [{**_ev("10:00", "12:00"), "type": "focusTime"}]
+    r = plan.fit(ev, [], now=T("09:00"), workday_start="09:00",
+                 workday_end="18:00", deep_min_hours=2)
+    assert r["no_meeting_day"] is True
+    assert len(r["gaps"]) == 1 and r["gaps"][0]["type"] == "deep"
+
+
+def test_working_location_is_not_busy():
+    ev = [{**_ev("09:00", "18:00"), "type": "workingLocation"}]
+    r = plan.fit(ev, [], now=T("09:00"), workday_start="09:00",
+                 workday_end="18:00", deep_min_hours=2)
+    assert r["no_meeting_day"] is True
+
+
+def test_out_of_office_blocks_the_day():
+    ev = [{**_ev("09:00", "18:00"), "type": "outOfOffice"}]
+    r = plan.fit(ev, ["Merge PR #1"], now=T("09:00"), workday_start="09:00",
+                 workday_end="18:00", deep_min_hours=2)
+    assert r["gaps"] == []
+    assert r["unassigned"]
+
+
+def test_real_meeting_blocks_even_when_focus_time_overlaps():
+    # Focus 10-12 (free) overlapping a real meeting 11-12 (busy): 11-12 stays busy.
+    ev = [{**_ev("10:00", "12:00"), "type": "focusTime"},
+          {**_ev("11:00", "12:00"), "type": "default"}]
+    r = plan.fit(ev, [], now=T("09:00"), workday_start="09:00",
+                 workday_end="18:00", deep_min_hours=2)
+    # busy = [11:00-12:00] -> gaps 09:00-11:00 and 12:00-18:00
+    assert len(r["gaps"]) == 2
+    assert r["gaps"][0]["end"][11:16] == "11:00"
+
+
+def test_untyped_event_still_blocks():
+    # Backward compat: an event with no `type` is treated as blocking.
+    r = plan.fit([_ev("10:00", "12:00")], [], now=T("09:00"), workday_start="09:00",
+                 workday_end="18:00", deep_min_hours=2)
+    assert r["no_meeting_day"] is False
+
+
 # --- assignment ---
 def test_deep_only_unassigned_on_fragmented_day():
     # Meetings chop the day so no gap reaches 2h.

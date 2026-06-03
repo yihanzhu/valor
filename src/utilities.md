@@ -172,10 +172,20 @@ blocks back as events. Skipped entirely if `integrations.calendar` is `false`.
 ### Protocol
 
 1. **Fetch today's calendar** (the same read discovery as the briefing Calendar
-   section). Keep only accepted/tentative meetings; drop declined. Build busy
-   blocks as `[{"start": ISO, "end": ISO, "summary": "..."}]`.
-2. **Fit** — pass the busy blocks and the **post-gate** priorities (exclude any
-   the Verification Gate demoted to "unverified — confirm or drop?") to:
+   section). Drop events the user declined. Build the events list as
+   `[{"start": ISO, "end": ISO, "summary": "...", "type": "<eventType>"}]` —
+   **include each event's `type`** (Google Calendar `eventType`:
+   `default`/`focusTime`/`outOfOffice`/`workingLocation`). plan.py uses it:
+   focus-time and working-location are left **free** (focus time is a deep-work
+   slot to fill); regular meetings and out-of-office **block**. Untyped events
+   block, for safety.
+2. **Working hours.** If the calendar tool exposes the user's working-hours
+   setting, pass it as `--workday-start HH:MM --workday-end HH:MM`. Most calendar
+   APIs (including the Google Calendar MCP) do **not** expose this setting, so
+   plan.py falls back to `state.planning.workday_start`/`workday_end` (configured
+   at setup). Don't guess hours from the events.
+3. **Fit** — pass the events and the **post-gate** priorities (exclude any the
+   Verification Gate demoted to "unverified — confirm or drop?") to:
    ```bash
    python3 ~/.valor/plan.py fit --events "$EVENTS" --priorities "$PRIORITIES"
    ```
@@ -184,7 +194,7 @@ blocks back as events. Skipped entirely if `integrations.calendar` is `false`.
    (`deep` ≥ `deep_min_hours`, else `fragmented`), and assigns greedily —
    `deep_only` only lands in deep gaps; `fragmented_ok` prefers fragmented gaps
    so deep blocks stay free for deep work.
-3. **Present** the `blocks` as a "Day Plan" section (time-blocked). Surface each
+4. **Present** the `blocks` as a "Day Plan" section (time-blocked). Surface each
    `unassigned` item as "push to your next deep block" (for `deep_only`, the
    next no-meeting / ≥`deep_min_hours` window).
 
