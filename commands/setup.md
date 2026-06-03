@@ -254,8 +254,10 @@ Replace each boolean with the actual value determined above.
 Only if `calendar` is enabled. The morning briefing fits priorities to the
 day's gaps and can write the plan back as calendar events. Ask two things:
 
-1. **Working hours?** (default 09:00–18:00) — the window the plan fits within.
-   If the user has set working hours in their calendar, use those.
+1. **Working hours?** (default 09:00–18:00) — the window the plan fits within,
+   and the basis for your briefing/wrap-up **routine times** (§4): briefing at
+   `workday_start`, wrap-up at `workday_end`. If the user has set working hours
+   in their calendar, use those.
 2. **Auto-write the plan to your calendar?** (default yes) — "yes" creates
    events for each block (idempotent, removed when the task is done); "no" is
    plan-only (shown in the briefing, nothing written). Suggest starting "no" to
@@ -416,19 +418,24 @@ user has installed.
 
 ### 4.6 Personalization for the other routines
 
-Only ask for what is relevant to the routines the user kept. Defaults:
+Only ask for what is relevant to the routines the user kept. **Defaults derive
+from the working hours set in §3.5** (`planning.workday_start`/`workday_end`) so
+the routines track the user's actual day:
 
 | Field | Routine | Default |
 |-------|---------|---------|
-| Briefing time | briefing | 09:00 |
-| Wrap-up time | wrapup | 17:00 |
-| Weekly slot | weekly | Friday 16:30 (alt: Sunday 19:00) |
+| Briefing time | briefing | `workday_start` |
+| Wrap-up time | wrapup | `workday_end` |
+| Weekly slot | weekly | Friday, 30 min before `workday_end` (alt: Sunday 19:00) |
 
-Convert the user's personalization to a cron expression. Examples:
+So a 09:00–17:00 user gets briefing 09:00 / wrap-up 17:00; an 08:00–16:00 user
+gets 08:00 / 16:00. The user can still override any individual time.
 
-- Briefing 09:00 weekdays -> `0 9 * * 1-5`
-- Wrap-up 17:00 weekdays -> `0 17 * * 1-5`
-- Weekly Friday 16:30 -> `30 16 * * 5`
+Convert to a cron expression. Examples (for a 09:00–17:00 day):
+
+- Briefing at `workday_start` 09:00 weekdays -> `0 9 * * 1-5`
+- Wrap-up at `workday_end` 17:00 weekdays -> `0 17 * * 1-5`
+- Weekly Friday, 30 min before `workday_end` (16:30) -> `30 16 * * 5`
 - Weekly Sunday 19:00 -> `0 19 * * 0`
 - Prep, 1:1 Monday 11:00, lead 90 min -> 09:30 Monday -> `30 9 * * 1`
 

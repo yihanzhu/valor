@@ -129,6 +129,21 @@ def test_installer_seeds_planning_state():
     assert '"calendar_auto_write"' in text
 
 
+def test_day_plan_write_is_private():
+    """Day-plan items must be written private (Google Task, or private event)."""
+    text = Path("src/utilities.md").read_text()
+    assert "Google Task" in text          # preferred private target
+    assert "visibility: private" in text  # private-event fallback
+    btext = Path("commands/briefing.md").read_text()
+    assert "private" in btext
+
+
+def test_routine_times_derive_from_working_hours():
+    """Setup derives briefing/wrap-up routine times from the working hours."""
+    text = Path("commands/setup.md").read_text()
+    assert "workday_start" in text and "workday_end" in text
+
+
 # --- Install script tests ---
 
 def test_install_script_syntax():

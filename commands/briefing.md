@@ -302,11 +302,14 @@ Write"). In short:
    Render `blocks` as the **Day Plan** section above; surface `unassigned`
    `deep_only` items as "push to your next deep block".
 3. **Calendar write** — only if `context.planning.calendar_auto_write` is `true`
-   AND a calendar writer is available: create/update one event per block
-   (idempotent via the `valor:task:` token; never duplicate), **skip unverified
-   claims**, delete Valor events whose claim has since verified **resolved**, and
-   never touch non-Valor events. If no writer exists, present the plan only and
-   note it once.
+   AND a writer is available. These are personal to-dos, so write them
+   **private**: prefer a **Google Task** per block (private by nature) if a
+   task-create tool exists; otherwise a **private** calendar event
+   (`visibility: private` + `transparency: transparent`/free) so the title is
+   hidden from others and you're not shown busy. Idempotent via the
+   `valor:task:` token (never duplicate), **skip unverified claims**,
+   delete/complete items whose claim has since verified **resolved**, and never
+   touch items Valor didn't create. No writer → present the plan only, note once.
 
 ## Monday / Return-from-Absence Mode
 

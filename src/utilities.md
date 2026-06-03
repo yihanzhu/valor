@@ -200,25 +200,37 @@ blocks back as events. Skipped entirely if `integrations.calendar` is `false`.
 
 ### Calendar write (optional)
 
-Only if `context.planning.calendar_auto_write` is `true` **and** a calendar
-**writer** is available (discover create/update/delete-event MCP tools, or a
-calendar slash command with write; if none, skip write — present the markdown
-plan only and note it once).
+Only if `context.planning.calendar_auto_write` is `true` **and** a writer is
+available. These are personal to-dos, so they must stay **private** (visible
+only to the user, never to colleagues who can see the calendar). Pick the write
+target by capability, in this order:
 
-- **Write one event per block.** Title `Valor: <priority, truncated to 60>`.
-  Put an idempotency token in the description: `valor:task:<sha1(YYYY-MM-DD + "|"
+1. **Google Tasks (preferred).** If a task-create tool is available (a Google
+   Tasks / task-capable connector), create one **time-blocked task** per block.
+   Tasks are private by nature and show on the calendar grid at their scheduled
+   time. *(As of now no such connector is typically present — fall through.)*
+2. **Private calendar event (fallback).** Create the event with
+   `visibility: private` **and** `transparency: transparent` (shows free) so the
+   title is hidden from anyone viewing the calendar and it doesn't mark the user
+   busy. This keeps the time block when Tasks aren't available.
+3. **No writer** → skip write; present the markdown plan only and note it once.
+
+Common rules (both targets):
+
+- **One item per block.** Title `Valor: <priority, truncated to 60>`. Put an
+  idempotency token in the notes/description: `valor:task:<sha1(YYYY-MM-DD + "|"
   + lowercased priority)>`, plus `valor:shape:<shape>`, and for artifact-claim
   priorities the verify `valor:claim:<claim_hash>`. No reminders.
-- **Idempotent:** before creating, search today's events for the same
+- **Idempotent:** before creating, search today's items for the same
   `valor:task:` token. If found, update it in place (the time may have shifted);
-  else create. Never create a second event for the same task.
-- **Skip unverified:** do NOT write an event for a priority the gate demoted —
-  it stays in the markdown "Needs Confirmation" note only.
-- **Cleanup (done = gone):** for a Valor event whose `valor:claim:` now verifies
-  **resolved**, delete it — the task got done, so it leaves the calendar. Leave
-  `unresolved` ones in place (they're real reminders).
-- **Never touch non-Valor events.** Only act on events whose description carries
-  a `valor:` token. Do not auto-create anything for unverified claims.
+  else create. Never create a second item for the same task.
+- **Skip unverified:** do NOT write an item for a priority the gate demoted — it
+  stays in the markdown "Needs Confirmation" note only.
+- **Cleanup (done = gone):** for a Valor item whose `valor:claim:` now verifies
+  **resolved**, delete/complete it — the task got done, so it leaves the
+  calendar. Leave `unresolved` ones in place (they're real reminders).
+- **Never touch items Valor didn't create.** Only act on those whose
+  notes/description carry a `valor:` token.
 
 ## State Management
 
