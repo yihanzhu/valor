@@ -1123,7 +1123,7 @@ def test_migrate_state_in_memory_adds_v6_planning_fields():
     assert migrated["planning"]["workday_start"] == "09:00"
     assert migrated["planning"]["workday_end"] == "18:00"
     assert migrated["planning"]["deep_min_hours"] == 2.0
-    assert migrated["state_schema_version"] == 6
+    assert migrated["state_schema_version"] == STATE_SCHEMA_VERSION
 
 
 def test_migrate_state_in_memory_preserves_planning_overrides():
@@ -1132,6 +1132,19 @@ def test_migrate_state_in_memory_preserves_planning_overrides():
     assert migrated["planning"]["calendar_auto_write"] is False
     assert migrated["planning"]["workday_start"] == "08:00"
     assert migrated["planning"]["workday_end"] == "18:00"  # missing sub-key filled
+
+
+def test_migrate_state_in_memory_adds_v7_one_on_one_fields():
+    migrated = _migrate_state_in_memory({"current_level": "L3"})
+    assert migrated["one_on_one"] == {"doc": "", "format_notes": ""}
+    assert migrated["state_schema_version"] == 7
+
+
+def test_migrate_state_in_memory_preserves_one_on_one():
+    state = {"one_on_one": {"doc": "https://docs.example.com/d/abc"}}
+    migrated = _migrate_state_in_memory(state)
+    assert migrated["one_on_one"]["doc"] == "https://docs.example.com/d/abc"
+    assert migrated["one_on_one"]["format_notes"] == ""  # missing sub-key filled
 
 
 def test_migrate_state_in_memory_preserves_verification_overrides():
@@ -1286,6 +1299,21 @@ def test_context_planning_defaults_when_absent(cli_db, capsys):
     result = json.loads(capsys.readouterr().out)
     assert result["planning"]["calendar_auto_write"] is True
     assert result["planning"]["deep_min_hours"] == 2.0
+
+
+def test_context_one_on_one_doc_set_flag(cli_db, capsys):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    # No doc -> false
+    (valor_home / "state.json").write_text(json.dumps({"current_level": "L3"}))
+    cmd_context(argparse.Namespace())
+    assert json.loads(capsys.readouterr().out)["one_on_one_doc_set"] is False
+    # Doc set -> true (the doc value itself is not exposed)
+    (valor_home / "state.json").write_text(json.dumps({
+        "one_on_one": {"doc": "https://docs.example.com/d/abc", "format_notes": ""},
+    }))
+    cmd_context(argparse.Namespace())
+    assert json.loads(capsys.readouterr().out)["one_on_one_doc_set"] is True
 
 
 # --- cmd_framework_validate ---
