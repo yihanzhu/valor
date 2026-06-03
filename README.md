@@ -159,6 +159,28 @@ to start with. You can re-run `/valor-setup` anytime to reconfigure.
 When you get promoted, re-run setup or update the three level fields in
 `~/.valor/state.json` directly.
 
+### Day plan & calendar
+
+If calendar is enabled, the morning briefing fits your priorities to the day's
+real gaps (deep vs fragmented) and can write the blocks back as calendar events.
+This is controlled by the `planning` block in `~/.valor/state.json`:
+
+| Setting | Default | Meaning |
+|---------|---------|---------|
+| `calendar_auto_write` | `true` | Write the day plan to your calendar as events. Set `false` for plan-only (shown in the briefing, no events written). |
+| `workday_start` / `workday_end` | `09:00` / `18:00` | Hours the plan fits within. |
+| `deep_min_hours` | `2` | Minimum contiguous hours for a gap to count as a "deep" block. |
+
+```bash
+# e.g. plan-only, 9-to-5 workday:
+python3 ~/.valor/evidence_cli.py state-set planning \
+  '{"calendar_auto_write": false, "workday_start": "09:00", "workday_end": "17:00", "deep_min_hours": 2}'
+```
+
+Calendar events Valor creates are tagged and idempotent (re-running the briefing
+updates rather than duplicates), and are removed once the underlying task is
+verified done. Valor never touches events it didn't create.
+
 ## Prerequisites
 
 Valor works best when these tools are already available in your environment:

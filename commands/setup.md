@@ -249,6 +249,25 @@ python3 ~/.valor/evidence_cli.py state-set \
 
 Replace each boolean with the actual value determined above.
 
+## 3.5 Day Plan & Calendar
+
+Only if `calendar` is enabled. The morning briefing fits priorities to the
+day's gaps and can write the plan back as calendar events. Ask two things:
+
+1. **Working hours?** (default 09:00–18:00) — the window the plan fits within.
+   If the user has set working hours in their calendar, use those.
+2. **Auto-write the plan to your calendar?** (default yes) — "yes" creates
+   events for each block (idempotent, removed when the task is done); "no" is
+   plan-only (shown in the briefing, nothing written). Suggest starting "no" to
+   see it once, then enabling.
+
+```bash
+python3 ~/.valor/evidence_cli.py state-set planning \
+  '{"calendar_auto_write": true, "workday_start": "09:00", "workday_end": "18:00", "deep_min_hours": 2}'
+```
+
+Skip silently if `calendar` is `false`.
+
 ## 4. Routines
 
 Valor has four time-anchored agents that deliver the most value when run on a

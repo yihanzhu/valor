@@ -12,8 +12,13 @@ It is pure logic + a CLI, like verify.py: the AGENT fetches the calendar
 touches the network.
 
 Model:
+  * Workday bounds (workday_start/end) come from state.planning; the agent
+    should override them with the user's calendar working-hours setting if the
+    calendar tool exposes it.
   * Compute free gaps in the workday = [max(now, workday_start), workday_end]
-    minus busy (accepted/tentative) meetings.
+    minus blocking events. Blocking = regular meetings (accepted/tentative) and
+    out-of-office. NOT blocking = focus time (a deep-work slot to fill) and
+    working-location (informational) -- see NON_BLOCKING_EVENT_TYPES.
   * Classify each gap: `deep` if >= deep_min_hours of contiguous time, else
     `fragmented`. A gap ending at a meeting is flagged `pre_meeting`.
     A no-meeting day is naturally one big deep gap.
@@ -65,6 +70,13 @@ FRAGMENTED_KW = (
     "cherry-pick", "bump", "tag ", "release", "close ", "triage", "stand-up",
     "standup", "sync", "check ", "update status", "respond to",
 )
+
+# Calendar event types that do NOT block planning. Focus time is a deep-work
+# slot you WANT to fill (so it becomes available, not busy); working-location is
+# informational. Out-of-office and regular meetings (default) DO block. The
+# caller tags each event with its type (Google Calendar `eventType`); untyped
+# events default to blocking, preserving older behavior.
+NON_BLOCKING_EVENT_TYPES = ("focusTime", "workingLocation")
 
 
 def _read_state() -> dict:
@@ -236,6 +248,8 @@ def fit(events, priorities, *, now=None, workday_start=None, workday_end=None,
 
     busy = []
     for ev in events:
+        if ev.get("type") in NON_BLOCKING_EVENT_TYPES:
+            continue  # focus time / working-location: leave free for deep work
         try:
             busy.append((_parse_iso(ev["start"]), _parse_iso(ev["end"])))
         except (KeyError, ValueError):
