@@ -162,14 +162,20 @@ When you get promoted, re-run setup or update the three level fields in
 ### Day plan & calendar
 
 If calendar is enabled, the morning briefing fits your priorities to the day's
-real gaps (deep vs fragmented) and can write the blocks back as calendar events.
-This is controlled by the `planning` block in `~/.valor/state.json`:
+real gaps (deep vs fragmented) and can write the blocks back to your calendar as
+**private** items. This is controlled by the `planning` block in
+`~/.valor/state.json`:
 
 | Setting | Default | Meaning |
 |---------|---------|---------|
-| `calendar_auto_write` | `true` | Write the day plan to your calendar as events. Set `false` for plan-only (shown in the briefing, no events written). |
-| `workday_start` / `workday_end` | `09:00` / `18:00` | Hours the plan fits within. |
+| `calendar_auto_write` | `true` | Write the day plan to your calendar. Set `false` for plan-only (shown in the briefing, nothing written). |
+| `workday_start` / `workday_end` | `09:00` / `18:00` | Hours the plan fits within. If unset, configured at setup. |
 | `deep_min_hours` | `2` | Minimum contiguous hours for a gap to count as a "deep" block. |
+
+Items are written **private**: as a Google Task per block if a task connector is
+available (tasks are personal by nature), otherwise as a private calendar event
+(`visibility: private`, shown free) — so the titles stay visible only to you,
+not to colleagues who can see your calendar.
 
 ```bash
 # e.g. plan-only, 9-to-5 workday:
