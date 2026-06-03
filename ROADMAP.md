@@ -76,6 +76,31 @@ What shipped:
 - wrap-up now records evidence (wrapup_completed entry)
 - version bump to 0.3.0
 
+## Phase 6: Trust, Planning, and Hygiene
+
+**Status:** Complete
+
+What shipped:
+
+- **Verification gate** (`verify.py`): artifacts are verified before any agent
+  re-asserts a carried-forward claim; per-type TTL cache (`claim_verifications`
+  table); unverifiable claims are demoted ("confirm or drop?") with a frozen
+  day-counter — stops phantom propagation across wrap-up → briefing → prep.
+- **Day-planning pass** (`plan.py`): fits priorities to the day's calendar gaps
+  (deep vs fragmented, focus-time treated as deep-work, OOO blocks), with
+  optional **private** calendar write (idempotent; removed when verified done).
+- **Chronic escalation**: items stuck past a threshold surface in `/valor-prep`.
+- **Format-aware 1:1 prep**: `/valor-prep` reads the user's running 1:1 doc and
+  drafts this week's entry in that doc's own format.
+- **Working-hours-driven routines**: briefing/wrap-up/weekly times derive from
+  the configured working hours.
+- **Company-info hygiene guard**: a scanner (`scripts/check_hygiene.py`) wired
+  into local git hooks and CI (`hygiene`, `hygiene-pr`) plus branch protection,
+  keeping employer/colleague/ticket-key terms out of the public repo.
+- state schema v4 → v7 (`verification`, `planning`, `one_on_one`,
+  `escalate_in_one_on_one`); evidence DB schema v2 → v3.
+- version bump to 0.5.0
+
 ## Future Considerations
 
 These are not committed but worth exploring:

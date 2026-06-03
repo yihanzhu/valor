@@ -47,8 +47,10 @@ and `utilities.md`).
 | File / Dir            | Purpose                                       | Managed by           |
 | --------------------- | --------------------------------------------- | -------------------- |
 | `state.json`          | User config, rolling state, integration flags | `install.sh`, agents |
-| `evidence.sqlite`     | Structured career evidence (SQLite)           | `evidence_cli.py`    |
-| `evidence_cli.py`     | CLI for the evidence store                    | `install.sh`         |
+| `evidence.sqlite`     | Structured career evidence + verification cache | `evidence_cli.py`  |
+| `evidence_cli.py`     | CLI for the evidence store + state             | `install.sh`         |
+| `verify.py`           | Artifact-verification gate (anti-phantom)      | `install.sh`         |
+| `plan.py`             | Day-planning gap-fit scheduler                 | `install.sh`         |
 | `career_framework.md` | User's career ladder (not overwritten)        | User                 |
 | `utilities.md`        | Tool discovery reference for agents           | `install.sh`         |
 | `coaching-ref.md`     | Coaching specs loaded on-demand (see below)   | `install.sh`         |
@@ -61,27 +63,33 @@ and `utilities.md`).
 
 The `installed_version` and `installed_at` fields track when the last install
 happened. The `state_schema_version` field enables forward-only migrations
-when the installer adds new fields (currently at version 3).
+when the installer adds new fields (currently at version 7). Migrations are
+non-destructive (only missing keys are added) and run in `_migrate_state_in_memory`.
 
 Key fields:
 
 - `current_level`, `target_level`, `ceiling_level` -- career level config
 - `coaching_mode` -- `"ambient"` (default), `"quiet"`, or `"off"`
 - `integrations` -- boolean flags for github, jira, calendar, news
+- `verification` -- gate config: `enabled`, `escalation_threshold`, `ttl_overrides` (v5)
+- `planning` -- day-plan config: `calendar_auto_write`, `workday_start`/`workday_end`, `deep_min_hours` (v6)
+- `one_on_one` -- 1:1 doc reference + `format_notes` for `/valor-prep` (v7; local only)
+- `escalate_in_one_on_one` -- chronic items flagged for the next 1:1 (v5)
 - `state_schema_version` -- integer for installer migrations
 - `installed_version`, `installed_at` -- install tracking
-- `last_update_check` -- ISO timestamp of last remote version check
-- `update_check_interval_hours` -- how often to check (default 24)
+- `last_update_check`, `update_check_interval_hours` -- remote version checks
 
 ### evidence.sqlite schema
 
-Current schema version: **2**
+Current schema version: **3**
 
 Tables:
 
 - `evidence` -- career evidence entries (activity, competency, statement)
 - `feedback` -- agent feedback tracking
 - `weekly_summary` -- weekly reflection summaries
+- `claim_verifications` -- artifact-verification cache backing `verify.py`
+  (claim_hash, verdict, day_count, miss_count, frozen, TTL) (v3)
 - `schema_version` -- migration tracking
 
 Migrations are applied forward-only in `evidence_cli.py`. The `MIGRATIONS`
@@ -107,6 +115,25 @@ coaching layer:
 
 All agents read `integrations` from `state.json` and silently skip sections
 for disabled integrations.
+
+### Verification, planning, and escalation (behaviors, not new agents)
+
+Three cross-cutting behaviors run inside the existing agents — no new commands:
+
+- **Verification gate** (`verify.py`): before wrap-up writes a carry-forward
+  claim or the briefing re-asserts one, the claim is verified against its source
+  (GitHub PRs via `gh`; Confluence/Slack/Drive/Jira via the agent's MCP tools).
+  Unverifiable claims are demoted to "confirm or drop?" with their day-counter
+  frozen, so a guess never propagates as fact. Verdicts cache in
+  `claim_verifications` with per-type TTLs.
+- **Day-planning pass** (`plan.py`): after the briefing's Suggested Priorities,
+  it fits them to the day's real calendar gaps (deep vs fragmented; focus-time is
+  deep-work, out-of-office blocks) and — if `planning.calendar_auto_write` —
+  writes the blocks back as **private** calendar items (idempotent; removed when
+  the task verifies done).
+- **Chronic escalation**: items verified-unresolved past
+  `verification.escalation_threshold` surface in `/valor-prep`, which also drafts
+  the entry in the user's own 1:1-doc format when `one_on_one.doc` is set.
 
 ## Context Loading Strategy
 

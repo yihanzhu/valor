@@ -8,9 +8,11 @@ boundary as clearly as possible.
 
 By default, Valor stores data under `~/.valor/`:
 
-- `state.json`: preferences and rolling assistant state
+- `state.json`: preferences and rolling assistant state (including, if you set
+  it, a reference to your 1:1 doc — the reference stays local, never committed)
 - `career_framework.md`: your career ladder and company values
-- `evidence.sqlite`: structured evidence entries and summaries
+- `evidence.sqlite`: structured evidence entries, summaries, and the
+  artifact-verification cache
 - `backups/`: local SQLite backups created by the CLI
 - `carry-forward/`: local wrap-up notes and next-day pickup files
 - `repo/`: git clone of the Valor source repository (used for updates)
@@ -56,8 +58,23 @@ to use tools that are already present in the user's environment, such as:
 
 - `gh` CLI for GitHub data
 - Jira or Atlassian MCP tools
-- calendar integrations
+- calendar integrations (read, and — if enabled — write)
+- Google Drive / Docs tools (to read your 1:1 doc, only if you configure one)
+- Slack tools (to check whether a message was actually sent)
 - web search for explicitly requested research
+
+Two behaviors are worth calling out specifically:
+
+- **Verification gate** (`verify.py`): to keep carried-forward claims honest,
+  Valor queries the relevant source — a PR's state, whether a Confluence page or
+  Drive doc exists, whether a Slack message was sent, a Jira status — through the
+  tools above. These are reads of your own data via your own connectors; verdicts
+  cache locally in `evidence.sqlite`.
+- **Day-plan calendar write** (`plan.py`): when `planning.calendar_auto_write`
+  is on, Valor creates calendar items for the day's plan. They are written
+  **private** (visible only to you), idempotent (re-runs update, never
+  duplicate), and Valor only ever touches items it created. Set
+  `planning.calendar_auto_write` to `false` for plan-only (nothing written).
 
 The exact behavior depends on the host assistant, installed plugins, and the
 commands the user runs.

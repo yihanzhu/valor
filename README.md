@@ -47,7 +47,7 @@ hardcoding one.
 | **Weekly Reflection** | Auto Friday, or `/valor-weekly`                | Week summary mapped to competencies, gap analysis, and 1:1 narrative            |
 | **Task Identifier**   | `/valor-tasks` or "what should I work on"      | High-impact work prioritized by career growth potential                         |
 | **Evening Wrap-up**   | Auto after 4pm, or `/valor-wrapup`             | Day summary, carry-forward items, and career reflection                         |
-| **1:1 Prep**          | `/valor-prep` or "prep for 1:1"                | Evidence-grounded prep document for manager 1:1s                                |
+| **1:1 Prep**          | `/valor-prep` or "prep for 1:1"                | Evidence-grounded prep, drafted in your own 1:1-doc format, with chronic blockers surfaced |
 | **Setup**             | `/valor-setup` or "set up valor"               | Guided career framework, level, and integration configuration                  |
 
 
@@ -55,13 +55,20 @@ Beyond the discrete commands, Valor also supports **ambient coaching**. After a
 meaningful task, it can classify the work, connect it to target-level
 competencies, and suggest one concrete "next-level" move.
 
+Two cross-cutting behaviors run inside those workflows. A **verification gate**
+checks carried-forward claims against their source (a PR's state, whether a doc
+was posted or a message sent) before any briefing or wrap-up re-asserts them —
+so a "still blocked, N days" note never rides on an unchecked guess. And the
+briefing turns its priorities into a **day plan** fit to your calendar's real
+gaps (deep vs fragmented), optionally written back as private calendar items.
+
 ## Local Data Model
 
 Valor stores its working state under `~/.valor/`:
 
 - `state.json`: user settings and rolling assistant state
 - `career_framework.md`: your career ladder and company values
-- `evidence.sqlite`: structured evidence store
+- `evidence.sqlite`: structured evidence store + artifact-verification cache
 - `backups/`: local database backups
 - `carry-forward/`: local wrap-up notes and next-day pickup files
 
