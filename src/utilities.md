@@ -284,5 +284,6 @@ fields, so a fresh `state.json` with only installer fields is valid.
 | `verification` | Installer | Object: `enabled` (gate kill switch), `escalation_threshold` (consecutive misses before 1:1 escalation, default 3), `ttl_overrides` (per-type cache TTL hours) |
 | `escalate_in_one_on_one` | Carry-forward audit | List of claims that failed repeated verification; surfaced by 1:1 prep |
 | `planning` | Installer | Object: `calendar_auto_write` (write kill switch; read is gated by `integrations.calendar`), `workday_start`/`workday_end` (HH:MM), `deep_min_hours` (deep-block threshold, default 2) |
+| `one_on_one` | Installer / setup | Object: `doc` (link/id/name of the user's running 1:1 doc, so `/valor-prep` can learn the format — local only, never committed), `format_notes` (optional format spec used if the doc can't be read) |
 | `installed_version` | Installer | Valor version at last install (semver) |
 | `installed_at` | Installer | ISO 8601 timestamp of last install |

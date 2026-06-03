@@ -421,7 +421,7 @@ install_shared() {
     local detected_intg
     detected_intg=$(detect_integrations)
 
-    local schema_version=6
+    local schema_version=7
 
     if [ ! -f "$VALOR_HOME/state.json" ]; then
         cat > "$VALOR_HOME/state.json" <<STATEJSON
@@ -452,6 +452,10 @@ install_shared() {
     "workday_start": "09:00",
     "workday_end": "18:00",
     "deep_min_hours": 2.0
+  },
+  "one_on_one": {
+    "doc": "",
+    "format_notes": ""
   }
 }
 STATEJSON
@@ -489,6 +493,10 @@ if not isinstance(state.get('escalate_in_one_on_one'), list):
 # v6: day-planning config (presence-based so it self-heals).
 if not isinstance(state.get('planning'), dict):
     state['planning'] = {'calendar_auto_write': True, 'workday_start': '09:00', 'workday_end': '18:00', 'deep_min_hours': 2.0}
+    changed = True
+# v7: 1:1 doc config (presence-based).
+if not isinstance(state.get('one_on_one'), dict):
+    state['one_on_one'] = {'doc': '', 'format_notes': ''}
     changed = True
 if state.get('state_schema_version', 1) < target_version:
     state['state_schema_version'] = target_version

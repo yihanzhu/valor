@@ -40,7 +40,7 @@ from pathlib import Path
 DB_PATH = Path.home() / ".valor" / "evidence.sqlite"
 BACKUP_DIR = Path.home() / ".valor" / "backups"
 
-STATE_SCHEMA_VERSION = 6
+STATE_SCHEMA_VERSION = 7
 
 ROUTINE_SLOTS = ("briefing", "wrapup", "weekly", "prep")
 
@@ -596,6 +596,16 @@ def _migrate_state_in_memory(state: dict) -> dict:
         plan.setdefault("workday_start", "09:00")
         plan.setdefault("workday_end", "18:00")
         plan.setdefault("deep_min_hours", 2.0)
+    # v7: 1:1 doc config. `doc` points valor-prep at the user's running 1:1 doc
+    # so it can learn the format and draft this week's entry to match;
+    # `format_notes` is an optional fallback when the doc can't be read. Both are
+    # user-local (the doc reference is never committed).
+    if "one_on_one" not in state or not isinstance(state.get("one_on_one"), dict):
+        state["one_on_one"] = {"doc": "", "format_notes": ""}
+    else:
+        oo = state["one_on_one"]
+        oo.setdefault("doc", "")
+        oo.setdefault("format_notes", "")
     state["state_schema_version"] = STATE_SCHEMA_VERSION
     return state
 
@@ -741,6 +751,7 @@ def cmd_context(args: argparse.Namespace) -> None:
             "escalation_threshold": (state.get("verification") or {}).get("escalation_threshold", 3),
         },
         "escalate_in_one_on_one_count": len(state.get("escalate_in_one_on_one", []) or []),
+        "one_on_one_doc_set": bool((state.get("one_on_one") or {}).get("doc")),
         "planning": {
             "calendar_auto_write": bool((state.get("planning") or {}).get("calendar_auto_write", True)),
             "workday_start": (state.get("planning") or {}).get("workday_start", "09:00"),

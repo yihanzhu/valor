@@ -144,6 +144,22 @@ def test_routine_times_derive_from_working_hours():
     assert "workday_start" in text and "workday_end" in text
 
 
+# --- 1:1 prep: format-aware + chronic (lighter Phase 3) ---
+
+def test_prep_drafts_in_doc_format_and_surfaces_chronic():
+    text = Path("commands/prep.md").read_text()
+    assert "one_on_one" in text            # reads the configured 1:1 doc
+    assert "format" in text.lower()        # mirrors the doc's format
+    assert "verify.py list" in text        # chronic-item source (lighter Phase 3)
+    assert "escalation_threshold" in text  # chronic threshold
+    assert "Chronic" in text               # surfaced as a section
+
+
+def test_installer_seeds_one_on_one_state():
+    text = Path("install.sh").read_text()
+    assert '"one_on_one"' in text
+
+
 # --- Install script tests ---
 
 def test_install_script_syntax():

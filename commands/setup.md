@@ -230,6 +230,21 @@ This field is used only by 1:1 auto-detection in section 4 (Routines). It is
 safe to skip and add later -- detection still works using recurrence and
 title heuristics, just with lower precision.
 
+### 1:1 doc (optional)
+
+Ask: "Do you keep a running 1:1 doc? Paste the link (or say 'skip'). With it,
+`/valor-prep` drafts each week's entry in **your doc's own format** instead of a
+generic layout."
+
+If provided, save it (the reference is local-only, never committed):
+
+```bash
+python3 ~/.valor/evidence_cli.py state-set one_on_one '{"doc":"<link or name>","format_notes":""}'
+```
+
+If they skip, leave it empty -- prep falls back to the generic layout and can
+be pointed at the doc later.
+
 ### Applying integration changes
 
 After collecting all answers, build the final integrations object. Start

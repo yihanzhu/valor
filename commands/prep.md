@@ -68,6 +68,41 @@ Done/Closed in the last 2 weeks.
 
 These are supplementary -- evidence entries are the primary source.
 
+### 2.5 Chronic items (escalation candidates)
+
+Surface items carried unresolved long enough to be worth raising. Read the
+verification cache:
+
+```bash
+python3 ~/.valor/verify.py list --status unresolved
+```
+
+Any claim whose `miss_count` >= `context.verification.escalation_threshold`
+(default 3) is an **escalation candidate** -- verified-missing across that many
+checks (e.g. a doc unposted for weeks, a PR stuck in review). These are
+advisory: surface them so the user can choose to raise them; they map naturally
+to the "roadblocks / need help" part of a 1:1. Also fold in anything pinned in
+`state.escalate_in_one_on_one`.
+
+### 2.6 Your 1:1 doc and its format
+
+If `context.one_on_one_doc_set` is true, the deliverable is this week's entry
+drafted **in the format the user already uses** -- not Valor's generic layout.
+
+1. Read the doc reference from `state.one_on_one.doc` (a Google Doc link/id or
+   name). If unset, ask once ("What's your 1:1 doc? paste the link") and store:
+   `python3 ~/.valor/evidence_cli.py state-set one_on_one '{"doc":"<ref>","format_notes":""}'`.
+2. Discover a docs-read capability (a Drive/Docs MCP that reads file content, or
+   a docs-related slash command). If none, use the §4.3 fallback.
+3. Read the doc and study the **most recent 1-2 entries** to infer the format:
+   section labels (verbatim), their order, bullet vs numbered convention and
+   nesting, the tone/length of each section, whether new entries go at the top
+   or bottom, and how entries are dated/titled.
+4. If the doc can't be read but `state.one_on_one.format_notes` is set, use that
+   as the format spec.
+
+Do not impose a structure -- mirror theirs exactly. Formats are personal.
+
 ## 3. Analyze
 
 ### 3.1 Competency Map
@@ -99,41 +134,57 @@ definitions from `career_framework.md`. Identify:
 - Where the user is **approaching** but not yet at target level
 - Where there is a **gap** with a concrete suggestion
 
-## 4. Output Format
+## 4. Output
 
-Present the prep document in this structure:
+### 4.1 This week's 1:1 entry — primary deliverable (when a doc format is known)
+
+Using the format learned in §2.6, draft **this week's entry, ready to paste**
+into the user's doc. This is the main output — not a pile of key points the user
+must reformat afterward.
+
+- **Mirror the doc exactly:** the same section labels (verbatim), order,
+  bullet/numbered convention and nesting, tone, and length. Title/date the entry
+  for the upcoming 1:1 and place it where new entries go (usually the top).
+- **Fill each section by meaning, not by Valor's labels:** recent shipped work
+  / status (evidence entries, merged PRs, closed tickets) → the "what happened /
+  last week" section; **chronic escalation candidates (§2.5)** → the "roadblocks
+  / need help" section; in-progress work → the "project overview" section;
+  next-period priorities → the "goals" section.
+- **Concrete and honest:** reference specific PRs/tickets; keep the user's voice
+  and length. The user reviews before pasting — do not fabricate; if a section
+  has nothing real, leave it light/empty as their doc does.
+
+Then add a short **"Chronic — consider raising"** note: the §2.5 escalation
+candidates with how long each has been stuck, so the user decides what to
+actually surface.
+
+### 4.2 Supporting analysis (grounding, condensed)
+
+Below the entry, include a condensed version of the §3 competency map and
+target-level alignment — the evidence behind the entry, for the user who wants
+to go deeper. The entry in §4.1 is the deliverable; this is backup.
+
+### 4.3 Fallback — no doc format available
+
+If no 1:1 doc is configured and no docs reader is available, produce the generic
+layout instead, and note once: *"Set `one_on_one.doc` (your 1:1 doc link) to get
+this drafted in your doc's own format."*
 
 ```markdown
 # 1:1 Prep — [date range]
-
 ## Highlights
 - [Top 2-3 accomplishments with specific evidence]
-
 ## By Competency
-
 ### [Competency Name] — [N entries, strength/developing/gap]
-- **Evidence:** [specific statements from evidence store]
-- **Target-level alignment:** [how this maps to target-level definition]
-- **Talking point:** "[suggested thing to mention to your manager]"
-
-[Repeat for each competency with at least 1 entry]
-
+- **Evidence / Target-level alignment / Talking point**
 ## Gaps to Discuss
 - **[Gap competency]:** 0 entries this period. Suggestion: [specific action]
-
-## Trends
-[Only if weekly summaries are available]
-- [Competency X] growing: N last week → M this week
-- [Competency Y] persistent gap: 0 entries for 3 weeks
-
+## Chronic — consider raising
+- [§2.5 escalation candidates, with how long stuck]
 ## Suggested Asks
-- [1-2 things the user could ask their manager for, based on gaps]
-  e.g., "Ask for a cross-team review opportunity to build collaboration evidence"
-
+- [1-2 asks grounded in gaps]
 ## Narrative
-"[3-5 sentence summary the user can use as an opening for the 1:1.
-Covers what they shipped, where they're growing, and what they want to
-focus on next. Grounded in evidence, not generic.]"
+"[3-5 sentence opener, grounded in evidence]"
 ```
 
 ## 5. Tone and Framing
