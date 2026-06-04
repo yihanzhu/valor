@@ -118,11 +118,13 @@ What shipped:
   are sized by an agent estimate (not a flat default), with a configurable
   breather reserved after real meetings.
 - **Calendar-first task surface**: day-plan blocks carry the task's description
-  (next action + links), readable at do-time.
+  (next action + clickable link) and snap to clean clock boundaries
+  (`block_granularity_minutes`) like meetings, readable at do-time.
 - **Anti-phantom hardening**: no "publish/document X" task before its upstream
   work exists; claims recorded by stable id to stop counter fragmentation.
-- state schema v7 → v11 (`planning.post_meeting_break_minutes`, `project_focus`).
-- version bump to 0.6.0
+- state schema v7 → v12 (`planning.post_meeting_break_minutes` +
+  `block_granularity_minutes`, `project_focus` + `meeting_baseline`).
+- version bump to 0.6.1
 
 ## Future Considerations
 
