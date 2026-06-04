@@ -101,10 +101,34 @@ What shipped:
   `escalate_in_one_on_one`); evidence DB schema v2 → v3.
 - version bump to 0.5.0
 
+## Phase 7: Focus, Estimation, and Proactive Detection
+
+**Status:** Complete
+
+What shipped:
+
+- **Opt-in project focus** (`focus.py`): for users who rotate projects, the
+  briefing derives the current project from a recurring per-project sync meeting
+  (or a manual setting), plans around it, and hides off-focus work. Off by
+  default; ticket→project classification is by reading the ticket, not a prefix.
+- **Proactive drift detection**: a throttled baseline-diff of recurring meetings,
+  enriched by reading a new meeting's attached docs, flags a likely new/dropped
+  project as a top-of-briefing alert — no routine prompt.
+- **Per-task duration estimates + post-meeting breaks** in the day plan: tasks
+  are sized by an agent estimate (not a flat default), with a configurable
+  breather reserved after real meetings.
+- **Calendar-first task surface**: day-plan blocks carry the task's description
+  (next action + links), readable at do-time.
+- **Anti-phantom hardening**: no "publish/document X" task before its upstream
+  work exists; claims recorded by stable id to stop counter fragmentation.
+- state schema v7 → v11 (`planning.post_meeting_break_minutes`, `project_focus`).
+- version bump to 0.6.0
+
 ## Future Considerations
 
 These are not committed but worth exploring:
 
+- **Slack as a project-detection signal** (phase 2 of proactive drift detection)
 - local model support for privacy-sensitive environments
 - self-hosted or encrypted sync across machines
 - cross-agent evidence federation (e.g., Cursor + Claude Code on same machine)

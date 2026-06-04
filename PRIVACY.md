@@ -59,11 +59,12 @@ to use tools that are already present in the user's environment, such as:
 - `gh` CLI for GitHub data
 - Jira or Atlassian MCP tools
 - calendar integrations (read, and — if enabled — write)
-- Google Drive / Docs tools (to read your 1:1 doc, only if you configure one)
+- Google Drive / Docs tools (to read your 1:1 doc if you configure one, and —
+  with project focus on — a new meeting's attached docs to identify a project)
 - Slack tools (to check whether a message was actually sent)
 - web search for explicitly requested research
 
-Two behaviors are worth calling out specifically:
+A few behaviors are worth calling out specifically:
 
 - **Verification gate** (`verify.py`): to keep carried-forward claims honest,
   Valor queries the relevant source — a PR's state, whether a Confluence page or
@@ -75,6 +76,11 @@ Two behaviors are worth calling out specifically:
   **private** (visible only to you), idempotent (re-runs update, never
   duplicate), and Valor only ever touches items it created. Set
   `planning.calendar_auto_write` to `false` for plan-only (nothing written).
+- **Project focus** (`focus.py`, opt-in, off by default): if you enable it, the
+  briefing reads your calendar to resolve the current project and, on a throttled
+  re-check, reads a newly-appeared meeting's attached docs to tell whether it's a
+  new project. Your project/meeting labels (`project_focus`) live only in local
+  `state.json` and are never committed.
 
 The exact behavior depends on the host assistant, installed plugins, and the
 commands the user runs.

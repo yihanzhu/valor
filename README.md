@@ -55,12 +55,16 @@ Beyond the discrete commands, Valor also supports **ambient coaching**. After a
 meaningful task, it can classify the work, connect it to target-level
 competencies, and suggest one concrete "next-level" move.
 
-Two cross-cutting behaviors run inside those workflows. A **verification gate**
+A few cross-cutting behaviors run inside those workflows. A **verification gate**
 checks carried-forward claims against their source (a PR's state, whether a doc
 was posted or a message sent) before any briefing or wrap-up re-asserts them —
-so a "still blocked, N days" note never rides on an unchecked guess. And the
-briefing turns its priorities into a **day plan** fit to your calendar's real
-gaps (deep vs fragmented), optionally written back as private calendar items.
+so a "still blocked, N days" note never rides on an unchecked guess. The briefing
+turns its priorities into a **day plan** fit to your calendar's real gaps (deep
+vs fragmented), sizing each task and leaving a breather after meetings, optionally
+written back as private calendar items that carry the task on the block. And for
+people who rotate between projects, an opt-in **project focus** plans around the
+project whose sync is next and hides the rest — noticing on its own when you pick
+up or drop a project.
 
 ## Local Data Model
 
