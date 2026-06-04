@@ -290,11 +290,16 @@ Common rules (both targets):
 - **One item per block.** Title `Valor: <priority, truncated to 60>`.
 - **Put the task on the block.** The calendar is the do-time surface, so write a
   short, self-contained **description** the user can act on when the block comes
-  up — the concrete next action + the key context/links (ticket/PR/doc URLs) —
-  not just the title. Keep it tight (a few lines). Then append the machine tokens
-  at the end of the description: `valor:task:<sha1(YYYY-MM-DD + "|" + lowercased
-  priority)>` (idempotency), `valor:shape:<shape>`, and for artifact-claim
-  priorities `valor:claim:<claim_hash>`. No reminders.
+  up — the concrete next action plus the artifact's **actual clickable URL**
+  (resolve PR vs issue so the link doesn't 404; include the ticket/doc link). Keep
+  it tight (a few lines). No reminders.
+- **Machine marker (minimal).** Append one idempotency token at the end of the
+  description: `valor:task:<stable slug>` (e.g. the ticket key / PR number, like
+  `proj-42`), plus `valor:claim:<claim_hash>` only for artifact-claim priorities.
+  Do NOT add a shape tag — nothing reads it back. The clean home for this would be
+  Google Calendar `extendedProperties.private` (hidden from the event UI), but the
+  calendar tool here doesn't expose it, so the token rides in the description —
+  keep it to one short line and label it (e.g. "Valor sync tag; leave it").
 - **Idempotent:** before creating, search today's items for the same
   `valor:task:` token. If found, update it in place (the time may have shifted);
   else create. Never create a second item for the same task.
