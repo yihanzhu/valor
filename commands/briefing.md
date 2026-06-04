@@ -397,9 +397,10 @@ Write"). In short:
    task-create tool exists; otherwise a **private** calendar event
    (`visibility: private` + `transparency: transparent`/free) so the title is
    hidden from others and you're not shown busy. **Write the task onto the
-   block** — a short actionable description (next action + key ticket/PR/doc
-   links) so it's readable at do-time, with the `valor:` tokens appended at the
-   end. Idempotent via the `valor:task:` token (never duplicate), **skip
+   block** — a short actionable description (next action + the artifact's
+   **clickable URL**, resolved so it doesn't 404) so it's readable at do-time,
+   with a single `valor:task:<slug>` idempotency token appended (labeled "leave
+   it"; no shape tag). Idempotent via the `valor:task:` token (never duplicate), **skip
    unverified claims**, delete/complete items whose claim has since verified
    **resolved**, and never touch items Valor didn't create. No writer → present
    the plan only, note once.
