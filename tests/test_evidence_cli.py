@@ -1137,7 +1137,7 @@ def test_migrate_state_in_memory_preserves_planning_overrides():
 def test_migrate_state_in_memory_adds_v7_one_on_one_fields():
     migrated = _migrate_state_in_memory({"current_level": "L3"})
     assert migrated["one_on_one"] == {"doc": "", "format_notes": ""}
-    assert migrated["state_schema_version"] == 7
+    assert migrated["state_schema_version"] == STATE_SCHEMA_VERSION
 
 
 def test_migrate_state_in_memory_preserves_one_on_one():
@@ -1145,6 +1145,25 @@ def test_migrate_state_in_memory_preserves_one_on_one():
     migrated = _migrate_state_in_memory(state)
     assert migrated["one_on_one"]["doc"] == "https://docs.example.com/d/abc"
     assert migrated["one_on_one"]["format_notes"] == ""  # missing sub-key filled
+
+
+def test_migrate_state_in_memory_adds_v8_project_focus_fields():
+    migrated = _migrate_state_in_memory({"current_level": "L3"})
+    assert migrated["project_focus"]["enabled"] is False  # opt-in: off by default
+    assert migrated["project_focus"]["mode"] == "meeting_derived"
+    assert migrated["project_focus"]["flip"] == "after_sync"
+    assert migrated["project_focus"]["syncs"] == []
+    assert migrated["state_schema_version"] == STATE_SCHEMA_VERSION
+
+
+def test_migrate_state_in_memory_preserves_project_focus():
+    state = {"project_focus": {"enabled": True, "mode": "manual", "current": "platform"}}
+    migrated = _migrate_state_in_memory(state)
+    assert migrated["project_focus"]["enabled"] is True
+    assert migrated["project_focus"]["mode"] == "manual"
+    assert migrated["project_focus"]["current"] == "platform"
+    assert migrated["project_focus"]["flip"] == "after_sync"  # missing sub-key filled
+    assert migrated["project_focus"]["syncs"] == []  # missing sub-key filled
 
 
 def test_migrate_state_in_memory_preserves_verification_overrides():

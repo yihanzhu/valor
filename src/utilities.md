@@ -107,6 +107,13 @@ does not exist / is or is not done. Gate these:
 Pure plans with no external artifact ("think about X", "decide Y", "block focus
 time") are NOT artifact claims -- do not gate them.
 
+**Don't assert a downstream task before its upstream work exists.** A "publish /
+write up / document X" item only becomes a real claim once the work it describes
+has reached a publishable stage (the ticket is resolved or a finished draft
+exists). Until then it's a coaching nudge, not a priority or carry-forward claim
+— asserting it early is what breeds a recurring "publish the 1-pager" ghost for
+work still in flight.
+
 **Kill switch:** if `context.verification.enabled` is `false`, skip the gate
 entirely and behave as before.
 
@@ -152,6 +159,45 @@ entirely and behave as before.
 
 The gate normalizes case/whitespace, but different wording forks a new counter.
 Reuse the same identifier every run for the same claim.
+
+## Project Focus (optional customization)
+
+Off by default. When `context.project_focus.enabled` is `true`, the user works
+**one project at a time**; the briefing plans around the **current** project and
+hides the rest (deferred work is noise). `focus.py` derives the current focus;
+ticket→project classification is the agent's job (read the ticket).
+
+### focus.py subcommands
+
+| Subcommand | Purpose |
+|------------|---------|
+| `resolve --syncs JSON [--today YYYY-MM-DD]` | Resolve the current focus from dated per-project syncs; returns `current_project`, `next_project`, `transition_today` (JSON) |
+| `config` | Print the `project_focus` block (mode, flip rule, configured sync labels) |
+
+`--syncs` accepts inline JSON, `@file`, or `-` (stdin), shape
+`[{"project": "...", "date": "YYYY-MM-DD"}]`.
+
+### Protocol (run before Work Context / Priorities / Day Plan)
+
+1. **Resolve the focus.**
+   - `mode: meeting_derived` — the focus follows a recurring per-project sync.
+     Read the upcoming calendar (~3 weeks), match event titles to the configured
+     sync labels (`focus.py config`), build the dated sync list, then call
+     `focus.py resolve --syncs '...'`. `current_project` is the project whose
+     sync is next; it flips the day after each sync.
+   - `mode: manual` — `focus.py resolve` returns the user's set `current_project`.
+2. **Filter to the focus.** If `current_project` is empty, **fail open** (don't
+   filter — never hide everything on a misconfig). Otherwise classify each
+   candidate ticket/PR **by reading it** (epic / component / labels / content —
+   never a key prefix; prefixes collide) and keep only `current_project` items.
+   Hide everything else **entirely** — including a PR that only needs the user's
+   approval (a review is a focus session, and the user asked to hold that
+   single-project boundary). Applies to Work Context, PR Situation, Suggested
+   Priorities, and the Day Plan.
+3. **Transition hand-off.** When `transition_today` is true (a sync fell
+   yesterday → the focus just flipped), lead Suggested Priorities with a one-time
+   line naming the new focus and when the other project resumes (`next_project` /
+   `next_sync_date`). Outside the transition, don't preview off-focus work.
 
 ## Day Planning & Calendar Write
 
@@ -285,5 +331,6 @@ fields, so a fresh `state.json` with only installer fields is valid.
 | `escalate_in_one_on_one` | Carry-forward audit | List of claims that failed repeated verification; surfaced by 1:1 prep |
 | `planning` | Installer | Object: `calendar_auto_write` (write kill switch; read is gated by `integrations.calendar`), `workday_start`/`workday_end` (HH:MM), `deep_min_hours` (deep-block threshold, default 2) |
 | `one_on_one` | Installer / setup | Object: `doc` (link/id/name of the user's running 1:1 doc, so `/valor-prep` can learn the format — local only, never committed), `format_notes` (optional format spec used if the doc can't be read) |
+| `project_focus` | Installer / setup | Optional customization (disabled by default). Object: `enabled`; `mode` (`meeting_derived` follows the next per-project sync on the calendar, `manual` uses `current`); `current`; `flip` (`after_sync`); `syncs` (sync-label → project map; local only). When on, the briefing plans around the current project and hides the rest. |
 | `installed_version` | Installer | Valor version at last install (semver) |
 | `installed_at` | Installer | ISO 8601 timestamp of last install |

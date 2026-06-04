@@ -40,7 +40,7 @@ from pathlib import Path
 DB_PATH = Path.home() / ".valor" / "evidence.sqlite"
 BACKUP_DIR = Path.home() / ".valor" / "backups"
 
-STATE_SCHEMA_VERSION = 7
+STATE_SCHEMA_VERSION = 8
 
 ROUTINE_SLOTS = ("briefing", "wrapup", "weekly", "prep")
 
@@ -606,6 +606,27 @@ def _migrate_state_in_memory(state: dict) -> dict:
         oo = state["one_on_one"]
         oo.setdefault("doc", "")
         oo.setdefault("format_notes", "")
+    # v8: project-focus customization (focus.py). Opt-in: when `enabled`, the
+    # briefing plans around the current project only and hides the rest.
+    # `mode` is "meeting_derived" (focus follows the next per-project sync on the
+    # calendar) or "manual" (`current` is set by the user). `syncs` holds the
+    # user's sync labels -> project mapping (local; never committed). Disabled by
+    # default so one-project users never see it.
+    if "project_focus" not in state or not isinstance(state.get("project_focus"), dict):
+        state["project_focus"] = {
+            "enabled": False,
+            "mode": "meeting_derived",
+            "current": "",
+            "flip": "after_sync",
+            "syncs": [],
+        }
+    else:
+        pf = state["project_focus"]
+        pf.setdefault("enabled", False)
+        pf.setdefault("mode", "meeting_derived")
+        pf.setdefault("current", "")
+        pf.setdefault("flip", "after_sync")
+        pf.setdefault("syncs", [])
     state["state_schema_version"] = STATE_SCHEMA_VERSION
     return state
 
@@ -757,6 +778,11 @@ def cmd_context(args: argparse.Namespace) -> None:
             "workday_start": (state.get("planning") or {}).get("workday_start", "09:00"),
             "workday_end": (state.get("planning") or {}).get("workday_end", "18:00"),
             "deep_min_hours": (state.get("planning") or {}).get("deep_min_hours", 2.0),
+        },
+        "project_focus": {
+            "enabled": bool((state.get("project_focus") or {}).get("enabled", False)),
+            "mode": (state.get("project_focus") or {}).get("mode", "meeting_derived"),
+            "syncs_configured": len((state.get("project_focus") or {}).get("syncs", []) or []),
         },
         "state_schema_version": state.get("state_schema_version", STATE_SCHEMA_VERSION),
     }

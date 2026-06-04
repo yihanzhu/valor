@@ -164,6 +164,19 @@ This directly covers the kind of items a carry-forward file tends to flag by
 hand under a "verify-before-quoting" note (unposted design docs, unsent Slack
 replies, stale PR states). The gate makes that discipline automatic.
 
+Two more rules when writing carry-forward claims:
+
+- **Don't carry a downstream task before its upstream work is done.** A "publish
+  / write up / document X" item isn't a real carry-forward item until the work it
+  describes has reached a publishable stage (the ticket is resolved or a finished
+  draft exists). Until then it's a coaching nudge, not a claim — carrying it early
+  is what breeds a recurring "publish the 1-pager" ghost for work still in flight.
+- **Identify each claim by its stable id** (ticket key, PR number, doc title), not
+  a prose description. "publish the PROJ-42 1-pager" vs "publish the PROJ-42
+  write-up" vs "post the 1-pager" are the *same* claim; phrasing-drift forks them
+  into separate counters that each look new, so nothing ever escalates. Use the
+  stable id (e.g. `PROJ-42`) as the verify.py `--id` so it stays one claim.
+
 ## 2. Summarize the Day
 
 ### 2.1 Accomplishments

@@ -285,6 +285,39 @@ python3 ~/.valor/evidence_cli.py state-set planning \
 
 Skip silently if `calendar` is `false`.
 
+## 3.6 Project Focus (optional)
+
+Only if `calendar` is enabled. Some people focus on **one project at a time** and
+rotate — often driven by a recurring per-project sync meeting (you work on
+whichever project's sync is next). If that's the user, Valor can plan around the
+current project and hide the rest. Most people don't rotate — make this easy to
+skip.
+
+Ask: "Do you focus on one project at a time and rotate between them? (yes / no —
+skip if unsure)." If no, skip silently (leave `project_focus.enabled` false).
+
+If yes, set it up by **detecting the syncs**, not by asking the user to type
+schedules:
+
+1. Read the upcoming calendar (~4 weeks) and find **recurring meetings that look
+   like project syncs** (title contains "sync", "biweekly", "check-in", or a
+   project name; usually one per project, weekly or biweekly).
+2. Show the candidates and have the user confirm + name each: "I found these
+   recurring meetings — which project does each belong to? (skip any that aren't
+   a project sync)." Keep the mapping as title-fragment → project name.
+3. Save it (enabled, meeting-derived, flips the day after each sync):
+   ```bash
+   python3 ~/.valor/evidence_cli.py state-set project_focus \
+     '{"enabled": true, "mode": "meeting_derived", "flip": "after_sync", "current": "", "syncs": [{"project": "Project A", "match": "Project A Sync"}, {"project": "Project B", "match": "Project B Sync"}]}'
+   ```
+   `match` is a case-insensitive substring of the meeting title; `project` is the
+   user's label. If the user would rather just set the active project by hand,
+   use `"mode": "manual", "current": "Project A"` instead.
+
+The sync labels and project names are **local only** — never committed.
+
+Skip silently if `calendar` is `false` or the user doesn't rotate.
+
 ## 4. Routines
 
 Valor has four time-anchored agents that deliver the most value when run on a
