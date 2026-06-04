@@ -169,8 +169,9 @@ def test_per_task_est_minutes_overrides_shape_default():
     # Agent-provided durations win over the shape fallbacks (30/45/90).
     prios = [{"text": "Big pipeline change", "est_minutes": 120},
              {"text": "Quick publish", "est_minutes": 20}]
+    # granularity=0 isolates the est-override from clock snapping (tested separately).
     r = plan.fit([], prios, now=T("09:00"), workday_start="09:00",
-                 workday_end="18:00", deep_min_hours=2)
+                 workday_end="18:00", deep_min_hours=2, granularity=0)
     by = {b["priority"]: b for b in r["blocks"]}
     assert by["Big pipeline change"]["minutes"] == 120
     assert by["Quick publish"]["minutes"] == 20
@@ -229,6 +230,42 @@ def test_break_minutes_zero_disables_break():
     r = plan.fit([_mtg("10:00", "11:00")], [], now=T("09:00"), workday_start="09:00",
                  workday_end="18:00", deep_min_hours=2, break_minutes=0)
     assert r["gaps"][1]["start"] == T("11:00")
+
+
+# --- clock-granularity snapping ---
+def test_block_start_snaps_up_to_granularity():
+    # now 14:09 -> first block snaps up to 14:15 (clean, like a meeting)
+    r = plan.fit([], [{"text": "Merge PR #1", "est_minutes": 30}], now=T("14:09"),
+                 workday_start="09:00", workday_end="18:00", deep_min_hours=2)
+    assert r["blocks"][0]["start"] == T("14:15")
+    assert r["blocks"][0]["end"] == T("14:45")
+
+
+def test_duration_rounds_up_to_granularity():
+    r = plan.fit([], [{"text": "Quick publish", "est_minutes": 20}], now=T("09:00"),
+                 workday_start="09:00", workday_end="18:00", deep_min_hours=2)
+    assert r["blocks"][0]["minutes"] == 30          # 20 -> next 15-multiple
+    assert r["blocks"][0]["end"] == T("09:30")
+
+
+def test_packed_blocks_stay_on_clean_boundaries():
+    r = plan.fit([], [{"text": "Merge #1", "est_minutes": 20}, {"text": "Review #2", "est_minutes": 25}],
+                 now=T("14:09"), workday_start="09:00", workday_end="18:00", deep_min_hours=2)
+    assert [b["start"] for b in r["blocks"]] == [T("14:15"), T("14:45")]
+
+
+def test_granularity_zero_disables_snapping():
+    r = plan.fit([], [{"text": "Merge PR #1", "est_minutes": 20}], now=T("14:09"),
+                 workday_start="09:00", workday_end="18:00", deep_min_hours=2, granularity=0)
+    assert r["blocks"][0]["start"] == T("14:09")     # exact now, not snapped
+    assert r["blocks"][0]["minutes"] == 20           # exact duration
+
+
+def test_granularity_30_snaps_to_half_hours():
+    r = plan.fit([], [{"text": "Merge PR #1", "est_minutes": 20}], now=T("14:09"),
+                 workday_start="09:00", workday_end="18:00", deep_min_hours=2, granularity=30)
+    assert r["blocks"][0]["start"] == T("14:30")     # next :00/:30
+    assert r["blocks"][0]["minutes"] == 30
 
 
 # --- CLI ---

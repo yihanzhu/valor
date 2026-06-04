@@ -280,12 +280,13 @@ day's gaps and can write the plan back as calendar events. Ask two things:
 
 ```bash
 python3 ~/.valor/evidence_cli.py state-set planning \
-  '{"calendar_auto_write": true, "workday_start": "09:00", "workday_end": "18:00", "deep_min_hours": 2, "post_meeting_break_minutes": 15}'
+  '{"calendar_auto_write": true, "workday_start": "09:00", "workday_end": "18:00", "deep_min_hours": 2, "post_meeting_break_minutes": 15, "block_granularity_minutes": 15}'
 ```
 
 `post_meeting_break_minutes` (default 15) reserves a breather after each real
-meeting before the next block is scheduled. Skip silently if `calendar` is
-`false`.
+meeting before the next block is scheduled; `block_granularity_minutes` (default
+15) snaps blocks to clean clock times (:00/:15/:30/:45) like meetings. Skip
+silently if `calendar` is `false`.
 
 ## 3.6 Project Focus (optional)
 

@@ -423,7 +423,7 @@ install_shared() {
     local detected_intg
     detected_intg=$(detect_integrations)
 
-    local schema_version=11
+    local schema_version=12
 
     if [ ! -f "$VALOR_HOME/state.json" ]; then
         cat > "$VALOR_HOME/state.json" <<STATEJSON
@@ -454,7 +454,8 @@ install_shared() {
     "workday_start": "09:00",
     "workday_end": "18:00",
     "deep_min_hours": 2.0,
-    "post_meeting_break_minutes": 15
+    "post_meeting_break_minutes": 15,
+    "block_granularity_minutes": 15
   },
   "one_on_one": {
     "doc": "",
@@ -505,12 +506,16 @@ if not isinstance(state.get('escalate_in_one_on_one'), list):
     changed = True
 # v6: day-planning config (presence-based so it self-heals).
 if not isinstance(state.get('planning'), dict):
-    state['planning'] = {'calendar_auto_write': True, 'workday_start': '09:00', 'workday_end': '18:00', 'deep_min_hours': 2.0, 'post_meeting_break_minutes': 15}
+    state['planning'] = {'calendar_auto_write': True, 'workday_start': '09:00', 'workday_end': '18:00', 'deep_min_hours': 2.0, 'post_meeting_break_minutes': 15, 'block_granularity_minutes': 15}
     changed = True
-# v9: post-meeting break sub-key (fill if the planning block predates it).
-elif 'post_meeting_break_minutes' not in state['planning']:
-    state['planning']['post_meeting_break_minutes'] = 15
-    changed = True
+else:
+    # v9/v12: fill day-planning sub-keys if the planning block predates them.
+    if 'post_meeting_break_minutes' not in state['planning']:
+        state['planning']['post_meeting_break_minutes'] = 15
+        changed = True
+    if 'block_granularity_minutes' not in state['planning']:
+        state['planning']['block_granularity_minutes'] = 15
+        changed = True
 # v7: 1:1 doc config (presence-based).
 if not isinstance(state.get('one_on_one'), dict):
     state['one_on_one'] = {'doc': '', 'format_notes': ''}

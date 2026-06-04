@@ -39,7 +39,7 @@ Model:
 CLI:
     plan.py fit --events <json|-> --priorities <json|-> [--now ISO]
                 [--workday-start HH:MM] [--workday-end HH:MM] [--deep-hours N]
-                [--break-minutes N]
+                [--break-minutes N] [--granularity N]
     plan.py shape --text "..."        # classify a single priority (debug)
 
 All output is JSON on stdout.
@@ -61,6 +61,9 @@ DEFAULTS = {
     "deep_min_hours": 2.0,
     # 15-min breather after a real meeting before the next block is scheduled.
     "post_meeting_break_minutes": 15,
+    # Snap block start/end to this clock granularity (minutes) so blocks line up
+    # with meetings (:00/:15/:30/:45). Durations round up to a multiple of it.
+    "block_granularity_minutes": 15,
     # Per-shape FALLBACK durations. The briefing should estimate each task's
     # duration from its nature (a publish is ~15 min; a pipeline change is hours)
     # and pass it as the priority's `est_minutes`; these are only used when it
@@ -103,7 +106,7 @@ def planning_config() -> dict:
     state_cfg = _read_state().get("planning", {})
     if isinstance(state_cfg, dict):
         for k in ("workday_start", "workday_end", "deep_min_hours",
-                  "post_meeting_break_minutes"):
+                  "post_meeting_break_minutes", "block_granularity_minutes"):
             if k in state_cfg:
                 cfg[k] = state_cfg[k]
         if isinstance(state_cfg.get("est_minutes"), dict):
@@ -163,6 +166,25 @@ def _is_real_meeting(ev) -> bool:
     if "is_meeting" in ev:
         return bool(ev["is_meeting"])
     return _attendee_count(ev) > 1
+
+
+def _ceil_to(dt: datetime, gran: int) -> datetime:
+    """Round dt UP to the next clean clock boundary that is a multiple of `gran`
+    minutes past the hour (so blocks line up with meetings). No-op if gran<=0."""
+    if gran <= 0:
+        return dt
+    rem = dt.minute % gran
+    if rem == 0 and dt.second == 0 and dt.microsecond == 0:
+        return dt
+    return (dt - timedelta(minutes=rem, seconds=dt.second, microseconds=dt.microsecond)
+            + timedelta(minutes=gran))
+
+
+def _round_up_minutes(n: int, gran: int) -> int:
+    """Round a duration up to a whole multiple of gran (so block ends are clean)."""
+    if gran <= 0:
+        return n
+    return ((n + gran - 1) // gran) * gran
 
 
 # --- shape classification ------------------------------------------------
@@ -251,19 +273,20 @@ def _candidate_order(shape, gaps):
            [g for g in gaps if g["type"] == "deep"]
 
 
-def assign(priorities, gaps, est_minutes):
+def assign(priorities, gaps, est_minutes, granularity=0):
     """priorities: list of {"text", "shape"}. Mutates gap cursors. Returns
-    (blocks, unassigned)."""
+    (blocks, unassigned). Block starts snap up to `granularity` and durations
+    round up to it, so blocks land on clean clock boundaries like meetings."""
     blocks, unassigned = [], []
     for p in priorities:
         shape = p["shape"]
         # Per-task estimate (agent-provided) wins; shape default is the fallback.
-        need = int(p.get("est_minutes") or est_minutes.get(shape, 45))
+        need = _round_up_minutes(int(p.get("est_minutes") or est_minutes.get(shape, 45)), granularity)
         placed = False
         for g in _candidate_order(shape, gaps):
-            remaining = _minutes(g["_cursor"], _parse_iso(g["end"]))
+            blk_start = _ceil_to(g["_cursor"], granularity)
+            remaining = _minutes(blk_start, _parse_iso(g["end"]))
             if remaining >= need:
-                blk_start = g["_cursor"]
                 blk_end = blk_start + timedelta(minutes=need)
                 blocks.append({
                     "start": blk_start.isoformat(),
@@ -287,12 +310,13 @@ def assign(priorities, gaps, est_minutes):
 
 # --- top-level fit -------------------------------------------------------
 def fit(events, priorities, *, now=None, workday_start=None, workday_end=None,
-        deep_min_hours=None, break_minutes=None):
+        deep_min_hours=None, break_minutes=None, granularity=None):
     cfg = planning_config()
     workday_start = workday_start or cfg["workday_start"]
     workday_end = workday_end or cfg["workday_end"]
     deep_min_hours = deep_min_hours if deep_min_hours is not None else cfg["deep_min_hours"]
     break_minutes = break_minutes if break_minutes is not None else cfg["post_meeting_break_minutes"]
+    granularity = granularity if granularity is not None else cfg["block_granularity_minutes"]
     est = cfg["est_minutes"]
 
     now_dt = _now(now)
@@ -327,7 +351,7 @@ def fit(events, priorities, *, now=None, workday_start=None, workday_end=None,
                 "est_minutes": est_p if isinstance(est_p, (int, float)) and est_p > 0 else None,
             })
 
-    blocks, unassigned = assign(norm_priorities, gaps, est)
+    blocks, unassigned = assign(norm_priorities, gaps, est, granularity)
 
     public_gaps = [{k: v for k, v in g.items() if not k.startswith("_")} for g in gaps]
     return {
@@ -358,6 +382,7 @@ def cmd_fit(args: argparse.Namespace) -> None:
         events, priorities, now=args.now,
         workday_start=args.workday_start, workday_end=args.workday_end,
         deep_min_hours=args.deep_hours, break_minutes=args.break_minutes,
+        granularity=args.granularity,
     )
     print(json.dumps(result, indent=2))
 
@@ -382,6 +407,8 @@ def main() -> None:
                        help="Min contiguous hours for a deep block (default 2)")
     p_fit.add_argument("--break-minutes", type=int, default=None,
                        help="Minutes reserved after a real meeting (default from state/15)")
+    p_fit.add_argument("--granularity", type=int, default=None,
+                       help="Snap block start/end to this clock granularity (default from state/15)")
 
     p_shape = sub.add_parser("shape", help="Classify a single priority's task shape")
     p_shape.add_argument("--text", required=True)

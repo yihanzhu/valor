@@ -227,7 +227,7 @@ blocks back as events. Skipped entirely if `integrations.calendar` is `false`.
 
 | Subcommand | Purpose |
 |------------|---------|
-| `fit --events JSON --priorities JSON [--now ISO] [--workday-start HH:MM] [--workday-end HH:MM] [--deep-hours N] [--break-minutes N]` | Fit priorities to calendar gaps; returns a time-blocked schedule (JSON). Priorities may carry per-task `est_minutes`; events may carry `is_meeting`/`attendees` |
+| `fit --events JSON --priorities JSON [--now ISO] [--workday-start HH:MM] [--workday-end HH:MM] [--deep-hours N] [--break-minutes N] [--granularity N]` | Fit priorities to calendar gaps; returns a time-blocked schedule (JSON). Priorities may carry per-task `est_minutes`; events may carry `is_meeting`/`attendees` |
 | `shape --text "..."` | Classify one priority's task shape (debug) |
 
 `--events`/`--priorities` accept inline JSON, `@file`, or `-` (stdin).
@@ -263,7 +263,9 @@ blocks back as events. Skipped entirely if `integrations.calendar` is `false`.
    `post_meeting_break_minutes` breather (default 15) after each real meeting, and
    assigns greedily — each task taking its `est_minutes` (shape fallback if
    absent); `deep_only` only lands in deep gaps; `fragmented_ok` prefers
-   fragmented gaps so deep blocks stay free for deep work.
+   fragmented gaps so deep blocks stay free for deep work. Block starts/ends snap
+   to `block_granularity_minutes` (default 15) so they land on clean clock
+   boundaries (:00/:15/:30/:45) like meetings, not odd times like 2:09.
 4. **Present** the `blocks` as a "Day Plan" section (time-blocked). Surface each
    `unassigned` item as "push to your next deep block" (for `deep_only`, the
    next no-meeting / ≥`deep_min_hours` window).
@@ -362,7 +364,7 @@ fields, so a fresh `state.json` with only installer fields is valid.
 | `integrations` | Installer / User config | Object with boolean flags for github, jira, calendar, news |
 | `verification` | Installer | Object: `enabled` (gate kill switch), `escalation_threshold` (consecutive misses before 1:1 escalation, default 3), `ttl_overrides` (per-type cache TTL hours) |
 | `escalate_in_one_on_one` | Carry-forward audit | List of claims that failed repeated verification; surfaced by 1:1 prep |
-| `planning` | Installer | Object: `calendar_auto_write` (write kill switch; read is gated by `integrations.calendar`), `workday_start`/`workday_end` (HH:MM), `deep_min_hours` (deep-block threshold, default 2), `post_meeting_break_minutes` (breather reserved after a real meeting, default 15) |
+| `planning` | Installer | Object: `calendar_auto_write` (write kill switch; read is gated by `integrations.calendar`), `workday_start`/`workday_end` (HH:MM), `deep_min_hours` (deep-block threshold, default 2), `post_meeting_break_minutes` (breather reserved after a real meeting, default 15), `block_granularity_minutes` (snap block start/end to this clock granularity, default 15) |
 | `one_on_one` | Installer / setup | Object: `doc` (link/id/name of the user's running 1:1 doc, so `/valor-prep` can learn the format — local only, never committed), `format_notes` (optional format spec used if the doc can't be read) |
 | `project_focus` | Installer / setup | Optional customization (disabled by default). Object: `enabled`; `mode` (`meeting_derived` follows the next per-project sync on the calendar, `manual` uses `current`); `current`; `flip` (`after_sync`); `syncs` (sync-label → project map; local only); `sync_scan_interval_days` (re-check cadence, default 14) + `last_sync_scan`; `meeting_baseline` (known recurring-meeting titles — a new one is a "new project?" signal). When on, the briefing plans around the current project and hides the rest. |
 | `installed_version` | Installer | Valor version at last install (semver) |
