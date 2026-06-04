@@ -24,16 +24,22 @@ Model:
     A no-meeting day is naturally one big deep gap.
   * Tag each priority by task shape: merge/review/publish/nudge -> fragmented_ok;
     code/design/research/draft -> deep_only; otherwise -> either.
+  * A gap that immediately follows a real meeting (attendees > 1, or the agent
+    set is_meeting) has its start pushed back by post_meeting_break_minutes -- a
+    breather between back-to-backs. No break after lunch / a personal hold / OOO.
   * Assign greedily in priority order, respecting shape: deep_only only lands in
     deep gaps; fragmented_ok prefers fragmented gaps (preserving deep blocks for
-    deep work); either prefers fragmented then falls back. Each task consumes an
-    estimated duration; multiple tasks can pack into one gap.
+    deep work); either prefers fragmented then falls back. Each task consumes its
+    own estimated duration -- the priority's `est_minutes` when the agent
+    provides one (it should estimate per task and lean generous), else a per-
+    shape fallback; multiple tasks can pack into one gap.
   * Anything that doesn't fit is returned as `unassigned` (the agent surfaces it
     as "push to your next deep block").
 
 CLI:
     plan.py fit --events <json|-> --priorities <json|-> [--now ISO]
                 [--workday-start HH:MM] [--workday-end HH:MM] [--deep-hours N]
+                [--break-minutes N]
     plan.py shape --text "..."        # classify a single priority (debug)
 
 All output is JSON on stdout.
@@ -53,6 +59,12 @@ DEFAULTS = {
     "workday_start": "09:00",
     "workday_end": "18:00",
     "deep_min_hours": 2.0,
+    # 15-min breather after a real meeting before the next block is scheduled.
+    "post_meeting_break_minutes": 15,
+    # Per-shape FALLBACK durations. The briefing should estimate each task's
+    # duration from its nature (a publish is ~15 min; a pipeline change is hours)
+    # and pass it as the priority's `est_minutes`; these are only used when it
+    # doesn't. Estimate generously — the user would rather finish early.
     "est_minutes": {"fragmented_ok": 30, "deep_only": 90, "either": 45},
 }
 
@@ -90,7 +102,8 @@ def planning_config() -> dict:
     cfg = dict(DEFAULTS)
     state_cfg = _read_state().get("planning", {})
     if isinstance(state_cfg, dict):
-        for k in ("workday_start", "workday_end", "deep_min_hours"):
+        for k in ("workday_start", "workday_end", "deep_min_hours",
+                  "post_meeting_break_minutes"):
             if k in state_cfg:
                 cfg[k] = state_cfg[k]
         if isinstance(state_cfg.get("est_minutes"), dict):
@@ -128,6 +141,30 @@ def _minutes(a: datetime, b: datetime) -> int:
     return int((b - a).total_seconds() // 60)
 
 
+def _attendee_count(ev) -> int:
+    """Best-effort attendee count for 'is this a real meeting?' detection."""
+    a = ev.get("attendees")
+    if isinstance(a, bool):
+        return 0
+    if isinstance(a, int):
+        return a
+    if isinstance(a, (list, tuple)):
+        return len(a)
+    return 0
+
+
+def _is_real_meeting(ev) -> bool:
+    """A real (collaborative) meeting earns a post-meeting break; a personal hold
+    (lunch, a solo focus block kept as `default`) does not. Out-of-office blocks
+    the day but isn't a meeting. The agent can pass `is_meeting` explicitly;
+    otherwise we infer from attendee count > 1."""
+    if ev.get("type") == "outOfOffice":
+        return False
+    if "is_meeting" in ev:
+        return bool(ev["is_meeting"])
+    return _attendee_count(ev) > 1
+
+
 # --- shape classification ------------------------------------------------
 def classify_shape(text: str) -> str:
     low = text.lower()
@@ -139,33 +176,51 @@ def classify_shape(text: str) -> str:
 
 
 # --- gaps ----------------------------------------------------------------
-def compute_gaps(busy, window_start, window_end, deep_min_hours):
-    """busy: list of (start, end) aware datetimes. Returns gap dicts."""
-    # Normalize, clip to window, sort, merge overlaps.
+def compute_gaps(busy, window_start, window_end, deep_min_hours, break_minutes=0):
+    """busy: list of (start, end, is_meeting) aware datetimes. Returns gap dicts.
+
+    A gap that immediately follows a real meeting has its start pushed back by
+    `break_minutes` (a post-meeting breather). The break is applied ONLY after
+    real meetings — never after lunch / a personal hold / out-of-office, and
+    never at the start of the workday.
+    """
+    # Normalize, clip to window, sort, merge overlaps (carrying is_meeting).
     clipped = []
-    for s, e in busy:
+    for item in busy:
+        s, e = item[0], item[1]
+        is_mtg = bool(item[2]) if len(item) > 2 else False
         s = max(s, window_start)
         e = min(e, window_end)
         if e > s:
-            clipped.append((s, e))
-    clipped.sort()
+            clipped.append((s, e, is_mtg))
+    clipped.sort(key=lambda t: (t[0], t[1]))
     merged = []
-    for s, e in clipped:
+    for s, e, is_mtg in clipped:
         if merged and s <= merged[-1][1]:
-            merged[-1] = (merged[-1][0], max(merged[-1][1], e))
+            merged[-1] = (merged[-1][0], max(merged[-1][1], e), merged[-1][2] or is_mtg)
         else:
-            merged.append((s, e))
+            merged.append((s, e, is_mtg))
 
     gaps = []
     cursor = window_start
+    prev_was_meeting = False
     deep_min = deep_min_hours * 60
-    for s, e in merged:
+    for s, e, is_mtg in merged:
         if s > cursor:
-            gaps.append(_make_gap(cursor, s, deep_min, pre_meeting=True))
+            start = cursor
+            if prev_was_meeting and break_minutes:
+                start = min(start + timedelta(minutes=break_minutes), s)
+            if s > start:
+                gaps.append(_make_gap(start, s, deep_min, pre_meeting=True))
         cursor = max(cursor, e)
+        prev_was_meeting = is_mtg
     if cursor < window_end:
         # Terminal gap (end of workday): not bounded by a later meeting.
-        gaps.append(_make_gap(cursor, window_end, deep_min, pre_meeting=False))
+        start = cursor
+        if prev_was_meeting and break_minutes:
+            start = min(start + timedelta(minutes=break_minutes), window_end)
+        if window_end > start:
+            gaps.append(_make_gap(start, window_end, deep_min, pre_meeting=False))
     return gaps
 
 
@@ -202,7 +257,8 @@ def assign(priorities, gaps, est_minutes):
     blocks, unassigned = [], []
     for p in priorities:
         shape = p["shape"]
-        need = est_minutes.get(shape, 45)
+        # Per-task estimate (agent-provided) wins; shape default is the fallback.
+        need = int(p.get("est_minutes") or est_minutes.get(shape, 45))
         placed = False
         for g in _candidate_order(shape, gaps):
             remaining = _minutes(g["_cursor"], _parse_iso(g["end"]))
@@ -231,11 +287,12 @@ def assign(priorities, gaps, est_minutes):
 
 # --- top-level fit -------------------------------------------------------
 def fit(events, priorities, *, now=None, workday_start=None, workday_end=None,
-        deep_min_hours=None):
+        deep_min_hours=None, break_minutes=None):
     cfg = planning_config()
     workday_start = workday_start or cfg["workday_start"]
     workday_end = workday_end or cfg["workday_end"]
     deep_min_hours = deep_min_hours if deep_min_hours is not None else cfg["deep_min_hours"]
+    break_minutes = break_minutes if break_minutes is not None else cfg["post_meeting_break_minutes"]
     est = cfg["est_minutes"]
 
     now_dt = _now(now)
@@ -251,19 +308,24 @@ def fit(events, priorities, *, now=None, workday_start=None, workday_end=None,
         if ev.get("type") in NON_BLOCKING_EVENT_TYPES:
             continue  # focus time / working-location: leave free for deep work
         try:
-            busy.append((_parse_iso(ev["start"]), _parse_iso(ev["end"])))
+            busy.append((_parse_iso(ev["start"]), _parse_iso(ev["end"]), _is_real_meeting(ev)))
         except (KeyError, ValueError):
             continue
 
-    gaps = compute_gaps(busy, window_start, day_end, deep_min_hours)
+    gaps = compute_gaps(busy, window_start, day_end, deep_min_hours, break_minutes=break_minutes)
 
     norm_priorities = []
     for p in priorities:
         if isinstance(p, str):
-            norm_priorities.append({"text": p, "shape": classify_shape(p)})
+            norm_priorities.append({"text": p, "shape": classify_shape(p), "est_minutes": None})
         else:
             text = p.get("text", "")
-            norm_priorities.append({"text": text, "shape": p.get("shape") or classify_shape(text)})
+            est_p = p.get("est_minutes")
+            norm_priorities.append({
+                "text": text,
+                "shape": p.get("shape") or classify_shape(text),
+                "est_minutes": est_p if isinstance(est_p, (int, float)) and est_p > 0 else None,
+            })
 
     blocks, unassigned = assign(norm_priorities, gaps, est)
 
@@ -295,7 +357,7 @@ def cmd_fit(args: argparse.Namespace) -> None:
     result = fit(
         events, priorities, now=args.now,
         workday_start=args.workday_start, workday_end=args.workday_end,
-        deep_min_hours=args.deep_hours,
+        deep_min_hours=args.deep_hours, break_minutes=args.break_minutes,
     )
     print(json.dumps(result, indent=2))
 
@@ -310,14 +372,16 @@ def main() -> None:
 
     p_fit = sub.add_parser("fit", help="Fit priorities to today's calendar gaps")
     p_fit.add_argument("--events", default="[]",
-                       help='Busy blocks JSON: [{"start","end","summary"}] (or @file or -)')
+                       help='Busy blocks JSON: [{"start","end","type","is_meeting"|"attendees"}] (or @file or -)')
     p_fit.add_argument("--priorities", default="[]",
-                       help='Priorities JSON: ["text", ...] or [{"text","shape"}] (or @file or -)')
+                       help='Priorities JSON: ["text", ...] or [{"text","shape","est_minutes"}] (or @file or -)')
     p_fit.add_argument("--now", default=None, help="ISO timestamp override (testing)")
     p_fit.add_argument("--workday-start", default=None, help="HH:MM (default from state/09:00)")
     p_fit.add_argument("--workday-end", default=None, help="HH:MM (default from state/18:00)")
     p_fit.add_argument("--deep-hours", type=float, default=None,
                        help="Min contiguous hours for a deep block (default 2)")
+    p_fit.add_argument("--break-minutes", type=int, default=None,
+                       help="Minutes reserved after a real meeting (default from state/15)")
 
     p_shape = sub.add_parser("shape", help="Classify a single priority's task shape")
     p_shape.add_argument("--text", required=True)
