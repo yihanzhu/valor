@@ -225,7 +225,9 @@ state, so a recurring meeting that *wasn't there before* is a strong "new
 project?" signal. Run `python3 ~/.valor/focus.py scan-due`; only if `due: true`:
 
 1. Build the list of your **current recurring meeting titles** from the calendar
-   (recurring only — skip one-offs) and diff against the saved baseline:
+   — scan **~3–4 weeks** so biweekly meetings are captured, keep only recurring
+   events (those with a `recurringEventId`; skip one-offs), and dedupe by title.
+   Diff against the saved baseline:
    ```bash
    python3 ~/.valor/focus.py baseline-diff --current '["Title A", "Title B", ...]'
    ```
