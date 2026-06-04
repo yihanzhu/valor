@@ -262,6 +262,7 @@ source .venv/bin/activate
 python3 -m pip install -r requirements-dev.txt
 python3 -m pytest -q
 python3 -m compileall src tests
+python3 scripts/check_version_sync.py   # version strings (manifests, website) match VERSION
 ```
 
 If you are editing installed artifacts locally, you can verify they still match

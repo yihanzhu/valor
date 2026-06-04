@@ -24,6 +24,8 @@ jobs:
         run: python -m pytest -q
       - name: Compile sources
         run: python -m compileall src tests scripts
+      - name: Check version sync
+        run: python scripts/check_version_sync.py
 
   hygiene:
     # Company-info guard: fails if any committed file contains an employer name,
