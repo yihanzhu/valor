@@ -64,7 +64,7 @@ and `utilities.md`).
 
 The `installed_version` and `installed_at` fields track when the last install
 happened. The `state_schema_version` field enables forward-only migrations
-when the installer adds new fields (currently at version 11). Migrations are
+when the installer adds new fields (currently at version 12). Migrations are
 non-destructive (only missing keys are added) and run in `_migrate_state_in_memory`.
 
 Key fields:
@@ -73,7 +73,7 @@ Key fields:
 - `coaching_mode` -- `"ambient"` (default), `"quiet"`, or `"off"`
 - `integrations` -- boolean flags for github, jira, calendar, news
 - `verification` -- gate config: `enabled`, `escalation_threshold`, `ttl_overrides` (v5)
-- `planning` -- day-plan config: `calendar_auto_write`, `workday_start`/`workday_end`, `deep_min_hours`, `post_meeting_break_minutes` (v6, v9)
+- `planning` -- day-plan config: `calendar_auto_write`, `workday_start`/`workday_end`, `deep_min_hours`, `post_meeting_break_minutes`, `block_granularity_minutes` (v6, v9, v12)
 - `one_on_one` -- 1:1 doc reference + `format_notes` for `/valor-prep` (v7; local only)
 - `project_focus` -- opt-in project rotation: `enabled`, `mode`, `syncs`, `meeting_baseline`, re-check cadence (v8–v11; local only)
 - `escalate_in_one_on_one` -- chronic items flagged for the next 1:1 (v5)
@@ -133,8 +133,9 @@ Cross-cutting behaviors run inside the existing agents — no new commands:
   deep-work, out-of-office blocks), sizing each task by an agent-provided
   `est_minutes` and reserving a `post_meeting_break_minutes` breather after real
   meetings. If `planning.calendar_auto_write`, it writes the blocks back as
-  **private** calendar items — each carrying the task's description so it's
-  readable at do-time — idempotent and removed when the task verifies done.
+  **private** calendar items — each snapped to clean clock boundaries and
+  carrying the task's description (with a clickable link) so it's readable at
+  do-time — idempotent and removed when the task verifies done.
 - **Project focus** (`focus.py`, opt-in): when the user rotates projects, the
   briefing derives the current project from a recurring per-project sync meeting
   (or a manual setting) and plans around it, hiding off-focus work. A throttled
