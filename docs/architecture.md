@@ -51,6 +51,7 @@ and `utilities.md`).
 | `evidence_cli.py`     | CLI for the evidence store + state             | `install.sh`         |
 | `verify.py`           | Artifact-verification gate (anti-phantom)      | `install.sh`         |
 | `plan.py`             | Day-planning gap-fit scheduler                 | `install.sh`         |
+| `focus.py`            | Project-focus resolver + drift detection       | `install.sh`         |
 | `career_framework.md` | User's career ladder (not overwritten)        | User                 |
 | `utilities.md`        | Tool discovery reference for agents           | `install.sh`         |
 | `coaching-ref.md`     | Coaching specs loaded on-demand (see below)   | `install.sh`         |
@@ -63,7 +64,7 @@ and `utilities.md`).
 
 The `installed_version` and `installed_at` fields track when the last install
 happened. The `state_schema_version` field enables forward-only migrations
-when the installer adds new fields (currently at version 7). Migrations are
+when the installer adds new fields (currently at version 11). Migrations are
 non-destructive (only missing keys are added) and run in `_migrate_state_in_memory`.
 
 Key fields:
@@ -72,8 +73,9 @@ Key fields:
 - `coaching_mode` -- `"ambient"` (default), `"quiet"`, or `"off"`
 - `integrations` -- boolean flags for github, jira, calendar, news
 - `verification` -- gate config: `enabled`, `escalation_threshold`, `ttl_overrides` (v5)
-- `planning` -- day-plan config: `calendar_auto_write`, `workday_start`/`workday_end`, `deep_min_hours` (v6)
+- `planning` -- day-plan config: `calendar_auto_write`, `workday_start`/`workday_end`, `deep_min_hours`, `post_meeting_break_minutes` (v6, v9)
 - `one_on_one` -- 1:1 doc reference + `format_notes` for `/valor-prep` (v7; local only)
+- `project_focus` -- opt-in project rotation: `enabled`, `mode`, `syncs`, `meeting_baseline`, re-check cadence (v8–v11; local only)
 - `escalate_in_one_on_one` -- chronic items flagged for the next 1:1 (v5)
 - `state_schema_version` -- integer for installer migrations
 - `installed_version`, `installed_at` -- install tracking
@@ -116,9 +118,9 @@ coaching layer:
 All agents read `integrations` from `state.json` and silently skip sections
 for disabled integrations.
 
-### Verification, planning, and escalation (behaviors, not new agents)
+### Verification, planning, focus, and escalation (behaviors, not new agents)
 
-Three cross-cutting behaviors run inside the existing agents — no new commands:
+Cross-cutting behaviors run inside the existing agents — no new commands:
 
 - **Verification gate** (`verify.py`): before wrap-up writes a carry-forward
   claim or the briefing re-asserts one, the claim is verified against its source
@@ -128,9 +130,17 @@ Three cross-cutting behaviors run inside the existing agents — no new commands
   `claim_verifications` with per-type TTLs.
 - **Day-planning pass** (`plan.py`): after the briefing's Suggested Priorities,
   it fits them to the day's real calendar gaps (deep vs fragmented; focus-time is
-  deep-work, out-of-office blocks) and — if `planning.calendar_auto_write` —
-  writes the blocks back as **private** calendar items (idempotent; removed when
-  the task verifies done).
+  deep-work, out-of-office blocks), sizing each task by an agent-provided
+  `est_minutes` and reserving a `post_meeting_break_minutes` breather after real
+  meetings. If `planning.calendar_auto_write`, it writes the blocks back as
+  **private** calendar items — each carrying the task's description so it's
+  readable at do-time — idempotent and removed when the task verifies done.
+- **Project focus** (`focus.py`, opt-in): when the user rotates projects, the
+  briefing derives the current project from a recurring per-project sync meeting
+  (or a manual setting) and plans around it, hiding off-focus work. A throttled
+  baseline-diff of recurring meetings — enriched by reading a new meeting's
+  attached docs — proactively flags a likely new/dropped project as a
+  top-of-briefing alert.
 - **Chronic escalation**: items verified-unresolved past
   `verification.escalation_threshold` surface in `/valor-prep`, which also drafts
   the entry in the user's own 1:1-doc format when `one_on_one.doc` is set.
