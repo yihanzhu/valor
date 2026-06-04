@@ -310,13 +310,16 @@ schedules:
 3. Save it (enabled, meeting-derived, flips the day after each sync):
    ```bash
    python3 ~/.valor/evidence_cli.py state-set project_focus \
-     '{"enabled": true, "mode": "meeting_derived", "flip": "after_sync", "current": "", "syncs": [{"project": "Project A", "match": "Project A Sync"}, {"project": "Project B", "match": "Project B Sync"}]}'
+     '{"enabled": true, "mode": "meeting_derived", "flip": "after_sync", "current": "", "syncs": [{"project": "Project A", "match": "Project A Sync"}, {"project": "Project B", "match": "Project B Sync"}], "sync_scan_interval_days": 14, "last_sync_scan": ""}'
    ```
    `match` is a case-insensitive substring of the meeting title; `project` is the
    user's label. If the user would rather just set the active project by hand,
    use `"mode": "manual", "current": "Project A"` instead.
 
-The sync labels and project names are **local only** — never committed.
+`sync_scan_interval_days` (default 14) controls how often the briefing re-scans
+for sync meetings to catch changes to the project set; the current focus itself
+is re-derived from the calendar every briefing. The sync labels and project
+names are **local only** — never committed.
 
 Skip silently if `calendar` is `false` or the user doesn't rotate.
 

@@ -1,6 +1,7 @@
 """Tests for the project-focus resolver (src/focus.py)."""
 
 import importlib.util
+import json
 from datetime import date
 from pathlib import Path
 
@@ -96,3 +97,53 @@ def test_malformed_sync_entries_are_skipped():
     syncs = [{"project": "platform"}, {"date": "2026-06-15"}, {"project": "payments", "date": "2026-06-15"}]
     out = focus.meeting_focus(syncs, today="2026-06-04")
     assert out["current_project"] == "payments"
+
+
+# --- periodic mapping re-check ------------------------------------------
+def test_scan_due_when_never_scanned():
+    assert focus.scan_due({"enabled": True, "last_sync_scan": ""}) is True
+
+
+def test_scan_due_false_when_disabled():
+    assert focus.scan_due({"enabled": False, "last_sync_scan": ""}) is False
+
+
+def test_scan_due_respects_interval():
+    cfg = {"enabled": True, "last_sync_scan": "2026-06-01", "sync_scan_interval_days": 14}
+    assert focus.scan_due(cfg, today="2026-06-10") is False   # 9 days < 14
+    assert focus.scan_due(cfg, today="2026-06-15") is True     # 14 days >= 14
+
+
+def test_scan_due_bad_date_is_due():
+    assert focus.scan_due({"enabled": True, "last_sync_scan": "garbage"}) is True
+
+
+def test_diff_syncs_flags_new_and_missing():
+    configured = [{"project": "platform", "match": "Platform Sync"},
+                  {"project": "payments", "match": "Payments Sync"}]
+    observed = ["Weekly Platform Sync", "New Thing Biweekly Sync"]
+    d = focus.diff_syncs(configured, observed)
+    assert d["new"] == ["New Thing Biweekly Sync"]                       # unmatched observed
+    assert d["missing"] == [{"project": "payments", "match": "Payments Sync"}]  # no occurrence
+
+
+def test_diff_syncs_all_matched():
+    d = focus.diff_syncs([{"project": "platform", "match": "platform sync"}],
+                         ["Platform Sync (biweekly)"])
+    assert d["new"] == [] and d["missing"] == []
+
+
+def test_mark_scanned_writes_state(tmp_path, monkeypatch):
+    home = tmp_path / ".valor"
+    home.mkdir()
+    (home / "state.json").write_text(json.dumps({"project_focus": {"enabled": True}}))
+    monkeypatch.setattr(focus, "VALOR_HOME", home)
+    assert focus.mark_scanned(today="2026-06-15") == "2026-06-15"
+    state = json.loads((home / "state.json").read_text())
+    assert state["project_focus"]["last_sync_scan"] == "2026-06-15"
+    assert state["project_focus"]["enabled"] is True  # other keys preserved
+
+
+def test_mark_scanned_missing_state_returns_empty(tmp_path, monkeypatch):
+    monkeypatch.setattr(focus, "VALOR_HOME", tmp_path / "nope")
+    assert focus.mark_scanned(today="2026-06-15") == ""
