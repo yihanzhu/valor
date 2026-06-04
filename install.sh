@@ -251,6 +251,7 @@ check_drift() {
         "$SCRIPT_DIR/src/evidence_cli.py"
         "$SCRIPT_DIR/src/verify.py"
         "$SCRIPT_DIR/src/plan.py"
+        "$SCRIPT_DIR/src/focus.py"
         "$SCRIPT_DIR/src/collect_transcripts.py"
         "$SCRIPT_DIR/src/career_framework.md"
         "$SCRIPT_DIR/src/utilities.md"
@@ -260,6 +261,7 @@ check_drift() {
         "$VALOR_HOME/evidence_cli.py"
         "$VALOR_HOME/verify.py"
         "$VALOR_HOME/plan.py"
+        "$VALOR_HOME/focus.py"
         "$VALOR_HOME/collect_transcripts.py"
         "$VALOR_HOME/career_framework.md"
         "$VALOR_HOME/utilities.md"
@@ -421,7 +423,7 @@ install_shared() {
     local detected_intg
     detected_intg=$(detect_integrations)
 
-    local schema_version=7
+    local schema_version=8
 
     if [ ! -f "$VALOR_HOME/state.json" ]; then
         cat > "$VALOR_HOME/state.json" <<STATEJSON
@@ -456,6 +458,13 @@ install_shared() {
   "one_on_one": {
     "doc": "",
     "format_notes": ""
+  },
+  "project_focus": {
+    "enabled": false,
+    "mode": "meeting_derived",
+    "current": "",
+    "flip": "after_sync",
+    "syncs": []
   }
 }
 STATEJSON
@@ -498,6 +507,10 @@ if not isinstance(state.get('planning'), dict):
 if not isinstance(state.get('one_on_one'), dict):
     state['one_on_one'] = {'doc': '', 'format_notes': ''}
     changed = True
+# v8: project-focus customization (presence-based; disabled by default).
+if not isinstance(state.get('project_focus'), dict):
+    state['project_focus'] = {'enabled': False, 'mode': 'meeting_derived', 'current': '', 'flip': 'after_sync', 'syncs': []}
+    changed = True
 if state.get('state_schema_version', 1) < target_version:
     state['state_schema_version'] = target_version
     changed = True
@@ -518,6 +531,9 @@ else:
 
     cp "$SCRIPT_DIR/src/plan.py" "$VALOR_HOME/plan.py"
     echo "  [OK] plan.py"
+
+    cp "$SCRIPT_DIR/src/focus.py" "$VALOR_HOME/focus.py"
+    echo "  [OK] focus.py"
 
     cp "$SCRIPT_DIR/src/collect_transcripts.py" "$VALOR_HOME/collect_transcripts.py"
     echo "  [OK] collect_transcripts.py"

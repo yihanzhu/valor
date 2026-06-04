@@ -181,6 +181,45 @@ Use `context.briefing_meta.tone_tier` (pre-computed from briefing count):
   ratio: 10% (target: 25%). Sarah's #892 is a good candidate."
 - **established:** Data only. E.g., "Cross-team: 10/25%. #892 available."
 
+### 5.5 Project Focus (filter to the current project — run before Work Context and Priorities)
+
+If `context.project_focus.enabled` is `false` (the default), skip this and
+surface all projects as usual. When it's on, the user works **one project at a
+time** and has deliberately deferred the others for a later cycle — mixing in
+deferred work is noise, so resolve the current focus and filter to it.
+
+Resolve the focus:
+
+- **meeting_derived** (`context.project_focus.mode`): the focus follows a
+  recurring per-project sync meeting (you work on whichever project's sync is
+  next). Look at the **upcoming calendar** (next ~3 weeks), match event titles
+  against the configured sync labels (`python3 ~/.valor/focus.py config` shows
+  them — each maps a title fragment to a project), build the dated sync list,
+  then:
+  ```bash
+  python3 ~/.valor/focus.py resolve --syncs '[{"project":"...","date":"YYYY-MM-DD"}, ...]'
+  ```
+- **manual**: `focus.py resolve` returns the user's set `current_project`.
+
+Apply the result:
+
+- **`current_project` is empty** → focus couldn't be determined; **fail open**
+  (don't filter — surface everything). Never hide every project on a misconfig.
+- Otherwise, **classify each candidate ticket/PR by reading it** (epic /
+  component / labels / content — not a key prefix, since two projects can share a
+  prefix) and **keep only items belonging to `current_project`.** Off-focus items
+  are **hidden entirely** — not shown under a "later" heading — across Work
+  Context, PR Situation, Suggested Priorities, and the Day Plan. A PR that only
+  needs your approval still counts as off-focus: a review is a focus session, not
+  a click, and the user has asked to hold that boundary.
+- **`transition_today` is true** (the focus just flipped — a sync fell yesterday):
+  lead Suggested Priorities with a one-time hand-off line, e.g. *"Focus shifts to
+  [current_project] this cycle; [next_project] resumes after its sync on
+  [next_sync_date]."* Outside the transition, do not preview the off-focus project
+  at all.
+
+This is cheap: reuse the §3 calendar read + one `focus.py` call.
+
 ### 6. Verification Gate (anti-phantom — run before Work Context and Priorities)
 
 Yesterday's `today_priorities` (from state) and the carry-forward file are
@@ -210,6 +249,17 @@ python3 ~/.valor/verify.py check --type <TYPE> --id "<IDENTIFIER>"
 
 Most `github_pr` claims resolve automatically (verify.py shells out to `gh`), so
 the bulk of this is cheap. Reserve agent lookups for Confluence/Slack/Drive/Jira.
+
+**Don't manufacture downstream tasks.** A "publish / write up / document X" item
+is a real priority only once the upstream work it describes has actually reached
+a publishable stage (the ticket is resolved, or a finished draft exists — confirm
+it, don't assume). Until then, keep it as a *coaching nudge* ("when X lands, a
+short write-up is strong industry_knowledge evidence"), never a numbered priority
+or a carry-forward claim. Surfacing the write-up before the work is done is what
+turns an unfinished investigation into a recurring "publish the 1-pager" ghost.
+When you do record a claim, identify it by its **stable id** (ticket key, PR
+number, doc title) — not a prose phrasing that drifts day to day — so the same
+item stays one claim instead of fragmenting into near-duplicates.
 
 ## Briefing Format
 
