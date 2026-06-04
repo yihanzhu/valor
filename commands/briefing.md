@@ -220,19 +220,32 @@ Apply the result:
 
 This is cheap: reuse the §3 calendar read + one `focus.py` call.
 
-**Mapping upkeep (only when due).** The sync→project *mapping* is set once, but
-your project set can change. Run `python3 ~/.valor/focus.py scan-due`; only if it
-reports `due: true`, re-scan the upcoming ~4 weeks for recurring meetings that
-look like **per-project rotation syncs** (biweekly-ish, project-specific — like
-your configured ones; do NOT include general team syncs/standups), pass their
-titles to `focus.py diff --observed '["title", ...]'`, and if it reports `new` or
-`missing` entries, surface ONE line: *"Your project syncs may have changed — new:
-[X]; gone: [Y]. Update your focus mapping?"* On confirmation, update
-`project_focus.syncs` via `state-set`. Either way (changed or not), record the
-scan so it won't re-prompt for ~2 weeks:
-```bash
-python3 ~/.valor/focus.py mark-scanned
-```
+**Proactive project drift (only when due).** Your calendar is stable in steady
+state, so a recurring meeting that *wasn't there before* is a strong "new
+project?" signal. Run `python3 ~/.valor/focus.py scan-due`; only if `due: true`:
+
+1. Build the list of your **current recurring meeting titles** from the calendar
+   (recurring only — skip one-offs) and diff against the saved baseline:
+   ```bash
+   python3 ~/.valor/focus.py baseline-diff --current '["Title A", "Title B", ...]'
+   ```
+2. If `seed: true` (first run, no baseline yet), absorb the current meetings as
+   the baseline and **alert nothing** (these are your existing meetings): run the
+   `baseline-sync` + `mark-scanned` in step 4 and stop.
+3. Otherwise, for each `new` meeting **read its attached docs** (Drive/Docs — a
+   "Project Plan"/"Notes" doc) to understand it. If it's a **per-project** meeting
+   (project-specific scope, not a team/sub-team ceremony), add a pinned **Heads
+   up** line at the very top of the briefing (see format): *"🆕 New recurring
+   meeting 'X' — looks like project Y (per its docs). Add to your focus
+   rotation?"* On confirm, append `{project, match}` to `project_focus.syncs` via
+   `state-set`. For each `gone` meeting matching a configured sync, pin: *"⚠️ 'X'
+   is off your calendar — drop project Y from focus?"*
+4. Either way, absorb the current meetings as the new baseline and record the
+   scan (so resolved items don't re-alert and it won't re-check for ~2 weeks):
+   ```bash
+   python3 ~/.valor/focus.py baseline-sync --current '["Title A", "Title B", ...]'
+   python3 ~/.valor/focus.py mark-scanned
+   ```
 
 ### 6. Verification Gate (anti-phantom — run before Work Context and Priorities)
 
@@ -282,6 +295,11 @@ Cross-reference items across sections (link tickets to meetings, PRs to tickets)
 
 ```
 ## Valor Morning Briefing -- [Day], [Date]
+
+[📌 **Heads up:** rare, high-signal one-time alerts — shown only when present and
+pinned above everything else so they survive a news-only skim. E.g. a possible
+new/dropped project from §5.5's drift check. Omit this line entirely when there's
+nothing.]
 
 ### Work Context
 - [Ticket ID]: [Title] -- *[Status]* ([days in status])
@@ -376,10 +394,13 @@ Write"). In short:
    **private**: prefer a **Google Task** per block (private by nature) if a
    task-create tool exists; otherwise a **private** calendar event
    (`visibility: private` + `transparency: transparent`/free) so the title is
-   hidden from others and you're not shown busy. Idempotent via the
-   `valor:task:` token (never duplicate), **skip unverified claims**,
-   delete/complete items whose claim has since verified **resolved**, and never
-   touch items Valor didn't create. No writer → present the plan only, note once.
+   hidden from others and you're not shown busy. **Write the task onto the
+   block** — a short actionable description (next action + key ticket/PR/doc
+   links) so it's readable at do-time, with the `valor:` tokens appended at the
+   end. Idempotent via the `valor:task:` token (never duplicate), **skip
+   unverified claims**, delete/complete items whose claim has since verified
+   **resolved**, and never touch items Valor didn't create. No writer → present
+   the plan only, note once.
 
 ## Monday / Return-from-Absence Mode
 
