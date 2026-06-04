@@ -40,4 +40,7 @@ comment on that line. Never bypass the hook with `--no-verify` for real terms.
   local-first and privacy-first.
 - Before a PR: `python3 -m pytest -q` and
   `python3 -m compileall src tests scripts`.
+- When bumping `VERSION`, also run `python3 scripts/check_version_sync.py` — it
+  asserts the plugin manifests and website badges match `VERSION` (CI enforces
+  it). Don't hand-edit one without the others.
 - See `CONTRIBUTING.md` for conventions and `docs/` for architecture.
