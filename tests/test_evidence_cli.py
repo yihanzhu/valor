@@ -1155,6 +1155,8 @@ def test_migrate_state_in_memory_adds_v8_project_focus_fields():
     assert migrated["project_focus"]["mode"] == "meeting_derived"
     assert migrated["project_focus"]["flip"] == "after_sync"
     assert migrated["project_focus"]["syncs"] == []
+    assert migrated["project_focus"]["sync_scan_interval_days"] == 14  # v10
+    assert migrated["project_focus"]["last_sync_scan"] == ""           # v10
     assert migrated["state_schema_version"] == STATE_SCHEMA_VERSION
 
 
@@ -1166,6 +1168,8 @@ def test_migrate_state_in_memory_preserves_project_focus():
     assert migrated["project_focus"]["current"] == "platform"
     assert migrated["project_focus"]["flip"] == "after_sync"  # missing sub-key filled
     assert migrated["project_focus"]["syncs"] == []  # missing sub-key filled
+    assert migrated["project_focus"]["sync_scan_interval_days"] == 14  # v10 sub-key filled
+    assert migrated["project_focus"]["last_sync_scan"] == ""           # v10 sub-key filled
 
 
 def test_migrate_state_in_memory_preserves_verification_overrides():

@@ -40,7 +40,7 @@ from pathlib import Path
 DB_PATH = Path.home() / ".valor" / "evidence.sqlite"
 BACKUP_DIR = Path.home() / ".valor" / "backups"
 
-STATE_SCHEMA_VERSION = 9
+STATE_SCHEMA_VERSION = 10
 
 ROUTINE_SLOTS = ("briefing", "wrapup", "weekly", "prep")
 
@@ -615,6 +615,8 @@ def _migrate_state_in_memory(state: dict) -> dict:
     # calendar) or "manual" (`current` is set by the user). `syncs` holds the
     # user's sync labels -> project mapping (local; never committed). Disabled by
     # default so one-project users never see it.
+    # v10 adds the periodic mapping re-check (sync_scan_interval_days,
+    # last_sync_scan) so the briefing can confirm changes to the project set.
     if "project_focus" not in state or not isinstance(state.get("project_focus"), dict):
         state["project_focus"] = {
             "enabled": False,
@@ -622,6 +624,8 @@ def _migrate_state_in_memory(state: dict) -> dict:
             "current": "",
             "flip": "after_sync",
             "syncs": [],
+            "sync_scan_interval_days": 14,
+            "last_sync_scan": "",
         }
     else:
         pf = state["project_focus"]
@@ -630,6 +634,8 @@ def _migrate_state_in_memory(state: dict) -> dict:
         pf.setdefault("current", "")
         pf.setdefault("flip", "after_sync")
         pf.setdefault("syncs", [])
+        pf.setdefault("sync_scan_interval_days", 14)
+        pf.setdefault("last_sync_scan", "")
     state["state_schema_version"] = STATE_SCHEMA_VERSION
     return state
 

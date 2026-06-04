@@ -220,6 +220,20 @@ Apply the result:
 
 This is cheap: reuse the §3 calendar read + one `focus.py` call.
 
+**Mapping upkeep (only when due).** The sync→project *mapping* is set once, but
+your project set can change. Run `python3 ~/.valor/focus.py scan-due`; only if it
+reports `due: true`, re-scan the upcoming ~4 weeks for recurring meetings that
+look like **per-project rotation syncs** (biweekly-ish, project-specific — like
+your configured ones; do NOT include general team syncs/standups), pass their
+titles to `focus.py diff --observed '["title", ...]'`, and if it reports `new` or
+`missing` entries, surface ONE line: *"Your project syncs may have changed — new:
+[X]; gone: [Y]. Update your focus mapping?"* On confirmation, update
+`project_focus.syncs` via `state-set`. Either way (changed or not), record the
+scan so it won't re-prompt for ~2 weeks:
+```bash
+python3 ~/.valor/focus.py mark-scanned
+```
+
 ### 6. Verification Gate (anti-phantom — run before Work Context and Priorities)
 
 Yesterday's `today_priorities` (from state) and the carry-forward file are

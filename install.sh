@@ -423,7 +423,7 @@ install_shared() {
     local detected_intg
     detected_intg=$(detect_integrations)
 
-    local schema_version=9
+    local schema_version=10
 
     if [ ! -f "$VALOR_HOME/state.json" ]; then
         cat > "$VALOR_HOME/state.json" <<STATEJSON
@@ -465,7 +465,9 @@ install_shared() {
     "mode": "meeting_derived",
     "current": "",
     "flip": "after_sync",
-    "syncs": []
+    "syncs": [],
+    "sync_scan_interval_days": 14,
+    "last_sync_scan": ""
   }
 }
 STATEJSON
@@ -514,7 +516,12 @@ if not isinstance(state.get('one_on_one'), dict):
     changed = True
 # v8: project-focus customization (presence-based; disabled by default).
 if not isinstance(state.get('project_focus'), dict):
-    state['project_focus'] = {'enabled': False, 'mode': 'meeting_derived', 'current': '', 'flip': 'after_sync', 'syncs': []}
+    state['project_focus'] = {'enabled': False, 'mode': 'meeting_derived', 'current': '', 'flip': 'after_sync', 'syncs': [], 'sync_scan_interval_days': 14, 'last_sync_scan': ''}
+    changed = True
+# v10: periodic mapping re-check sub-keys (fill if project_focus predates them).
+elif 'sync_scan_interval_days' not in state['project_focus']:
+    state['project_focus']['sync_scan_interval_days'] = 14
+    state['project_focus']['last_sync_scan'] = ''
     changed = True
 if state.get('state_schema_version', 1) < target_version:
     state['state_schema_version'] = target_version

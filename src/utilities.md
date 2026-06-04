@@ -173,6 +173,9 @@ ticket→project classification is the agent's job (read the ticket).
 |------------|---------|
 | `resolve --syncs JSON [--today YYYY-MM-DD]` | Resolve the current focus from dated per-project syncs; returns `current_project`, `next_project`, `transition_today` (JSON) |
 | `config` | Print the `project_focus` block (mode, flip rule, configured sync labels) |
+| `scan-due [--today YYYY-MM-DD]` | Whether the sync→project mapping is due for a periodic re-check (`due` bool) |
+| `diff --observed JSON` | Compare configured syncs to observed meeting titles; returns `new` / `missing` |
+| `mark-scanned [--today YYYY-MM-DD]` | Stamp `project_focus.last_sync_scan = today` after a re-check |
 
 `--syncs` accepts inline JSON, `@file`, or `-` (stdin), shape
 `[{"project": "...", "date": "YYYY-MM-DD"}]`.
@@ -198,6 +201,13 @@ ticket→project classification is the agent's job (read the ticket).
    yesterday → the focus just flipped), lead Suggested Priorities with a one-time
    line naming the new focus and when the other project resumes (`next_project` /
    `next_sync_date`). Outside the transition, don't preview off-focus work.
+4. **Periodic mapping re-check.** The mapping is set once, but the project set
+   can change. Only when `focus.py scan-due` reports `due: true`, re-scan the next
+   ~4 weeks for recurring meetings that look like **per-project rotation syncs**
+   (biweekly-ish, project-specific — not general team syncs/standups), pass their
+   titles to `focus.py diff --observed '[...]'`, and if it returns `new`/`missing`
+   entries, ask the user once whether to update `project_focus.syncs`. Then
+   `focus.py mark-scanned` so it won't re-prompt for ~`sync_scan_interval_days`.
 
 ## Day Planning & Calendar Write
 
@@ -338,6 +348,6 @@ fields, so a fresh `state.json` with only installer fields is valid.
 | `escalate_in_one_on_one` | Carry-forward audit | List of claims that failed repeated verification; surfaced by 1:1 prep |
 | `planning` | Installer | Object: `calendar_auto_write` (write kill switch; read is gated by `integrations.calendar`), `workday_start`/`workday_end` (HH:MM), `deep_min_hours` (deep-block threshold, default 2), `post_meeting_break_minutes` (breather reserved after a real meeting, default 15) |
 | `one_on_one` | Installer / setup | Object: `doc` (link/id/name of the user's running 1:1 doc, so `/valor-prep` can learn the format — local only, never committed), `format_notes` (optional format spec used if the doc can't be read) |
-| `project_focus` | Installer / setup | Optional customization (disabled by default). Object: `enabled`; `mode` (`meeting_derived` follows the next per-project sync on the calendar, `manual` uses `current`); `current`; `flip` (`after_sync`); `syncs` (sync-label → project map; local only). When on, the briefing plans around the current project and hides the rest. |
+| `project_focus` | Installer / setup | Optional customization (disabled by default). Object: `enabled`; `mode` (`meeting_derived` follows the next per-project sync on the calendar, `manual` uses `current`); `current`; `flip` (`after_sync`); `syncs` (sync-label → project map; local only); `sync_scan_interval_days` (periodic mapping re-check cadence, default 14) + `last_sync_scan`. When on, the briefing plans around the current project and hides the rest. |
 | `installed_version` | Installer | Valor version at last install (semver) |
 | `installed_at` | Installer | ISO 8601 timestamp of last install |
