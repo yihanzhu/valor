@@ -423,7 +423,7 @@ install_shared() {
     local detected_intg
     detected_intg=$(detect_integrations)
 
-    local schema_version=10
+    local schema_version=11
 
     if [ ! -f "$VALOR_HOME/state.json" ]; then
         cat > "$VALOR_HOME/state.json" <<STATEJSON
@@ -467,7 +467,8 @@ install_shared() {
     "flip": "after_sync",
     "syncs": [],
     "sync_scan_interval_days": 14,
-    "last_sync_scan": ""
+    "last_sync_scan": "",
+    "meeting_baseline": []
   }
 }
 STATEJSON
@@ -516,13 +517,18 @@ if not isinstance(state.get('one_on_one'), dict):
     changed = True
 # v8: project-focus customization (presence-based; disabled by default).
 if not isinstance(state.get('project_focus'), dict):
-    state['project_focus'] = {'enabled': False, 'mode': 'meeting_derived', 'current': '', 'flip': 'after_sync', 'syncs': [], 'sync_scan_interval_days': 14, 'last_sync_scan': ''}
+    state['project_focus'] = {'enabled': False, 'mode': 'meeting_derived', 'current': '', 'flip': 'after_sync', 'syncs': [], 'sync_scan_interval_days': 14, 'last_sync_scan': '', 'meeting_baseline': []}
     changed = True
-# v10: periodic mapping re-check sub-keys (fill if project_focus predates them).
-elif 'sync_scan_interval_days' not in state['project_focus']:
-    state['project_focus']['sync_scan_interval_days'] = 14
-    state['project_focus']['last_sync_scan'] = ''
-    changed = True
+else:
+    # v10/v11: fill sub-keys if the project_focus block predates them.
+    pf = state['project_focus']
+    if 'sync_scan_interval_days' not in pf:
+        pf['sync_scan_interval_days'] = 14
+        pf['last_sync_scan'] = ''
+        changed = True
+    if 'meeting_baseline' not in pf:
+        pf['meeting_baseline'] = []
+        changed = True
 if state.get('state_schema_version', 1) < target_version:
     state['state_schema_version'] = target_version
     changed = True

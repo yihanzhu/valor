@@ -57,6 +57,11 @@ DEFAULTS = {
     # meetings and confirms whether the user's project set changed.
     "sync_scan_interval_days": 14,
     "last_sync_scan": "",       # YYYY-MM-DD of the last re-check
+    # Baseline of known recurring-meeting titles (normalized). In steady state
+    # the calendar is stable, so a recurring meeting NOT in the baseline is a
+    # strong "new project?" signal. Seeded on first scan; updated as the user
+    # confirms/dismisses drift.
+    "meeting_baseline": [],
 }
 
 
@@ -209,6 +214,54 @@ def mark_scanned(today=None) -> str:
     return stamp
 
 
+# --- recurring-meeting baseline (proactive drift detection) --------------
+def _norm(title: str) -> str:
+    return " ".join(str(title or "").lower().split())
+
+
+def baseline_diff(baseline, current_titles) -> dict:
+    """Compare the stored baseline of recurring-meeting titles to the titles the
+    agent observed on the calendar now. Returns:
+      * seed    — True when the baseline is empty (cold start): the caller should
+                  absorb the current meetings silently, NOT alert on all of them.
+      * new     — current titles not in the baseline (candidate new projects —
+                  the agent reads each meeting's docs before alerting)
+      * gone    — baseline titles with no current occurrence (a meeting/project
+                  may have ended)
+    Pure logic; never mutates state."""
+    base = [b for b in (baseline or []) if b]
+    base_norm = {_norm(b) for b in base}
+    cur = [t for t in (current_titles or []) if t]
+    cur_norm = {_norm(t) for t in cur}
+    return {
+        "seed": not base,
+        "new": [t for t in cur if _norm(t) not in base_norm],
+        "gone": [b for b in base if _norm(b) not in cur_norm],
+    }
+
+
+def baseline_sync(current_titles) -> int:
+    """Set project_focus.meeting_baseline to the normalized current recurring-
+    meeting titles (best-effort write, preserving the rest of state). Returns the
+    number of titles stored, or -1 if state couldn't be read/written."""
+    state_path = VALOR_HOME / "state.json"
+    try:
+        state = json.loads(state_path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return -1
+    pf = state.get("project_focus")
+    if not isinstance(pf, dict):
+        pf = {}
+        state["project_focus"] = pf
+    titles = sorted({_norm(t) for t in (current_titles or []) if t})
+    pf["meeting_baseline"] = titles
+    try:
+        state_path.write_text(json.dumps(state, indent=2))
+    except OSError:
+        return -1
+    return len(titles)
+
+
 # --- CLI -----------------------------------------------------------------
 def _load_json_arg(value: str):
     if value == "-":
@@ -245,6 +298,16 @@ def cmd_mark_scanned(args: argparse.Namespace) -> None:
     print(json.dumps({"last_sync_scan": mark_scanned(today=args.today)}))
 
 
+def cmd_baseline_diff(args: argparse.Namespace) -> None:
+    current = _load_json_arg(args.current) if args.current else []
+    print(json.dumps(baseline_diff(focus_config().get("meeting_baseline", []), current), indent=2))
+
+
+def cmd_baseline_sync(args: argparse.Namespace) -> None:
+    current = _load_json_arg(args.current) if args.current else []
+    print(json.dumps({"baseline_size": baseline_sync(current)}))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Valor project-focus resolver")
     sub = ap.add_subparsers(dest="command", required=True)
@@ -268,9 +331,18 @@ def main() -> None:
     p_mark = sub.add_parser("mark-scanned", help="Stamp project_focus.last_sync_scan = today")
     p_mark.add_argument("--today", default=None, help="YYYY-MM-DD override (testing)")
 
+    p_bdiff = sub.add_parser("baseline-diff", help="New/gone recurring meetings vs the stored baseline")
+    p_bdiff.add_argument("--current", default="[]",
+                         help='Current recurring-meeting titles JSON: ["title", ...] (or @file or -)')
+
+    p_bsync = sub.add_parser("baseline-sync", help="Set the meeting baseline to the current recurring meetings")
+    p_bsync.add_argument("--current", default="[]",
+                         help='Current recurring-meeting titles JSON: ["title", ...] (or @file or -)')
+
     args = ap.parse_args()
     {"resolve": cmd_resolve, "config": cmd_config, "scan-due": cmd_scan_due,
-     "diff": cmd_diff, "mark-scanned": cmd_mark_scanned}[args.command](args)
+     "diff": cmd_diff, "mark-scanned": cmd_mark_scanned,
+     "baseline-diff": cmd_baseline_diff, "baseline-sync": cmd_baseline_sync}[args.command](args)
 
 
 if __name__ == "__main__":

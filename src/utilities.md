@@ -173,9 +173,11 @@ ticket→project classification is the agent's job (read the ticket).
 |------------|---------|
 | `resolve --syncs JSON [--today YYYY-MM-DD]` | Resolve the current focus from dated per-project syncs; returns `current_project`, `next_project`, `transition_today` (JSON) |
 | `config` | Print the `project_focus` block (mode, flip rule, configured sync labels) |
-| `scan-due [--today YYYY-MM-DD]` | Whether the sync→project mapping is due for a periodic re-check (`due` bool) |
-| `diff --observed JSON` | Compare configured syncs to observed meeting titles; returns `new` / `missing` |
+| `scan-due [--today YYYY-MM-DD]` | Whether the mapping is due for a periodic re-check (`due` bool) |
+| `baseline-diff --current JSON` | Diff current recurring-meeting titles vs the saved baseline; returns `seed` / `new` / `gone` |
+| `baseline-sync --current JSON` | Set the meeting baseline to the current recurring meetings (absorb as "known") |
 | `mark-scanned [--today YYYY-MM-DD]` | Stamp `project_focus.last_sync_scan = today` after a re-check |
+| `diff --observed JSON` | (legacy) Compare configured syncs to observed titles; returns `new` / `missing` |
 
 `--syncs` accepts inline JSON, `@file`, or `-` (stdin), shape
 `[{"project": "...", "date": "YYYY-MM-DD"}]`.
@@ -201,13 +203,18 @@ ticket→project classification is the agent's job (read the ticket).
    yesterday → the focus just flipped), lead Suggested Priorities with a one-time
    line naming the new focus and when the other project resumes (`next_project` /
    `next_sync_date`). Outside the transition, don't preview off-focus work.
-4. **Periodic mapping re-check.** The mapping is set once, but the project set
-   can change. Only when `focus.py scan-due` reports `due: true`, re-scan the next
-   ~4 weeks for recurring meetings that look like **per-project rotation syncs**
-   (biweekly-ish, project-specific — not general team syncs/standups), pass their
-   titles to `focus.py diff --observed '[...]'`, and if it returns `new`/`missing`
-   entries, ask the user once whether to update `project_focus.syncs`. Then
-   `focus.py mark-scanned` so it won't re-prompt for ~`sync_scan_interval_days`.
+4. **Proactive drift detection (briefing, only when due).** The mapping is set
+   once, but the project set changes. The calendar is stable in steady state, so
+   a recurring meeting that *wasn't there before* is the signal. Only when
+   `focus.py scan-due` is `due`, diff the current recurring-meeting titles vs the
+   baseline: `focus.py baseline-diff --current '[...]'`. If `seed` (no baseline
+   yet), absorb silently — no alerts. Otherwise, for each `new` meeting **read its
+   attached docs** to tell a per-project meeting from a team ceremony, and only
+   then pin a top-of-briefing "new project? add it" alert (the user confirms
+   before `project_focus.syncs` changes); `gone` meetings matching a configured
+   sync prompt a "drop it?". Then `focus.py baseline-sync --current '[...]'` +
+   `focus.py mark-scanned` so resolved items don't re-alert. *(Slack as an extra
+   signal is a planned phase 2.)*
 
 ## Day Planning & Calendar Write
 
@@ -280,10 +287,14 @@ target by capability, in this order:
 
 Common rules (both targets):
 
-- **One item per block.** Title `Valor: <priority, truncated to 60>`. Put an
-  idempotency token in the notes/description: `valor:task:<sha1(YYYY-MM-DD + "|"
-  + lowercased priority)>`, plus `valor:shape:<shape>`, and for artifact-claim
-  priorities the verify `valor:claim:<claim_hash>`. No reminders.
+- **One item per block.** Title `Valor: <priority, truncated to 60>`.
+- **Put the task on the block.** The calendar is the do-time surface, so write a
+  short, self-contained **description** the user can act on when the block comes
+  up — the concrete next action + the key context/links (ticket/PR/doc URLs) —
+  not just the title. Keep it tight (a few lines). Then append the machine tokens
+  at the end of the description: `valor:task:<sha1(YYYY-MM-DD + "|" + lowercased
+  priority)>` (idempotency), `valor:shape:<shape>`, and for artifact-claim
+  priorities `valor:claim:<claim_hash>`. No reminders.
 - **Idempotent:** before creating, search today's items for the same
   `valor:task:` token. If found, update it in place (the time may have shifted);
   else create. Never create a second item for the same task.
@@ -348,6 +359,6 @@ fields, so a fresh `state.json` with only installer fields is valid.
 | `escalate_in_one_on_one` | Carry-forward audit | List of claims that failed repeated verification; surfaced by 1:1 prep |
 | `planning` | Installer | Object: `calendar_auto_write` (write kill switch; read is gated by `integrations.calendar`), `workday_start`/`workday_end` (HH:MM), `deep_min_hours` (deep-block threshold, default 2), `post_meeting_break_minutes` (breather reserved after a real meeting, default 15) |
 | `one_on_one` | Installer / setup | Object: `doc` (link/id/name of the user's running 1:1 doc, so `/valor-prep` can learn the format — local only, never committed), `format_notes` (optional format spec used if the doc can't be read) |
-| `project_focus` | Installer / setup | Optional customization (disabled by default). Object: `enabled`; `mode` (`meeting_derived` follows the next per-project sync on the calendar, `manual` uses `current`); `current`; `flip` (`after_sync`); `syncs` (sync-label → project map; local only); `sync_scan_interval_days` (periodic mapping re-check cadence, default 14) + `last_sync_scan`. When on, the briefing plans around the current project and hides the rest. |
+| `project_focus` | Installer / setup | Optional customization (disabled by default). Object: `enabled`; `mode` (`meeting_derived` follows the next per-project sync on the calendar, `manual` uses `current`); `current`; `flip` (`after_sync`); `syncs` (sync-label → project map; local only); `sync_scan_interval_days` (re-check cadence, default 14) + `last_sync_scan`; `meeting_baseline` (known recurring-meeting titles — a new one is a "new project?" signal). When on, the briefing plans around the current project and hides the rest. |
 | `installed_version` | Installer | Valor version at last install (semver) |
 | `installed_at` | Installer | ISO 8601 timestamp of last install |

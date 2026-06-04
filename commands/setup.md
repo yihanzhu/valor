@@ -310,11 +310,18 @@ schedules:
 3. Save it (enabled, meeting-derived, flips the day after each sync):
    ```bash
    python3 ~/.valor/evidence_cli.py state-set project_focus \
-     '{"enabled": true, "mode": "meeting_derived", "flip": "after_sync", "current": "", "syncs": [{"project": "Project A", "match": "Project A Sync"}, {"project": "Project B", "match": "Project B Sync"}], "sync_scan_interval_days": 14, "last_sync_scan": ""}'
+     '{"enabled": true, "mode": "meeting_derived", "flip": "after_sync", "current": "", "syncs": [{"project": "Project A", "match": "Project A Sync"}, {"project": "Project B", "match": "Project B Sync"}], "sync_scan_interval_days": 14, "last_sync_scan": "", "meeting_baseline": []}'
    ```
    `match` is a case-insensitive substring of the meeting title; `project` is the
    user's label. If the user would rather just set the active project by hand,
    use `"mode": "manual", "current": "Project A"` instead.
+4. **Seed the meeting baseline** so future drift detection only flags *new*
+   meetings (not everything you already have). Capture the current recurring
+   meeting titles and store them, and stamp the scan:
+   ```bash
+   python3 ~/.valor/focus.py baseline-sync --current '["Recurring Meeting A", "Recurring Meeting B", ...]'
+   python3 ~/.valor/focus.py mark-scanned
+   ```
 
 `sync_scan_interval_days` (default 14) controls how often the briefing re-scans
 for sync meetings to catch changes to the project set; the current focus itself

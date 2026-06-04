@@ -147,3 +147,42 @@ def test_mark_scanned_writes_state(tmp_path, monkeypatch):
 def test_mark_scanned_missing_state_returns_empty(tmp_path, monkeypatch):
     monkeypatch.setattr(focus, "VALOR_HOME", tmp_path / "nope")
     assert focus.mark_scanned(today="2026-06-15") == ""
+
+
+# --- recurring-meeting baseline (proactive drift) -----------------------
+def test_baseline_diff_seed_when_empty():
+    d = focus.baseline_diff([], ["Standup", "Platform Sync"])
+    assert d["seed"] is True                       # cold start
+    assert d["new"] == ["Standup", "Platform Sync"]  # caller absorbs silently
+    assert d["gone"] == []
+
+
+def test_baseline_diff_detects_new_and_gone():
+    baseline = ["weekly standup", "platform sync"]
+    current = ["Weekly Standup", "New Project Kickoff"]  # platform sync gone; kickoff new
+    d = focus.baseline_diff(baseline, current)
+    assert d["seed"] is False
+    assert d["new"] == ["New Project Kickoff"]
+    assert d["gone"] == ["platform sync"]
+
+
+def test_baseline_diff_normalizes_case_and_whitespace():
+    d = focus.baseline_diff(["team   sync"], ["Team Sync"])
+    assert d["new"] == [] and d["gone"] == []
+
+
+def test_baseline_sync_writes_normalized_deduped_sorted(tmp_path, monkeypatch):
+    home = tmp_path / ".valor"
+    home.mkdir()
+    (home / "state.json").write_text(json.dumps({"project_focus": {"enabled": True}}))
+    monkeypatch.setattr(focus, "VALOR_HOME", home)
+    n = focus.baseline_sync(["Beta  Sync", "Alpha Standup", "Beta Sync"])
+    assert n == 2  # "Beta  Sync" and "Beta Sync" normalize to the same entry
+    state = json.loads((home / "state.json").read_text())
+    assert state["project_focus"]["meeting_baseline"] == ["alpha standup", "beta sync"]
+    assert state["project_focus"]["enabled"] is True  # other keys preserved
+
+
+def test_baseline_sync_missing_state_returns_negative(tmp_path, monkeypatch):
+    monkeypatch.setattr(focus, "VALOR_HOME", tmp_path / "nope")
+    assert focus.baseline_sync(["X"]) == -1
