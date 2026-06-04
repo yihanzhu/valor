@@ -1124,6 +1124,7 @@ def test_migrate_state_in_memory_adds_v6_planning_fields():
     assert migrated["planning"]["workday_end"] == "18:00"
     assert migrated["planning"]["deep_min_hours"] == 2.0
     assert migrated["planning"]["post_meeting_break_minutes"] == 15  # v9
+    assert migrated["planning"]["block_granularity_minutes"] == 15   # v12
     assert migrated["state_schema_version"] == STATE_SCHEMA_VERSION
 
 
@@ -1134,6 +1135,7 @@ def test_migrate_state_in_memory_preserves_planning_overrides():
     assert migrated["planning"]["workday_start"] == "08:00"
     assert migrated["planning"]["workday_end"] == "18:00"  # missing sub-key filled
     assert migrated["planning"]["post_meeting_break_minutes"] == 15  # v9 sub-key filled
+    assert migrated["planning"]["block_granularity_minutes"] == 15   # v12 sub-key filled
 
 
 def test_migrate_state_in_memory_adds_v7_one_on_one_fields():
