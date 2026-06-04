@@ -28,6 +28,11 @@ def _ev(start, end, summary="mtg"):
     return {"start": T(start), "end": T(end), "summary": summary}
 
 
+def _mtg(start, end, summary="standup"):
+    # A real (collaborative) meeting — earns a post-meeting break.
+    return {**_ev(start, end, summary), "is_meeting": True}
+
+
 # --- shape classification ---
 def test_shape_fragmented():
     for t in ["Merge PR #123", "Review #45 from a teammate", "Nudge review on #9",
@@ -159,6 +164,73 @@ def test_workday_over_no_gaps():
     assert r["unassigned"]
 
 
+# --- per-task estimates ---
+def test_per_task_est_minutes_overrides_shape_default():
+    # Agent-provided durations win over the shape fallbacks (30/45/90).
+    prios = [{"text": "Big pipeline change", "est_minutes": 120},
+             {"text": "Quick publish", "est_minutes": 20}]
+    r = plan.fit([], prios, now=T("09:00"), workday_start="09:00",
+                 workday_end="18:00", deep_min_hours=2)
+    by = {b["priority"]: b for b in r["blocks"]}
+    assert by["Big pipeline change"]["minutes"] == 120
+    assert by["Quick publish"]["minutes"] == 20
+    # packed sequentially from the top of the gap
+    assert by["Big pipeline change"]["start"] == T("09:00")
+    assert by["Quick publish"]["start"] == T("11:00")
+
+
+def test_invalid_est_minutes_falls_back_to_shape_default():
+    r = plan.fit([], [{"text": "Merge PR #1", "est_minutes": 0}], now=T("09:00"),
+                 workday_start="09:00", workday_end="18:00", deep_min_hours=2)
+    assert r["blocks"][0]["minutes"] == 30  # fragmented_ok fallback, not 0
+
+
+# --- post-meeting break ---
+def test_break_after_real_meeting_only_not_at_day_start():
+    # Meeting 11:00-12:00: the gap BEFORE it starts on time (no break at the
+    # day's start); the gap AFTER it is pushed back 15 min.
+    r = plan.fit([_mtg("11:00", "12:00")], [], now=T("09:00"),
+                 workday_start="09:00", workday_end="18:00", deep_min_hours=2)
+    assert r["gaps"][0]["start"] == T("09:00")   # pre-meeting gap not clipped
+    assert r["gaps"][1]["start"] == T("12:15")   # post-meeting breather
+
+
+def test_no_break_after_personal_hold():
+    # A plain blocking event (no attendees, not flagged) is a personal hold, not
+    # a meeting — no break after it.
+    r = plan.fit([_ev("10:00", "11:00")], [], now=T("09:00"),
+                 workday_start="09:00", workday_end="18:00", deep_min_hours=2)
+    assert r["gaps"][1]["start"] == T("11:00")
+
+
+def test_attendees_over_one_inferred_as_meeting():
+    ev = [{**_ev("10:00", "11:00"), "attendees": ["a@example.com", "b@example.com"]}]
+    r = plan.fit(ev, [], now=T("09:00"), workday_start="09:00",
+                 workday_end="18:00", deep_min_hours=2)
+    assert r["gaps"][1]["start"] == T("11:15")  # break after the 10:00–11:00 meeting
+
+
+def test_is_meeting_false_overrides_attendees():
+    ev = [{**_ev("10:00", "11:00"), "attendees": ["a", "b", "c"], "is_meeting": False}]
+    r = plan.fit(ev, [], now=T("09:00"), workday_start="09:00",
+                 workday_end="18:00", deep_min_hours=2)
+    assert r["gaps"][1]["start"] == T("11:00")  # explicit flag wins, no break
+
+
+def test_break_can_erase_a_tiny_between_meeting_gap():
+    # 10-min gap between two meetings, swallowed by the 15-min break.
+    r = plan.fit([_mtg("10:00", "11:00"), _mtg("11:10", "12:00")], [], now=T("09:00"),
+                 workday_start="09:00", workday_end="18:00", deep_min_hours=2)
+    starts = [g["start"] for g in r["gaps"]]
+    assert starts == [T("09:00"), T("12:15")]  # 11:00-11:10 erased
+
+
+def test_break_minutes_zero_disables_break():
+    r = plan.fit([_mtg("10:00", "11:00")], [], now=T("09:00"), workday_start="09:00",
+                 workday_end="18:00", deep_min_hours=2, break_minutes=0)
+    assert r["gaps"][1]["start"] == T("11:00")
+
+
 # --- CLI ---
 def test_cli_fit(tmp_path):
     events = json.dumps([_ev("12:00", "13:00")])
@@ -181,3 +253,16 @@ def test_cli_shape():
         capture_output=True, text=True,
     )
     assert json.loads(r.stdout)["shape"] == "fragmented_ok"
+
+
+def test_cli_fit_break_minutes(tmp_path):
+    events = json.dumps([_mtg("10:00", "11:00")])
+    r = subprocess.run(
+        [sys.executable, str(SCRIPT), "fit", "--events", events, "--priorities", "[]",
+         "--now", T("09:00"), "--workday-start", "09:00", "--workday-end", "18:00",
+         "--deep-hours", "2", "--break-minutes", "30"],
+        capture_output=True, text=True, env={"HOME": str(tmp_path)},
+    )
+    assert r.returncode == 0, r.stderr
+    out = json.loads(r.stdout)
+    assert out["gaps"][1]["start"] == T("11:30")  # 30-min break applied via CLI

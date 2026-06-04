@@ -210,7 +210,7 @@ blocks back as events. Skipped entirely if `integrations.calendar` is `false`.
 
 | Subcommand | Purpose |
 |------------|---------|
-| `fit --events JSON --priorities JSON [--now ISO] [--workday-start HH:MM] [--workday-end HH:MM] [--deep-hours N]` | Fit priorities to calendar gaps; returns a time-blocked schedule (JSON) |
+| `fit --events JSON --priorities JSON [--now ISO] [--workday-start HH:MM] [--workday-end HH:MM] [--deep-hours N] [--break-minutes N]` | Fit priorities to calendar gaps; returns a time-blocked schedule (JSON). Priorities may carry per-task `est_minutes`; events may carry `is_meeting`/`attendees` |
 | `shape --text "..."` | Classify one priority's task shape (debug) |
 
 `--events`/`--priorities` accept inline JSON, `@file`, or `-` (stdin).
@@ -219,27 +219,34 @@ blocks back as events. Skipped entirely if `integrations.calendar` is `false`.
 
 1. **Fetch today's calendar** (the same read discovery as the briefing Calendar
    section). Drop events the user declined. Build the events list as
-   `[{"start": ISO, "end": ISO, "summary": "...", "type": "<eventType>"}]` —
+   `[{"start": ISO, "end": ISO, "summary": "...", "type": "<eventType>", "is_meeting": bool}]` —
    **include each event's `type`** (Google Calendar `eventType`:
    `default`/`focusTime`/`outOfOffice`/`workingLocation`). plan.py uses it:
    focus-time and working-location are left **free** (focus time is a deep-work
    slot to fill); regular meetings and out-of-office **block**. Untyped events
-   block, for safety.
+   block, for safety. Also mark **real meetings** with `is_meeting: true` (or pass
+   `attendees` — plan.py treats > 1 as a meeting) so a post-meeting break is
+   reserved after them; lunch / personal holds / OOO are not meetings.
 2. **Working hours.** If the calendar tool exposes the user's working-hours
    setting, pass it as `--workday-start HH:MM --workday-end HH:MM`. Most calendar
    APIs (including the Google Calendar MCP) do **not** expose this setting, so
    plan.py falls back to `state.planning.workday_start`/`workday_end` (configured
    at setup). Don't guess hours from the events.
-3. **Fit** — pass the events and the **post-gate** priorities (exclude any the
-   Verification Gate demoted to "unverified — confirm or drop?") to:
+3. **Fit** — build the **post-gate** priorities (exclude any the Verification
+   Gate demoted to "unverified — confirm or drop?") as `{"text", "est_minutes"}`
+   objects, **estimating each task's duration from its nature** (a publish ~15
+   min; a PR review ~30–45; a pipeline/implementation change is a multi-hour deep
+   block, not 45 min) and leaning **generous**. Then:
    ```bash
    python3 ~/.valor/plan.py fit --events "$EVENTS" --priorities "$PRIORITIES"
    ```
    It classifies each priority's shape (merge/review/publish → `fragmented_ok`;
    code/design/research/draft → `deep_only`; else `either`), classifies gaps
-   (`deep` ≥ `deep_min_hours`, else `fragmented`), and assigns greedily —
-   `deep_only` only lands in deep gaps; `fragmented_ok` prefers fragmented gaps
-   so deep blocks stay free for deep work.
+   (`deep` ≥ `deep_min_hours`, else `fragmented`), reserves a
+   `post_meeting_break_minutes` breather (default 15) after each real meeting, and
+   assigns greedily — each task taking its `est_minutes` (shape fallback if
+   absent); `deep_only` only lands in deep gaps; `fragmented_ok` prefers
+   fragmented gaps so deep blocks stay free for deep work.
 4. **Present** the `blocks` as a "Day Plan" section (time-blocked). Surface each
    `unassigned` item as "push to your next deep block" (for `deep_only`, the
    next no-meeting / ≥`deep_min_hours` window).
@@ -329,7 +336,7 @@ fields, so a fresh `state.json` with only installer fields is valid.
 | `integrations` | Installer / User config | Object with boolean flags for github, jira, calendar, news |
 | `verification` | Installer | Object: `enabled` (gate kill switch), `escalation_threshold` (consecutive misses before 1:1 escalation, default 3), `ttl_overrides` (per-type cache TTL hours) |
 | `escalate_in_one_on_one` | Carry-forward audit | List of claims that failed repeated verification; surfaced by 1:1 prep |
-| `planning` | Installer | Object: `calendar_auto_write` (write kill switch; read is gated by `integrations.calendar`), `workday_start`/`workday_end` (HH:MM), `deep_min_hours` (deep-block threshold, default 2) |
+| `planning` | Installer | Object: `calendar_auto_write` (write kill switch; read is gated by `integrations.calendar`), `workday_start`/`workday_end` (HH:MM), `deep_min_hours` (deep-block threshold, default 2), `post_meeting_break_minutes` (breather reserved after a real meeting, default 15) |
 | `one_on_one` | Installer / setup | Object: `doc` (link/id/name of the user's running 1:1 doc, so `/valor-prep` can learn the format — local only, never committed), `format_notes` (optional format spec used if the doc can't be read) |
 | `project_focus` | Installer / setup | Optional customization (disabled by default). Object: `enabled`; `mode` (`meeting_derived` follows the next per-project sync on the calendar, `manual` uses `current`); `current`; `flip` (`after_sync`); `syncs` (sync-label → project map; local only). When on, the briefing plans around the current project and hides the rest. |
 | `installed_version` | Installer | Valor version at last install (semver) |

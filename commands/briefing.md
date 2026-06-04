@@ -342,10 +342,16 @@ Write"). In short:
 1. Reuse the calendar you already fetched (§3); drop declined. Build events with
    each event's **`type`** (`default`/`focusTime`/`outOfOffice`/`workingLocation`)
    so plan.py leaves focus-time free for deep work and blocks only real meetings
-   + OOO. If the calendar tool exposes the user's working hours, pass
+   + OOO. Mark **real meetings** so plan.py adds a breather after them: set
+   **`is_meeting: true`** for collaborative meetings (or pass **`attendees`** and
+   plan.py treats > 1 as a meeting). Lunch / personal holds / OOO are not meetings
+   and get no break. If the calendar tool exposes the user's working hours, pass
    `--workday-start/--workday-end`; otherwise plan.py uses `state.planning`.
-2. Fit the **post-gate** priorities (exclude any the §6 gate demoted to
-   "unverified") to the day's gaps:
+2. Build the **post-gate** priorities (exclude any the §6 gate demoted to
+   "unverified") as `{"text", "est_minutes"}` objects: **estimate each task's
+   duration from its nature** — a publish/post is ~15 min, a PR review ~30–45, a
+   pipeline/implementation change is a multi-hour deep block, not 45 min. Lean
+   **generous** (better to finish early than overflow). Then fit to the day's gaps:
    ```bash
    python3 ~/.valor/plan.py fit --events "$EVENTS" --priorities "$PRIORITIES"
    ```
