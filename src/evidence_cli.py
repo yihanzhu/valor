@@ -40,7 +40,7 @@ from pathlib import Path
 DB_PATH = Path.home() / ".valor" / "evidence.sqlite"
 BACKUP_DIR = Path.home() / ".valor" / "backups"
 
-STATE_SCHEMA_VERSION = 15
+STATE_SCHEMA_VERSION = 16
 
 ROUTINE_SLOTS = ("briefing", "wrapup", "weekly", "prep")
 
@@ -624,9 +624,12 @@ def _migrate_state_in_memory(state: dict) -> dict:
     # calendar) or "manual" (`current` is set by the user). `syncs` holds the
     # user's sync labels -> project mapping (local; never committed). Disabled by
     # default so one-project users never see it.
-    # v10 adds the periodic mapping re-check (sync_scan_interval_days,
-    # last_sync_scan); v11 added meeting_baseline (flat titles), superseded in
-    # v14 by meeting_catalog (categorized entries: project_sync, 1:1, social, ...).
+    # v11 added meeting_baseline (flat titles), superseded in v14 by
+    # meeting_catalog (categorized entries: project_sync, 1:1, social, ...). v16
+    # drops the periodic-rescan throttle (sync_scan_interval_days, last_sync_scan)
+    # — the briefing drift-checks the catalog DAILY — and adds auto_sync_prep
+    # (default true; auto-schedules /valor-sync-prep before a sync) + parked_projects
+    # (declined "new project?" syncs, so they're never re-prompted).
     if "project_focus" not in state or not isinstance(state.get("project_focus"), dict):
         state["project_focus"] = {
             "enabled": False,
@@ -634,8 +637,8 @@ def _migrate_state_in_memory(state: dict) -> dict:
             "current": "",
             "flip": "after_sync",
             "syncs": [],
-            "sync_scan_interval_days": 14,
-            "last_sync_scan": "",
+            "auto_sync_prep": True,
+            "parked_projects": [],
             "meeting_catalog": [],
         }
     else:
@@ -645,8 +648,11 @@ def _migrate_state_in_memory(state: dict) -> dict:
         pf.setdefault("current", "")
         pf.setdefault("flip", "after_sync")
         pf.setdefault("syncs", [])
-        pf.setdefault("sync_scan_interval_days", 14)
-        pf.setdefault("last_sync_scan", "")
+        pf.setdefault("auto_sync_prep", True)
+        pf.setdefault("parked_projects", [])
+        # v16: drop the periodic-rescan throttle (drift-check now runs daily).
+        pf.pop("sync_scan_interval_days", None)
+        pf.pop("last_sync_scan", None)
         # v14: drop the flat baseline; the catalog re-seeds (categorized) next run.
         pf.setdefault("meeting_catalog", [])
         pf.pop("meeting_baseline", None)
@@ -810,6 +816,8 @@ def cmd_context(args: argparse.Namespace) -> None:
             "enabled": bool((state.get("project_focus") or {}).get("enabled", False)),
             "mode": (state.get("project_focus") or {}).get("mode", "meeting_derived"),
             "syncs_configured": len((state.get("project_focus") or {}).get("syncs", []) or []),
+            "auto_sync_prep": bool((state.get("project_focus") or {}).get("auto_sync_prep", True)),
+            "parked_projects": (state.get("project_focus") or {}).get("parked_projects", []) or [],
         },
         "state_schema_version": state.get("state_schema_version", STATE_SCHEMA_VERSION),
     }

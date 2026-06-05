@@ -172,11 +172,9 @@ ticket→project classification is the agent's job (read the ticket).
 | Subcommand | Purpose |
 |------------|---------|
 | `resolve --syncs JSON [--today YYYY-MM-DD]` | Resolve the current focus from dated per-project syncs; returns `current_project`, `next_project`, `transition_today` (JSON) |
-| `config` | Print the `project_focus` block (mode, flip rule, configured sync labels) |
-| `scan-due [--today YYYY-MM-DD]` | Whether the mapping is due for a periodic re-check (`due` bool) |
+| `config` | Print the `project_focus` block (mode, flip rule, configured sync labels, parked projects) |
 | `catalog-diff --current JSON` | Diff current recurring-meeting titles vs the catalog; returns `seed` / `new` / `gone` |
-| `catalog-sync --entries JSON` | Set the meeting catalog to categorized entries (`{title, category, project}`) |
-| `mark-scanned [--today YYYY-MM-DD]` | Stamp `project_focus.last_sync_scan = today` after a re-check |
+| `catalog-sync --entries JSON` | Set the meeting catalog to categorized entries (`{title, category, project, source}`) |
 | `diff --observed JSON` | (legacy) Compare configured syncs to observed titles; returns `new` / `missing` |
 
 `--syncs` accepts inline JSON, `@file`, or `-` (stdin), shape
@@ -203,11 +201,12 @@ ticket→project classification is the agent's job (read the ticket).
    yesterday → the focus just flipped), lead Suggested Priorities with a one-time
    line naming the new focus and when the other project resumes (`next_project` /
    `next_sync_date`). Outside the transition, don't preview off-focus work.
-4. **Project & meeting intelligence (briefing, only when due).** The mapping is
-   set once, but the project set changes — and the calendar carries more than
-   project syncs. Only when `focus.py scan-due` is `due`, diff current
-   recurring-meeting titles vs the catalog: `focus.py catalog-diff --current
-   '[...]'`. **Categorize** the `new` ones (and ALL on a `seed`) **from the signals
+4. **Project & meeting intelligence (briefing, every run).** The mapping is set
+   once, but the project set changes — and the calendar carries more than project
+   syncs. **Each briefing**, diff current recurring-meeting titles (over a ~3–4
+   week window) vs the catalog: `focus.py catalog-diff --current '[...]'`. This is
+   a daily drift-check — known meetings stay silent; only genuinely new ones
+   surface — so there's no periodic throttle. **Categorize** the `new` ones (and ALL on a `seed`) **from the signals
    already in the calendar payload — free, no fetch:** the **description**,
    **attendees** (same recurring small group → standup; exactly two → 1:1; broad
    invite → social), **cadence + duration** (short+frequent → standup; monthly →
@@ -223,11 +222,15 @@ ticket→project classification is the agent's job (read the ticket).
    (had to open a doc/Confluence/Slack) — pass it through to `catalog-sync`, and
    note any fetches in the briefing; they mark where the signal heuristic is weak.
    Any `project_sync` whose project
-   isn't already in `project_focus.syncs` is pinned as a top-of-briefing "new
-   project? add it" (the
-   user confirms before `syncs` changes), **including on a seed** — don't silently
-   absorb a third project. A `gone` project_sync prompts "drop it?". Persist with
-   `focus.py catalog-sync --entries '[...]'` + `focus.py mark-scanned`.
+   isn't in `project_focus.syncs` **and isn't in `project_focus.parked_projects`**
+   is pinned as a top-of-briefing "new project? add it" (the user confirms before
+   `syncs` changes), **including on a seed** — don't silently absorb a third
+   project. **If the user declines/parks it, add the project to `parked_projects`**
+   so the daily check never re-asks (a parked project must not nag every morning).
+   A `gone` project_sync prompts "drop it?". Persist with `focus.py catalog-sync
+   --entries '[...]'`. When `project_focus.auto_sync_prep` is on (default), the
+   briefing also auto-schedules a `/valor-sync-prep` run before each same-day
+   `project_sync` (see Day Planning).
 
 ## Day Planning & Calendar Write
 
@@ -399,6 +402,6 @@ fields, so a fresh `state.json` with only installer fields is valid.
 | `escalate_in_one_on_one` | Carry-forward audit | List of claims that failed repeated verification; surfaced by 1:1 prep |
 | `planning` | Installer | Object: `calendar_auto_write` (write kill switch; read is gated by `integrations.calendar`), `workday_start`/`workday_end` (HH:MM), `deep_min_hours` (deep-block threshold, default 2), `post_meeting_break_minutes` (breather reserved after a real meeting, default 15), `block_granularity_minutes` (snap block start/end to this clock granularity, default 15), `morning_buffer_minutes` (no tasks until this many minutes after `workday_start`, default 0), `pre_meeting_prep_minutes` (a prep block reserved before each prep-worthy meeting — `project_sync` / `external` — default 30; 0 disables) |
 | `one_on_one` | Installer / setup | Object: `doc` (link/id/name of the user's running 1:1 doc, so `/valor-prep` can learn the format — local only, never committed), `format_notes` (optional format spec used if the doc can't be read) |
-| `project_focus` | Installer / setup | Optional customization (disabled by default). Object: `enabled`; `mode` (`meeting_derived` follows the next per-project sync on the calendar, `manual` uses `current`); `current`; `flip` (`after_sync`); `syncs` (sync-label → project map; local only); `sync_scan_interval_days` (re-check cadence, default 14) + `last_sync_scan`; `meeting_catalog` (recurring meetings, each categorized — `project_sync` / `1:1` / `social` / …; a meeting not in it is "new — research it"). When on, the briefing plans around the current project and hides the rest. |
+| `project_focus` | Installer / setup | Optional customization (disabled by default). Object: `enabled`; `mode` (`meeting_derived` follows the next per-project sync on the calendar, `manual` uses `current`); `current`; `flip` (`after_sync`); `syncs` (sync-label → project map; local only); `auto_sync_prep` (default true — auto-schedule `/valor-sync-prep` before each `project_sync`); `parked_projects` (projects the user declined to add to the rotation — never re-prompted); `meeting_catalog` (recurring meetings, each categorized — `project_sync` / `1:1` / `social` / …; a meeting not in it is "new — research it"). The catalog is drift-checked **daily** (no throttle). When on, the briefing plans around the current project and hides the rest. |
 | `installed_version` | Installer | Valor version at last install (semver) |
 | `installed_at` | Installer | ISO 8601 timestamp of last install |

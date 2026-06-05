@@ -64,7 +64,7 @@ and `utilities.md`).
 
 The `installed_version` and `installed_at` fields track when the last install
 happened. The `state_schema_version` field enables forward-only migrations
-when the installer adds new fields (currently at version 15). Migrations are
+when the installer adds new fields (currently at version 16). Migrations are
 non-destructive (only missing keys are added) and run in `_migrate_state_in_memory`.
 
 Key fields:
@@ -73,9 +73,9 @@ Key fields:
 - `coaching_mode` -- `"ambient"` (default), `"quiet"`, or `"off"`
 - `integrations` -- boolean flags for github, jira, calendar, news
 - `verification` -- gate config: `enabled`, `escalation_threshold`, `ttl_overrides` (v5)
-- `planning` -- day-plan config: `calendar_auto_write`, `workday_start`/`workday_end`, `deep_min_hours`, `post_meeting_break_minutes`, `block_granularity_minutes`, `morning_buffer_minutes` (v6, v9, v12, v13)
+- `planning` -- day-plan config: `calendar_auto_write`, `workday_start`/`workday_end`, `deep_min_hours`, `post_meeting_break_minutes`, `block_granularity_minutes`, `morning_buffer_minutes`, `pre_meeting_prep_minutes` (v6, v9, v12, v13, v15)
 - `one_on_one` -- 1:1 doc reference + `format_notes` for `/valor-prep` (v7; local only)
-- `project_focus` -- opt-in project rotation: `enabled`, `mode`, `syncs`, `meeting_catalog` (categorized recurring meetings), re-check cadence (v8–v14; local only)
+- `project_focus` -- opt-in project rotation: `enabled`, `mode`, `syncs`, `meeting_catalog` (categorized recurring meetings), `auto_sync_prep`, `parked_projects` (v8–v16; local only). Catalog drift-checked daily — no throttle.
 - `escalate_in_one_on_one` -- chronic items flagged for the next 1:1 (v5)
 - `state_schema_version` -- integer for installer migrations
 - `installed_version`, `installed_at` -- install tracking
@@ -139,10 +139,12 @@ Cross-cutting behaviors run inside the existing agents — no new commands:
   do-time — idempotent and removed when the task verifies done.
 - **Project focus** (`focus.py`, opt-in): when the user rotates projects, the
   briefing derives the current project from a recurring per-project sync meeting
-  (or a manual setting) and plans around it, hiding off-focus work. A throttled
-  baseline-diff of recurring meetings — enriched by reading a new meeting's
-  attached docs — proactively flags a likely new/dropped project as a
-  top-of-briefing alert.
+  (or a manual setting) and plans around it, hiding off-focus work. Every briefing
+  drift-checks the recurring meetings (over a ~3–4 week window) against the
+  categorized catalog: known meetings stay silent, an unknown one is categorized
+  and added (asked about once), and an unmapped, non-parked project_sync surfaces
+  a "new project?" alert. When `auto_sync_prep` is on, it also schedules a
+  `/valor-sync-prep` run before each project_sync.
 - **Chronic escalation**: items verified-unresolved past
   `verification.escalation_threshold` surface in `/valor-prep`, which also drafts
   the entry in the user's own 1:1-doc format when `one_on_one.doc` is set.

@@ -8,6 +8,11 @@ project). Run it ~30 min before the meeting, in the prep block Valor reserves.
 
 ## When to Use
 
+Two ways in: (1) **manually** by the user (the triggers below), or (2)
+**automatically** — when `project_focus.auto_sync_prep` is on (default), the
+briefing schedules a one-off run of this command ~`pre_meeting_prep_minutes`
+(default 30) before a `project_sync`.
+
 - User says: "sync prep", "prep for my project sync", "prep my sync talk
   points", "prep for the [project] sync", or runs `/valor-sync-prep`
 - Best ~30 min before a `project_sync` — late enough to include what you just
@@ -28,8 +33,14 @@ python3 ~/.valor/focus.py resolve --syncs '[{"project":"...","date":"YYYY-MM-DD"
 
 Use `current_project` (or, if the user named a specific sync, that meeting's
 project). Note the **last sync date** for the project — the most recent past
-sync in the rotation — that's the window for "what's new." If focus is off or
-`current_project` is empty, ask the user which project the sync is about.
+sync in the rotation — that's the window for "what's new."
+
+**No-op safeguard (for the scheduled path):** if there's **no `project_sync`
+still upcoming today**, exit quietly and do nothing — this guards against a stale
+trigger firing on a day with no sync, and (unlike a fixed "next hour" window) it
+holds for whatever `pre_meeting_prep_minutes` lead time is configured. For the
+manual path, if focus is off or `current_project` is empty, just ask the user
+which project the sync is about.
 
 ## 2. Gather progress since the last sync
 
@@ -69,9 +80,11 @@ reframe a point?"*
 
 ## Notes
 
-- **Pairs with the prep block.** The day plan reserves a 30-min block before each
-  `project_sync` (`planning.pre_meeting_prep_minutes`); this command is what you
-  run in it.
+- **Pairs with the prep block, and can auto-run.** The day plan reserves a 30-min
+  block before each `project_sync` (`planning.pre_meeting_prep_minutes`), and —
+  when `project_focus.auto_sync_prep` is true (default) — the briefing
+  auto-schedules this command to run at the start of that block. Manual
+  invocation still works any time.
 - **Stay project-scoped.** Only the current project, only since its last sync.
   Don't fold in off-focus projects or career framing — that's `/valor-prep`.
 - **Record evidence** only if the prep surfaced a real design decision or

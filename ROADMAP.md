@@ -180,6 +180,27 @@ What shipped:
   reserves the 30 min, this fills it.
 - version bump to 0.9.0
 
+## Phase 11: Daily Meeting Intelligence + Auto Sync-Prep
+
+**Status:** Complete
+
+What shipped:
+
+- **Daily drift-check**: the 14-day catalog re-scan throttle is gone — the
+  briefing now reconciles recurring meetings against the categorized catalog
+  **every day**. A known meeting stays silent; an unknown recurring meeting is
+  categorized and added (asked about once); an unmapped `project_sync` whose
+  project is new surfaces a "new project?" alert the day it appears.
+- **Parked-project memory** (`project_focus.parked_projects`): a new project the
+  user declines to add is remembered, so daily detection never re-prompts it.
+- **Auto sync-prep** (`project_focus.auto_sync_prep`, default true): each briefing
+  auto-schedules a one-off `/valor-sync-prep` run before each same-day
+  `project_sync`, at `pre_meeting_prep_minutes` before it (idempotent; the command
+  keeps a no-op safeguard).
+- state schema v15 → v16 (drop `sync_scan_interval_days` + `last_sync_scan`; add
+  `auto_sync_prep` + `parked_projects`).
+- version bump to 0.10.0
+
 ## Future Considerations
 
 These are not committed but worth exploring:

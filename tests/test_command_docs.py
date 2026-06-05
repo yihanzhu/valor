@@ -1,4 +1,6 @@
+import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -204,3 +206,30 @@ def test_getting_started_doc_exists():
 def test_getting_started_mentions_integrations():
     text = Path("docs/getting-started.md").read_text()
     assert "integrations" in text
+
+
+def test_install_sh_migrator_drops_v16_throttle(tmp_path):
+    # The install.sh inline migrator must match evidence_cli's v16 behavior: drop
+    # the throttle keys and add auto_sync_prep + parked_projects. CI coverage for
+    # the install.sh half — a short-circuit pop bug slipped through here once.
+    install = Path("install.sh").read_text()
+    marker = 'migrate_msg=$(python3 -c "'
+    start = install.index(marker) + len(marker)
+    end = install.index('" "$VALOR_HOME/state.json"', start)
+    migrator = install[start:end]
+    state = {"state_schema_version": 15, "project_focus": {
+        "enabled": True, "mode": "meeting_derived", "current": "", "flip": "after_sync",
+        "syncs": [{"project": "alpha", "match": "Alpha Sync"}],
+        "sync_scan_interval_days": 14, "last_sync_scan": "2026-06-01",
+        "meeting_catalog": []}}
+    statefile = tmp_path / "state.json"
+    statefile.write_text(json.dumps(state))
+    r = subprocess.run([sys.executable, "-c", migrator, str(statefile), "16", "{}"],
+                       capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    pf = json.loads(statefile.read_text())["project_focus"]
+    assert "sync_scan_interval_days" not in pf            # v16: throttle dropped
+    assert "last_sync_scan" not in pf                     # v16: throttle dropped
+    assert pf["auto_sync_prep"] is True                   # v16: added
+    assert pf["parked_projects"] == []                    # v16: added
+    assert json.loads(statefile.read_text())["state_schema_version"] == 16

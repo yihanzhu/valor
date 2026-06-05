@@ -53,10 +53,12 @@ DEFAULTS = {
     "current": "",              # used by manual mode
     "flip": "after_sync",       # when focus changes relative to a sync
     "syncs": [],                # [{"project","match"}] — agent matches titles
-    # Periodic mapping re-check: every N days the briefing re-scans for sync
-    # meetings and confirms whether the user's project set changed.
-    "sync_scan_interval_days": 14,
-    "last_sync_scan": "",       # YYYY-MM-DD of the last re-check
+    # Auto-schedule /valor-sync-prep before each project_sync (default on). The
+    # briefing now drift-checks the catalog DAILY (no periodic re-scan throttle).
+    "auto_sync_prep": True,
+    # Projects the user saw flagged as "new" and chose NOT to add to the rotation
+    # (a parked project). A project_sync for one of these is never re-prompted.
+    "parked_projects": [],
     # Catalog of known recurring meetings, each categorized (project_sync, 1:1,
     # standup, social, ...). A meeting NOT in the catalog is a "new — research
     # it" signal. Entries: {"title", "category", "project"}.
@@ -153,24 +155,6 @@ def decide(config, syncs, today=None) -> dict:
     return meeting_focus(syncs, today, flip=config.get("flip", "after_sync"))
 
 
-# --- periodic mapping re-check -------------------------------------------
-def scan_due(config, today=None) -> bool:
-    """True when the sync->project mapping is due for a re-check (projects may
-    have changed). False when focus is off. A never-scanned or unparseable
-    last_sync_scan is treated as due."""
-    if not config.get("enabled"):
-        return False
-    last = config.get("last_sync_scan") or ""
-    if not last:
-        return True
-    try:
-        last_d = _parse_day(last)
-    except (ValueError, TypeError):
-        return True
-    today = _parse_day(today) if today else date.today()
-    return (today - last_d).days >= int(config.get("sync_scan_interval_days", 14))
-
-
 def diff_syncs(configured, observed_titles) -> dict:
     """Compare the configured syncs to recurring sync-like meeting titles the
     agent observed on the calendar. Returns:
@@ -189,28 +173,6 @@ def diff_syncs(configured, observed_titles) -> dict:
         if m and not any(m.lower() in t.lower() for t in obs)
     ]
     return {"new": new, "missing": missing}
-
-
-def mark_scanned(today=None) -> str:
-    """Stamp project_focus.last_sync_scan = today in state.json (best-effort,
-    preserving the rest of state). Returns the date written, or "" if state
-    couldn't be read/written."""
-    state_path = VALOR_HOME / "state.json"
-    try:
-        state = json.loads(state_path.read_text())
-    except (OSError, json.JSONDecodeError):
-        return ""
-    pf = state.get("project_focus")
-    if not isinstance(pf, dict):
-        pf = {}
-        state["project_focus"] = pf
-    stamp = _parse_day(today).isoformat() if today else date.today().isoformat()
-    pf["last_sync_scan"] = stamp
-    try:
-        state_path.write_text(json.dumps(state, indent=2))
-    except OSError:
-        return ""
-    return stamp
 
 
 # --- recurring-meeting catalog (categorized; proactive drift detection) --
@@ -313,22 +275,9 @@ def cmd_config(args: argparse.Namespace) -> None:
     print(json.dumps(focus_config(), indent=2))
 
 
-def cmd_scan_due(args: argparse.Namespace) -> None:
-    cfg = focus_config()
-    print(json.dumps({
-        "due": scan_due(cfg, today=args.today),
-        "last_sync_scan": cfg.get("last_sync_scan", ""),
-        "interval_days": cfg.get("sync_scan_interval_days", 14),
-    }, indent=2))
-
-
 def cmd_diff(args: argparse.Namespace) -> None:
     observed = _load_json_arg(args.observed) if args.observed else []
     print(json.dumps(diff_syncs(focus_config().get("syncs", []), observed), indent=2))
-
-
-def cmd_mark_scanned(args: argparse.Namespace) -> None:
-    print(json.dumps({"last_sync_scan": mark_scanned(today=args.today)}))
 
 
 def _empty_current_warning(catalog, current_titles):
@@ -374,15 +323,9 @@ def main() -> None:
 
     sub.add_parser("config", help="Print the project_focus config block")
 
-    p_due = sub.add_parser("scan-due", help="Is the sync->project mapping due for a re-check?")
-    p_due.add_argument("--today", default=None, help="YYYY-MM-DD override (testing)")
-
     p_diff = sub.add_parser("diff", help="Compare configured syncs to observed meeting titles")
     p_diff.add_argument("--observed", default="[]",
                         help='Observed sync-like titles JSON: ["title", ...] (or @file or -)')
-
-    p_mark = sub.add_parser("mark-scanned", help="Stamp project_focus.last_sync_scan = today")
-    p_mark.add_argument("--today", default=None, help="YYYY-MM-DD override (testing)")
 
     p_cdiff = sub.add_parser("catalog-diff", help="New/gone recurring meetings vs the catalog")
     p_cdiff.add_argument("--current", default="[]",
@@ -393,8 +336,7 @@ def main() -> None:
                          help='Entries JSON: [{"title","category","project"}, ...] (or @file or -)')
 
     args = ap.parse_args()
-    {"resolve": cmd_resolve, "config": cmd_config, "scan-due": cmd_scan_due,
-     "diff": cmd_diff, "mark-scanned": cmd_mark_scanned,
+    {"resolve": cmd_resolve, "config": cmd_config, "diff": cmd_diff,
      "catalog-diff": cmd_catalog_diff, "catalog-sync": cmd_catalog_sync}[args.command](args)
 
 
