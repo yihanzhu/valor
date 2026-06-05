@@ -40,7 +40,7 @@ from pathlib import Path
 DB_PATH = Path.home() / ".valor" / "evidence.sqlite"
 BACKUP_DIR = Path.home() / ".valor" / "backups"
 
-STATE_SCHEMA_VERSION = 12
+STATE_SCHEMA_VERSION = 13
 
 ROUTINE_SLOTS = ("briefing", "wrapup", "weekly", "prep")
 
@@ -584,7 +584,8 @@ def _migrate_state_in_memory(state: dict) -> dict:
     # kill switch (read is gated separately by integrations.calendar). Workday
     # bounds + deep-block threshold tune the gap-fit pass.
     # v9 adds post_meeting_break_minutes (a breather after real meetings);
-    # v12 adds block_granularity_minutes (snap blocks to clean clock boundaries).
+    # v12 adds block_granularity_minutes (snap blocks to clean clock boundaries);
+    # v13 adds morning_buffer_minutes (no tasks until N min after workday_start).
     if "planning" not in state or not isinstance(state.get("planning"), dict):
         state["planning"] = {
             "calendar_auto_write": True,
@@ -593,6 +594,7 @@ def _migrate_state_in_memory(state: dict) -> dict:
             "deep_min_hours": 2.0,
             "post_meeting_break_minutes": 15,
             "block_granularity_minutes": 15,
+            "morning_buffer_minutes": 0,
         }
     else:
         plan = state["planning"]
@@ -602,6 +604,7 @@ def _migrate_state_in_memory(state: dict) -> dict:
         plan.setdefault("deep_min_hours", 2.0)
         plan.setdefault("post_meeting_break_minutes", 15)
         plan.setdefault("block_granularity_minutes", 15)
+        plan.setdefault("morning_buffer_minutes", 0)
     # v7: 1:1 doc config. `doc` points valor-prep at the user's running 1:1 doc
     # so it can learn the format and draft this week's entry to match;
     # `format_notes` is an optional fallback when the doc can't be read. Both are
@@ -795,6 +798,7 @@ def cmd_context(args: argparse.Namespace) -> None:
             "deep_min_hours": (state.get("planning") or {}).get("deep_min_hours", 2.0),
             "post_meeting_break_minutes": (state.get("planning") or {}).get("post_meeting_break_minutes", 15),
             "block_granularity_minutes": (state.get("planning") or {}).get("block_granularity_minutes", 15),
+            "morning_buffer_minutes": (state.get("planning") or {}).get("morning_buffer_minutes", 0),
         },
         "project_focus": {
             "enabled": bool((state.get("project_focus") or {}).get("enabled", False)),

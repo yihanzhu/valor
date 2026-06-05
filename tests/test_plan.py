@@ -268,6 +268,39 @@ def test_granularity_30_snaps_to_half_hours():
     assert r["blocks"][0]["minutes"] == 30
 
 
+# --- morning buffer + focus-time preference ---
+def test_morning_buffer_delays_task_start():
+    r = plan.fit([], [{"text": "Design X", "shape": "deep_only", "est_minutes": 120}],
+                 now=T("09:00"), workday_start="09:00", workday_end="18:00",
+                 deep_min_hours=2, morning_buffer=60)
+    assert r["blocks"][0]["start"] == T("10:00")  # 09:00 + 60m AM-ritual buffer
+
+
+def test_morning_buffer_zero_starts_at_workday():
+    r = plan.fit([], [{"text": "Merge PR #1", "est_minutes": 30}],
+                 now=T("09:00"), workday_start="09:00", workday_end="18:00",
+                 deep_min_hours=2, morning_buffer=0)
+    assert r["blocks"][0]["start"] == T("09:00")
+
+
+def test_morning_buffer_ignored_when_now_is_later():
+    r = plan.fit([], [{"text": "Merge PR #1", "est_minutes": 30}],
+                 now=T("11:00"), workday_start="09:00", workday_end="18:00",
+                 deep_min_hours=2, morning_buffer=60)
+    assert r["blocks"][0]["start"] == T("11:00")  # now already past the floor
+
+
+def test_deep_work_prefers_focus_time_gap():
+    # A plain morning deep gap + an afternoon deep gap containing focus-time.
+    # Deep work should prefer the focus gap, even though the morning one is earlier.
+    ev = [_ev("12:00", "13:00"),  # personal hold (no attendees): splits the day, no break
+          {"start": T("14:00"), "end": T("16:30"), "type": "focusTime"}]
+    r = plan.fit(ev, [{"text": "Design the system", "shape": "deep_only", "est_minutes": 120}],
+                 now=T("09:00"), workday_start="09:00", workday_end="17:00",
+                 deep_min_hours=2, morning_buffer=0)
+    assert r["blocks"][0]["start"] == T("13:00")  # the focus gap, not the 09:00 one
+
+
 # --- CLI ---
 def test_cli_fit(tmp_path):
     events = json.dumps([_ev("12:00", "13:00")])

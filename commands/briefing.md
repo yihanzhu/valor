@@ -373,8 +373,10 @@ is `false`.
 Follow the full protocol in `~/.valor/utilities.md` ("Day Planning & Calendar
 Write"). In short:
 
-1. Reuse the calendar you already fetched (§3); drop declined. Build events with
-   each event's **`type`** (`default`/`focusTime`/`outOfOffice`/`workingLocation`)
+1. Reuse the calendar you already fetched (§3); **drop declined — plus anything
+   you marked *tentative/maybe* or are only an *optional* attendee on; those are
+   free to schedule over, not busy.** Build events with each event's **`type`**
+   (`default`/`focusTime`/`outOfOffice`/`workingLocation`)
    so plan.py leaves focus-time free for deep work and blocks only real meetings
    + OOO. Mark **real meetings** so plan.py adds a breather after them: set
    **`is_meeting: true`** for collaborative meetings (or pass **`attendees`** and
@@ -389,8 +391,11 @@ Write"). In short:
    ```bash
    python3 ~/.valor/plan.py fit --events "$EVENTS" --priorities "$PRIORITIES"
    ```
-   Render `blocks` as the **Day Plan** section above; surface `unassigned`
-   `deep_only` items as "push to your next deep block".
+   Render `blocks` **exactly as plan.py returns them** — its times, in order;
+   don't re-time, merge, or improvise the schedule. plan.py won't start tasks
+   before `workday_start + morning_buffer_minutes` (your AM ritual) and **prefers
+   focus-time blocks for deep work** (that's what they're for). Surface
+   `unassigned` `deep_only` items as "push to your next deep block".
 3. **Calendar write** — only if `context.planning.calendar_auto_write` is `true`
    AND a writer is available. These are personal to-dos, so write them
    **private**: prefer a **Google Task** per block (private by nature) if a
