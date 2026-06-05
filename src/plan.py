@@ -398,9 +398,34 @@ def _load_json_arg(value: str):
     return json.loads(value)
 
 
+def _empty_calendar_warning(events, priorities):
+    """Warn when asked to schedule tasks against *no* calendar at all.
+
+    The failure this guards: a caller reads "the day's open / nothing on the
+    calendar" as an empty day and passes zero events, so tasks get packed from
+    `now` forward — landing on top of real but un-supplied commitments while the
+    genuinely free gaps go unused. We can't see the true calendar from here, but
+    "priorities to place + zero events" is almost always a dropped-calendar
+    mistake, not a truly empty day (accepted meetings and holds are busy). High
+    precision, near-zero false-positive cost — it's only a stderr note, the fit
+    still runs."""
+    if priorities and not events:
+        n = len(priorities)
+        return (
+            "plan.py: scheduling against an EMPTY calendar — 0 events, "
+            f"{n} priorit{'y' if n == 1 else 'ies'}. If the day isn't truly "
+            "empty, pass the real events (accepted meetings + holds are busy); "
+            "'open day' means no syncs, not no calendar."
+        )
+    return None
+
+
 def cmd_fit(args: argparse.Namespace) -> None:
     events = _load_json_arg(args.events) if args.events else []
     priorities = _load_json_arg(args.priorities) if args.priorities else []
+    warning = _empty_calendar_warning(events, priorities)
+    if warning:
+        print(f"⚠️  {warning}", file=sys.stderr)
     result = fit(
         events, priorities, now=args.now,
         workday_start=args.workday_start, workday_end=args.workday_end,
