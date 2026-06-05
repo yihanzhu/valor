@@ -286,9 +286,27 @@ def _load_json_arg(value: str):
     return json.loads(value)
 
 
+def _empty_syncs_warning(config, syncs):
+    """Warn when focus is on (meeting-derived) but no syncs were supplied.
+    decide() then fails open (current_project="") and the briefing shows
+    everything — the focus boundary silently disappears. Safe direction, but
+    worth a heads-up; stderr-only, the resolve still runs."""
+    if (config.get("enabled") and config.get("mode") != "manual"
+            and not [s for s in (syncs or []) if s]):
+        return ("focus.py: focus is on (meeting-derived) but 0 syncs supplied — "
+                "resolving to no focus and showing everything unfiltered. If you "
+                "rotate projects, pass the dated per-project syncs (did you "
+                "compute them?).")
+    return None
+
+
 def cmd_resolve(args: argparse.Namespace) -> None:
     syncs = _load_json_arg(args.syncs) if args.syncs else []
-    print(json.dumps(decide(focus_config(), syncs, today=args.today), indent=2))
+    cfg = focus_config()
+    warning = _empty_syncs_warning(cfg, syncs)
+    if warning:
+        print(f"⚠️  {warning}", file=sys.stderr)
+    print(json.dumps(decide(cfg, syncs, today=args.today), indent=2))
 
 
 def cmd_config(args: argparse.Namespace) -> None:
@@ -313,9 +331,29 @@ def cmd_mark_scanned(args: argparse.Namespace) -> None:
     print(json.dumps({"last_sync_scan": mark_scanned(today=args.today)}))
 
 
+def _empty_current_warning(catalog, current_titles):
+    """Warn when diffing a non-empty catalog against zero observed meetings.
+    If the agent didn't supply the current recurring-meeting titles (fetch
+    skipped/failed), every catalog entry looks 'gone' and the briefing would
+    prompt to drop every project. Same dropped-input failure as plan.py's
+    empty-calendar guard; high precision, stderr-only."""
+    entries = [e for e in (catalog or []) if isinstance(e, dict) and e.get("title")]
+    current = [t for t in (current_titles or []) if t]
+    if entries and not current:
+        return (f"focus.py: diffing {len(entries)} catalogued meeting(s) against "
+                "0 current titles — every one will look 'gone'. If your calendar "
+                "isn't truly empty, pass the current recurring-meeting titles "
+                "(did the fetch run?).")
+    return None
+
+
 def cmd_catalog_diff(args: argparse.Namespace) -> None:
     current = _load_json_arg(args.current) if args.current else []
-    print(json.dumps(catalog_diff(focus_config().get("meeting_catalog", []), current), indent=2))
+    catalog = focus_config().get("meeting_catalog", [])
+    warning = _empty_current_warning(catalog, current)
+    if warning:
+        print(f"⚠️  {warning}", file=sys.stderr)
+    print(json.dumps(catalog_diff(catalog, current), indent=2))
 
 
 def cmd_catalog_sync(args: argparse.Namespace) -> None:

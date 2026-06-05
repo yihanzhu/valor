@@ -216,3 +216,20 @@ def test_catalog_sync_preserves_valid_source_only(tmp_path, monkeypatch):
     assert by["fetched mtg"]["source"] == "fetch"
     assert "source" not in by["bare mtg"]    # absent stays absent
     assert "source" not in by["bad mtg"]     # invalid value dropped, not stored
+
+
+# --- empty-input tripwires (guard the dropped-data failure class) ---
+def test_empty_current_warning_fires_when_catalog_nonempty_but_no_current():
+    catalog = [{"title": "alpha sync", "category": "project_sync", "project": "alpha"}]
+    assert focus._empty_current_warning(catalog, [])             # all would look "gone"
+    assert focus._empty_current_warning(catalog, ["alpha sync"]) is None  # have current
+    assert focus._empty_current_warning([], []) is None          # empty catalog = seed, fine
+
+
+def test_empty_syncs_warning_fires_when_focus_on_but_no_syncs():
+    on = {"enabled": True, "mode": "meeting_derived"}
+    assert focus._empty_syncs_warning(on, [])                    # focus on, no syncs
+    assert focus._empty_syncs_warning(on, SYNCS) is None          # have syncs
+    assert focus._empty_syncs_warning({"enabled": False}, []) is None      # focus off
+    assert focus._empty_syncs_warning(
+        {"enabled": True, "mode": "manual"}, []) is None           # manual needs no syncs
