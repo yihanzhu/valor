@@ -207,12 +207,20 @@ ticket→project classification is the agent's job (read the ticket).
    set once, but the project set changes — and the calendar carries more than
    project syncs. Only when `focus.py scan-due` is `due`, diff current
    recurring-meeting titles vs the catalog: `focus.py catalog-diff --current
-   '[...]'`. **Categorize** the `new` ones (and ALL on a `seed`) by reading them
-   — `1:1` / `focus` / `standup` / `project_sync` / `team_planning` / `social` /
-   `demo_huddle` / `external` / `other` — **researching** the unclear or
-   project-looking ones via **attached docs → Confluence → Slack** (never
-   name-guess or ignore). Any `project_sync` whose project isn't already in
-   `project_focus.syncs` is pinned as a top-of-briefing "new project? add it" (the
+   '[...]'`. **Categorize** the `new` ones (and ALL on a `seed`) **from the signals
+   already in the calendar payload — free, no fetch:** the **description**,
+   **attendees** (same recurring small group → standup; exactly two → 1:1; broad
+   invite → social), **cadence + duration** (short+frequent → standup; monthly →
+   demo/huddle), and **attachment titles** ("…Project Plan" → project_sync;
+   "…Agenda/Notes" → a working meeting) — into `1:1` / `focus` / `standup` /
+   `project_sync` / `team_planning` / `social` / `demo_huddle` / `external` /
+   `other`, honoring known **team names** from memory (a team's sync is a standup,
+   not a project). **Only when those free signals don't resolve it** (or you can't
+   tell team-vs-project) spend a content fetch — attached doc → Confluence →
+   Slack. On a `seed`, list the categorization and flag low-confidence ones for a
+   one-line confirm. Never silently name-guess. Any `project_sync` whose project
+   isn't already in `project_focus.syncs` is pinned as a top-of-briefing "new
+   project? add it" (the
    user confirms before `syncs` changes), **including on a seed** — don't silently
    absorb a third project. A `gone` project_sync prompts "drop it?". Persist with
    `focus.py catalog-sync --entries '[...]'` + `focus.py mark-scanned`.

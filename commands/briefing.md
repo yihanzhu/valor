@@ -245,14 +245,21 @@ shows the current one):
    ```bash
    python3 ~/.valor/focus.py catalog-diff --current '["Title A", "Title B", ...]'
    ```
-2. **Categorize the `new` meetings (and ALL of them on a `seed`) — never guess
-   from the name or ignore them.** Classify each by *reading* it into a category:
-   `1:1`, `focus`, `personal`, `standup`, `project_sync`, `team_planning`,
-   `social`, `demo_huddle`, `external`, `other`. When the title + attendees aren't
-   enough, or it looks project-related, **research it**: its **attached docs** →
-   **Confluence** (the project/topic) → **Slack** (recent context, e.g. a project
-   you were just onboarded to). For a `project_sync`, record which **project** it
-   belongs to.
+2. **Categorize the `new` meetings (and ALL on a `seed`) from the signals, not the
+   name.** Before deciding, use the signals **already in the calendar payload (all
+   free — no fetch)**: the **description**, the **attendees** (same recurring small
+   group → standup; exactly two → 1:1; broad invite → social), the **cadence +
+   duration** (short + frequent → standup; monthly → demo/huddle), and the
+   **attachment titles** ("…Project Plan" → project_sync; "…Agenda/Notes" → a
+   working meeting). Also honor known **team names** from memory — a team's sync is
+   a `standup`, not a `project_sync`. Categories: `1:1` / `focus` / `personal` /
+   `standup` / `project_sync` / `team_planning` / `social` / `demo_huddle` /
+   `external` / `other`. **Only if the free signals still don't resolve it** (or you
+   can't tell team-vs-project) spend a content fetch: open an attached doc →
+   Confluence (the project/topic) → Slack (recent context, e.g. a project you were
+   just onboarded to). For a `project_sync`, record which **project**. On a `seed`,
+   after categorizing, list them and flag any you're **unsure** about for a
+   one-line confirm — catch misclassifications upfront, not weeks later.
 3. **Surface, don't swallow.** Any `project_sync` whose project is **not already
    in your focus mapping** (`project_focus.syncs`) is a candidate new project —
    pin a top-of-briefing **Heads up**: *"'X' looks like a new project (Y, per its
