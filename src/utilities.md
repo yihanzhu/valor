@@ -218,7 +218,11 @@ ticket→project classification is the agent's job (read the ticket).
    not a project). **Only when those free signals don't resolve it** (or you can't
    tell team-vs-project) spend a content fetch — attached doc → Confluence →
    Slack. On a `seed`, list the categorization and flag low-confidence ones for a
-   one-line confirm. Never silently name-guess. Any `project_sync` whose project
+   one-line confirm. Never silently name-guess. **Tag each entry with how you
+   decided it** — `source: "signals"` (free payload sufficed) or `source: "fetch"`
+   (had to open a doc/Confluence/Slack) — pass it through to `catalog-sync`, and
+   note any fetches in the briefing; they mark where the signal heuristic is weak.
+   Any `project_sync` whose project
    isn't already in `project_focus.syncs` is pinned as a top-of-briefing "new
    project? add it" (the
    user confirms before `syncs` changes), **including on a seed** — don't silently

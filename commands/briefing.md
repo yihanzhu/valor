@@ -259,7 +259,12 @@ shows the current one):
    Confluence (the project/topic) → Slack (recent context, e.g. a project you were
    just onboarded to). For a `project_sync`, record which **project**. On a `seed`,
    after categorizing, list them and flag any you're **unsure** about for a
-   one-line confirm — catch misclassifications upfront, not weeks later.
+   one-line confirm — catch misclassifications upfront, not weeks later. **Tag how
+   you decided each** — `source: "signals"` (the free payload was enough) or
+   `source: "fetch"` (you had to open a doc / Confluence / Slack) — and pass it
+   through to `catalog-sync`. When any meeting needed a fetch, add a one-line note
+   (*"opened 'X''s doc to classify it as project_sync"*); those mark where the
+   signal heuristic is weak and worth revisiting over time.
 3. **Surface, don't swallow.** Any `project_sync` whose project is **not already
    in your focus mapping** (`project_focus.syncs`) is a candidate new project —
    pin a top-of-briefing **Heads up**: *"'X' looks like a new project (Y, per its

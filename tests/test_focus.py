@@ -194,3 +194,25 @@ def test_catalog_sync_writes_normalized_deduped(tmp_path, monkeypatch):
 def test_catalog_sync_missing_state_returns_negative(tmp_path, monkeypatch):
     monkeypatch.setattr(focus, "VALOR_HOME", tmp_path / "nope")
     assert focus.catalog_sync([{"title": "X", "category": "other"}]) == -1
+
+
+def test_catalog_sync_preserves_valid_source_only(tmp_path, monkeypatch):
+    # The optional "source" (how the agent categorized: "signals" vs "fetch")
+    # is persisted when valid, absent when missing, and dropped when bogus.
+    home = tmp_path / ".valor"
+    home.mkdir()
+    (home / "state.json").write_text(json.dumps({"project_focus": {}}))
+    monkeypatch.setattr(focus, "VALOR_HOME", home)
+    focus.catalog_sync([
+        {"title": "Signals Mtg", "category": "standup", "source": "signals"},
+        {"title": "Fetched Mtg", "category": "project_sync", "project": "p",
+         "source": "fetch"},
+        {"title": "Bare Mtg", "category": "other"},                    # no source
+        {"title": "Bad Mtg", "category": "other", "source": "guess"},   # invalid
+    ])
+    cat = json.loads((home / "state.json").read_text())["project_focus"]["meeting_catalog"]
+    by = {e["title"]: e for e in cat}
+    assert by["signals mtg"]["source"] == "signals"
+    assert by["fetched mtg"]["source"] == "fetch"
+    assert "source" not in by["bare mtg"]    # absent stays absent
+    assert "source" not in by["bad mtg"]     # invalid value dropped, not stored
