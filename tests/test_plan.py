@@ -336,3 +336,68 @@ def test_cli_fit_break_minutes(tmp_path):
     assert r.returncode == 0, r.stderr
     out = json.loads(r.stdout)
     assert out["gaps"][1]["start"] == T("11:30")  # 30-min break applied via CLI
+
+
+# --- empty-calendar sanity warning (guards the dropped-calendar bug) ---
+def test_empty_calendar_warning_fires_for_priorities_without_events():
+    w = plan._empty_calendar_warning([], ["Publish the 1-pager"])
+    assert w and "EMPTY calendar" in w
+
+
+def test_no_warning_when_events_present():
+    assert plan._empty_calendar_warning(
+        [_ev("12:00", "13:00")], ["Publish the 1-pager"]) is None
+
+
+def test_no_warning_when_no_priorities():
+    # A genuinely empty day with nothing to schedule is fine — no false alarm.
+    assert plan._empty_calendar_warning([], []) is None
+
+
+def test_cmd_fit_emits_warning_on_stderr_only(capsys):
+    import types
+    args = types.SimpleNamespace(
+        events="[]", priorities='["Publish the 1-pager"]', now=T("09:00"),
+        workday_start="09:00", workday_end="18:00", deep_hours=2,
+        break_minutes=None, granularity=None, morning_buffer=None,
+    )
+    plan.cmd_fit(args)
+    out = capsys.readouterr()
+    assert "EMPTY calendar" in out.err       # warning -> stderr
+    assert "EMPTY calendar" not in out.out    # stdout stays clean JSON
+    json.loads(out.out)                       # stdout still parses
+
+
+# --- regression: a real (social + lunch) day never plans over busy events ---
+def test_blocks_never_overlap_busy_events():
+    # Mirrors the bug report: a focus block, an accepted 2h social, lunch, and a
+    # late hold. The one free window is 14:00-15:30 — tasks must land there and
+    # never on top of a busy event (the original bug packed them over the social
+    # because the caller passed an empty event list).
+    events = [
+        {**_ev("10:00", "12:00"), "type": "focusTime"},   # fillable, not busy
+        _ev("12:00", "14:00", "Team social"),             # accepted -> busy
+        _ev("13:00", "13:45", "Lunch"),                   # personal hold -> busy
+        _ev("15:30", "17:00", "Hold"),                    # busy
+    ]
+    priorities = [
+        {"text": "Publish the 1-pager", "shape": "either", "est_minutes": 30},
+        {"text": "Close out the ticket", "shape": "either", "est_minutes": 30},
+        {"text": "Prep the sync", "shape": "either", "est_minutes": 30},
+    ]
+    r = plan.fit(events, priorities, now=T("12:00"),
+                 workday_start="09:00", workday_end="18:00", deep_min_hours=2)
+
+    assert r["unassigned"] == []
+    assert len(r["blocks"]) == 3
+
+    busy = [("12:00", "14:00"), ("13:00", "13:45"), ("15:30", "17:00")]
+    for b in r["blocks"]:
+        bs, be = plan._parse_iso(b["start"]), plan._parse_iso(b["end"])
+        # every block sits inside the only real gap, 14:00-15:30 ...
+        assert bs >= plan._parse_iso(T("14:00"))
+        assert be <= plan._parse_iso(T("15:30"))
+        # ... and overlaps none of the busy events
+        for s, e in busy:
+            assert not (bs < plan._parse_iso(T(e)) and plan._parse_iso(T(s)) < be), \
+                f"{b['priority']} overlaps busy {s}-{e}"
