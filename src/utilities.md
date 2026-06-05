@@ -316,7 +316,10 @@ Common rules (both targets):
   short, self-contained **description** the user can act on when the block comes
   up — the concrete next action plus the artifact's **actual clickable URL**
   (resolve PR vs issue so the link doesn't 404; include the ticket/doc link). Keep
-  it tight (a few lines). No reminders.
+  it tight (a few lines). **No reminders** — when creating the event, set
+  `overrideReminders: []` (an explicit *empty* list). Omit the field and the event
+  silently inherits the calendar's default popup (e.g. a 10-min reminder), which the
+  user does not want on Valor blocks.
 - **Machine marker (minimal).** Append one idempotency token at the end of the
   description: `valor:task:<stable slug>` (e.g. the ticket key / PR number, like
   `proj-42`), plus `valor:claim:<claim_hash>` only for artifact-claim priorities.
