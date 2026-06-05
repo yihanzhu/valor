@@ -316,10 +316,13 @@ Common rules (both targets):
   short, self-contained **description** the user can act on when the block comes
   up — the concrete next action plus the artifact's **actual clickable URL**
   (resolve PR vs issue so the link doesn't 404; include the ticket/doc link). Keep
-  it tight (a few lines). **No reminders** — when creating the event, set
-  `overrideReminders: []` (an explicit *empty* list). Omit the field and the event
-  silently inherits the calendar's default popup (e.g. a 10-min reminder), which the
-  user does not want on Valor blocks.
+  it tight (a few lines). **Reminders — known limitation.** The calendar writer
+  here exposes only an `overrideReminders` array, and passing `overrideReminders: []`
+  is a **no-op**: the event keeps `reminders.useDefault = true` and still inherits the
+  calendar's default popup (e.g. a 10-min reminder). The MCP writer **cannot** suppress
+  that inherited reminder. The only way to zero it is a direct Google Calendar API
+  `events.patch` with `reminders = {useDefault: false, overrides: []}` — do that where
+  the raw API is available; otherwise the Valor block carries the calendar's default.
 - **Machine marker (minimal).** Append one idempotency token at the end of the
   description: `valor:task:<stable slug>` (e.g. the ticket key / PR number, like
   `proj-42`), plus `valor:claim:<claim_hash>` only for artifact-claim priorities.
