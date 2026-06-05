@@ -316,11 +316,12 @@ schedules:
    `match` is a case-insensitive substring of the meeting title; `project` is the
    user's label. If the user would rather just set the active project by hand,
    use `"mode": "manual", "current": "Project A"` instead.
-4. **Seed the meeting baseline** so future drift detection only flags *new*
-   meetings (not everything you already have). Capture the current recurring
-   meeting titles and store them, and stamp the scan:
+4. **Seed the meeting catalog** so future runs only flag *new* meetings.
+   Categorize the current recurring meetings (1:1 / standup / project_sync /
+   social / …; research any unclear ones via their docs + Confluence/Slack) and
+   store them, then stamp the scan:
    ```bash
-   python3 ~/.valor/focus.py baseline-sync --current '["Recurring Meeting A", "Recurring Meeting B", ...]'
+   python3 ~/.valor/focus.py catalog-sync --entries '[{"title": "Project A Sync", "category": "project_sync", "project": "Project A"}, {"title": "Team Standup", "category": "standup", "project": null}]'
    python3 ~/.valor/focus.py mark-scanned
    ```
 

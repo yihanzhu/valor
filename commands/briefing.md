@@ -234,32 +234,35 @@ Apply the result:
 
 This is cheap: reuse the §3 calendar read + one `focus.py` call.
 
-**Proactive project drift (only when due).** Your calendar is stable in steady
-state, so a recurring meeting that *wasn't there before* is a strong "new
-project?" signal. Run `python3 ~/.valor/focus.py scan-due`; only if `due: true`:
+**Project & meeting intelligence (only when due).** Run `python3
+~/.valor/focus.py scan-due`; only if `due: true`, reconcile your recurring
+meetings against the **catalog** (each meeting categorized; `focus.py config`
+shows the current one):
 
-1. Build the list of your **current recurring meeting titles** from the calendar
-   — scan **~3–4 weeks** so biweekly meetings are captured, keep only recurring
-   events (those with a `recurringEventId`; skip one-offs), and dedupe by title.
-   Diff against the saved baseline:
+1. Build the list of your **current recurring meeting titles** (scan **~3–4
+   weeks** so biweeklies are caught; recurring only — has a `recurringEventId`;
+   dedupe by title), then:
    ```bash
-   python3 ~/.valor/focus.py baseline-diff --current '["Title A", "Title B", ...]'
+   python3 ~/.valor/focus.py catalog-diff --current '["Title A", "Title B", ...]'
    ```
-2. If `seed: true` (first run, no baseline yet), absorb the current meetings as
-   the baseline and **alert nothing** (these are your existing meetings): run the
-   `baseline-sync` + `mark-scanned` in step 4 and stop.
-3. Otherwise, for each `new` meeting **read its attached docs** (Drive/Docs — a
-   "Project Plan"/"Notes" doc) to understand it. If it's a **per-project** meeting
-   (project-specific scope, not a team/sub-team ceremony), add a pinned **Heads
-   up** line at the very top of the briefing (see format): *"🆕 New recurring
-   meeting 'X' — looks like project Y (per its docs). Add to your focus
-   rotation?"* On confirm, append `{project, match}` to `project_focus.syncs` via
-   `state-set`. For each `gone` meeting matching a configured sync, pin: *"⚠️ 'X'
-   is off your calendar — drop project Y from focus?"*
-4. Either way, absorb the current meetings as the new baseline and record the
-   scan (so resolved items don't re-alert and it won't re-check for ~2 weeks):
+2. **Categorize the `new` meetings (and ALL of them on a `seed`) — never guess
+   from the name or ignore them.** Classify each by *reading* it into a category:
+   `1:1`, `focus`, `personal`, `standup`, `project_sync`, `team_planning`,
+   `social`, `demo_huddle`, `external`, `other`. When the title + attendees aren't
+   enough, or it looks project-related, **research it**: its **attached docs** →
+   **Confluence** (the project/topic) → **Slack** (recent context, e.g. a project
+   you were just onboarded to). For a `project_sync`, record which **project** it
+   belongs to.
+3. **Surface, don't swallow.** Any `project_sync` whose project is **not already
+   in your focus mapping** (`project_focus.syncs`) is a candidate new project —
+   pin a top-of-briefing **Heads up**: *"'X' looks like a new project (Y, per its
+   docs/Slack) — add it to your rotation?"* On confirm, append `{project, match}`
+   to `syncs` via `state-set`. A `gone` project_sync prompts *"drop project Y?"*.
+   Do this **even on a `seed`** (cold start): categorize everything, then flag the
+   unmapped project_syncs — don't silently absorb a third project.
+4. Write the categorized catalog + stamp the scan:
    ```bash
-   python3 ~/.valor/focus.py baseline-sync --current '["Title A", "Title B", ...]'
+   python3 ~/.valor/focus.py catalog-sync --entries '[{"title":"...","category":"project_sync","project":"Y"}, ...]'
    python3 ~/.valor/focus.py mark-scanned
    ```
 

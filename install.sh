@@ -423,7 +423,7 @@ install_shared() {
     local detected_intg
     detected_intg=$(detect_integrations)
 
-    local schema_version=13
+    local schema_version=14
 
     if [ ! -f "$VALOR_HOME/state.json" ]; then
         cat > "$VALOR_HOME/state.json" <<STATEJSON
@@ -470,7 +470,7 @@ install_shared() {
     "syncs": [],
     "sync_scan_interval_days": 14,
     "last_sync_scan": "",
-    "meeting_baseline": []
+    "meeting_catalog": []
   }
 }
 STATEJSON
@@ -526,7 +526,7 @@ if not isinstance(state.get('one_on_one'), dict):
     changed = True
 # v8: project-focus customization (presence-based; disabled by default).
 if not isinstance(state.get('project_focus'), dict):
-    state['project_focus'] = {'enabled': False, 'mode': 'meeting_derived', 'current': '', 'flip': 'after_sync', 'syncs': [], 'sync_scan_interval_days': 14, 'last_sync_scan': '', 'meeting_baseline': []}
+    state['project_focus'] = {'enabled': False, 'mode': 'meeting_derived', 'current': '', 'flip': 'after_sync', 'syncs': [], 'sync_scan_interval_days': 14, 'last_sync_scan': '', 'meeting_catalog': []}
     changed = True
 else:
     # v10/v11: fill sub-keys if the project_focus block predates them.
@@ -535,8 +535,10 @@ else:
         pf['sync_scan_interval_days'] = 14
         pf['last_sync_scan'] = ''
         changed = True
-    if 'meeting_baseline' not in pf:
-        pf['meeting_baseline'] = []
+    if 'meeting_catalog' not in pf:
+        pf['meeting_catalog'] = []
+        changed = True
+    if pf.pop('meeting_baseline', None) is not None:  # v14: superseded by catalog
         changed = True
 if state.get('state_schema_version', 1) < target_version:
     state['state_schema_version'] = target_version

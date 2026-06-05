@@ -57,11 +57,10 @@ DEFAULTS = {
     # meetings and confirms whether the user's project set changed.
     "sync_scan_interval_days": 14,
     "last_sync_scan": "",       # YYYY-MM-DD of the last re-check
-    # Baseline of known recurring-meeting titles (normalized). In steady state
-    # the calendar is stable, so a recurring meeting NOT in the baseline is a
-    # strong "new project?" signal. Seeded on first scan; updated as the user
-    # confirms/dismisses drift.
-    "meeting_baseline": [],
+    # Catalog of known recurring meetings, each categorized (project_sync, 1:1,
+    # standup, social, ...). A meeting NOT in the catalog is a "new — research
+    # it" signal. Entries: {"title", "category", "project"}.
+    "meeting_catalog": [],
 }
 
 
@@ -214,36 +213,35 @@ def mark_scanned(today=None) -> str:
     return stamp
 
 
-# --- recurring-meeting baseline (proactive drift detection) --------------
+# --- recurring-meeting catalog (categorized; proactive drift detection) --
 def _norm(title: str) -> str:
     return " ".join(str(title or "").lower().split())
 
 
-def baseline_diff(baseline, current_titles) -> dict:
-    """Compare the stored baseline of recurring-meeting titles to the titles the
-    agent observed on the calendar now. Returns:
-      * seed    — True when the baseline is empty (cold start): the caller should
-                  absorb the current meetings silently, NOT alert on all of them.
-      * new     — current titles not in the baseline (candidate new projects —
-                  the agent reads each meeting's docs before alerting)
-      * gone    — baseline titles with no current occurrence (a meeting/project
-                  may have ended)
+def catalog_diff(catalog, current_titles) -> dict:
+    """Compare the categorized meeting catalog to the recurring-meeting titles the
+    agent observed now. Returns:
+      * seed — True when the catalog is empty (cold start): categorize all current
+               meetings and surface project-syncs not in the focus mapping, but
+               don't alert on every meeting as "new."
+      * new  — current titles not in the catalog (research + categorize these).
+      * gone — catalog entries (with category/project) that no longer occur.
     Pure logic; never mutates state."""
-    base = [b for b in (baseline or []) if b]
-    base_norm = {_norm(b) for b in base}
+    entries = [e for e in (catalog or []) if isinstance(e, dict) and e.get("title")]
+    cat_norm = {_norm(e["title"]) for e in entries}
     cur = [t for t in (current_titles or []) if t]
     cur_norm = {_norm(t) for t in cur}
     return {
-        "seed": not base,
-        "new": [t for t in cur if _norm(t) not in base_norm],
-        "gone": [b for b in base if _norm(b) not in cur_norm],
+        "seed": not entries,
+        "new": [t for t in cur if _norm(t) not in cat_norm],
+        "gone": [e for e in entries if _norm(e["title"]) not in cur_norm],
     }
 
 
-def baseline_sync(current_titles) -> int:
-    """Set project_focus.meeting_baseline to the normalized current recurring-
-    meeting titles (best-effort write, preserving the rest of state). Returns the
-    number of titles stored, or -1 if state couldn't be read/written."""
+def catalog_sync(entries) -> int:
+    """Set project_focus.meeting_catalog to the given categorized entries
+    ({"title","category","project"}), deduped by normalized title. Best-effort
+    write preserving the rest of state. Returns the count, or -1 on failure."""
     state_path = VALOR_HOME / "state.json"
     try:
         state = json.loads(state_path.read_text())
@@ -253,13 +251,24 @@ def baseline_sync(current_titles) -> int:
     if not isinstance(pf, dict):
         pf = {}
         state["project_focus"] = pf
-    titles = sorted({_norm(t) for t in (current_titles or []) if t})
-    pf["meeting_baseline"] = titles
+    out, seen = [], set()
+    for e in (entries or []):
+        if not isinstance(e, dict):
+            continue
+        title = _norm(e.get("title"))
+        if not title or title in seen:
+            continue
+        seen.add(title)
+        out.append({"title": title,
+                    "category": e.get("category") or "unknown",
+                    "project": e.get("project")})
+    out.sort(key=lambda x: x["title"])
+    pf["meeting_catalog"] = out
     try:
         state_path.write_text(json.dumps(state, indent=2))
     except OSError:
         return -1
-    return len(titles)
+    return len(out)
 
 
 # --- CLI -----------------------------------------------------------------
@@ -298,14 +307,14 @@ def cmd_mark_scanned(args: argparse.Namespace) -> None:
     print(json.dumps({"last_sync_scan": mark_scanned(today=args.today)}))
 
 
-def cmd_baseline_diff(args: argparse.Namespace) -> None:
+def cmd_catalog_diff(args: argparse.Namespace) -> None:
     current = _load_json_arg(args.current) if args.current else []
-    print(json.dumps(baseline_diff(focus_config().get("meeting_baseline", []), current), indent=2))
+    print(json.dumps(catalog_diff(focus_config().get("meeting_catalog", []), current), indent=2))
 
 
-def cmd_baseline_sync(args: argparse.Namespace) -> None:
-    current = _load_json_arg(args.current) if args.current else []
-    print(json.dumps({"baseline_size": baseline_sync(current)}))
+def cmd_catalog_sync(args: argparse.Namespace) -> None:
+    entries = _load_json_arg(args.entries) if args.entries else []
+    print(json.dumps({"catalog_size": catalog_sync(entries)}))
 
 
 def main() -> None:
@@ -331,18 +340,18 @@ def main() -> None:
     p_mark = sub.add_parser("mark-scanned", help="Stamp project_focus.last_sync_scan = today")
     p_mark.add_argument("--today", default=None, help="YYYY-MM-DD override (testing)")
 
-    p_bdiff = sub.add_parser("baseline-diff", help="New/gone recurring meetings vs the stored baseline")
-    p_bdiff.add_argument("--current", default="[]",
+    p_cdiff = sub.add_parser("catalog-diff", help="New/gone recurring meetings vs the catalog")
+    p_cdiff.add_argument("--current", default="[]",
                          help='Current recurring-meeting titles JSON: ["title", ...] (or @file or -)')
 
-    p_bsync = sub.add_parser("baseline-sync", help="Set the meeting baseline to the current recurring meetings")
-    p_bsync.add_argument("--current", default="[]",
-                         help='Current recurring-meeting titles JSON: ["title", ...] (or @file or -)')
+    p_csync = sub.add_parser("catalog-sync", help="Set the meeting catalog to categorized entries")
+    p_csync.add_argument("--entries", default="[]",
+                         help='Entries JSON: [{"title","category","project"}, ...] (or @file or -)')
 
     args = ap.parse_args()
     {"resolve": cmd_resolve, "config": cmd_config, "scan-due": cmd_scan_due,
      "diff": cmd_diff, "mark-scanned": cmd_mark_scanned,
-     "baseline-diff": cmd_baseline_diff, "baseline-sync": cmd_baseline_sync}[args.command](args)
+     "catalog-diff": cmd_catalog_diff, "catalog-sync": cmd_catalog_sync}[args.command](args)
 
 
 if __name__ == "__main__":

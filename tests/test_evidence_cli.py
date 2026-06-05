@@ -1161,7 +1161,7 @@ def test_migrate_state_in_memory_adds_v8_project_focus_fields():
     assert migrated["project_focus"]["syncs"] == []
     assert migrated["project_focus"]["sync_scan_interval_days"] == 14  # v10
     assert migrated["project_focus"]["last_sync_scan"] == ""           # v10
-    assert migrated["project_focus"]["meeting_baseline"] == []         # v11
+    assert migrated["project_focus"]["meeting_catalog"] == []          # v14
     assert migrated["state_schema_version"] == STATE_SCHEMA_VERSION
 
 
@@ -1175,7 +1175,15 @@ def test_migrate_state_in_memory_preserves_project_focus():
     assert migrated["project_focus"]["syncs"] == []  # missing sub-key filled
     assert migrated["project_focus"]["sync_scan_interval_days"] == 14  # v10 sub-key filled
     assert migrated["project_focus"]["last_sync_scan"] == ""           # v10 sub-key filled
-    assert migrated["project_focus"]["meeting_baseline"] == []         # v11 sub-key filled
+    assert migrated["project_focus"]["meeting_catalog"] == []          # v14 sub-key filled
+
+
+def test_migrate_state_in_memory_drops_legacy_meeting_baseline():
+    # v11 meeting_baseline (flat titles) -> v14 meeting_catalog (re-seeds categorized).
+    state = {"project_focus": {"enabled": True, "meeting_baseline": ["old sync"]}}
+    migrated = _migrate_state_in_memory(state)
+    assert "meeting_baseline" not in migrated["project_focus"]   # superseded, dropped
+    assert migrated["project_focus"]["meeting_catalog"] == []     # re-seeds next briefing
 
 
 def test_migrate_state_in_memory_preserves_verification_overrides():
