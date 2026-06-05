@@ -46,7 +46,7 @@ https://raw.githubusercontent.com/yihanzhu/valor/main/VERSION
 ```
 
 This request contains no user data -- it downloads a version string (e.g.
-"0.6.1"). If a minor or patch update is available, Valor auto-applies it
+"0.7.0"). If a minor or patch update is available, Valor auto-applies it
 via `git pull` in `~/.valor/repo/`. Major version bumps prompt the user
 first. You can disable this by setting `update_check_interval_hours` to `0`
 in state.json.

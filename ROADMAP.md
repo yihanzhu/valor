@@ -126,11 +126,36 @@ What shipped:
   `block_granularity_minutes`, `project_focus` + `meeting_baseline`).
 - version bump to 0.6.1
 
+## Phase 8: Calendar Intelligence & Grounded Coaching
+
+**Status:** Complete
+
+What shipped:
+
+- **Day-plan that fits how you work**: a morning-ritual buffer
+  (`morning_buffer_minutes` — no tasks before workday_start + buffer), deep work
+  prefers focus-time blocks, and tentative / optional-attendee events are
+  schedulable-over (not treated as busy).
+- **Grounded coaching**: a low competency count is a signal to look, not a to-do;
+  a publish/write-up nudge must cite precedent (Confluence) or a framework reason,
+  else it isn't surfaced.
+- **Meeting intelligence**: a categorized `meeting_catalog` (project_sync / 1:1 /
+  standup / social / …) replaces the flat baseline; new meetings are
+  deep-researched (attached docs → Confluence → Slack), and an unmapped
+  project-sync is surfaced as a "new project?" prompt instead of ignored.
+- **Version-sync guard** (`scripts/check_version_sync.py`): CI asserts every
+  version string (manifests, website, OG) and the architecture schema number
+  match the source of truth.
+- state schema v12 → v14 (`planning.morning_buffer_minutes`;
+  `project_focus.meeting_catalog`).
+- version bump to 0.7.0
+
 ## Future Considerations
 
 These are not committed but worth exploring:
 
-- **Slack as a project-detection signal** (phase 2 of proactive drift detection)
+- **Slack as a primary project-detection signal** (today it enriches a
+  calendar-detected meeting; spotting a new project from Slack activity alone is future)
 - local model support for privacy-sensitive environments
 - self-hosted or encrypted sync across machines
 - cross-agent evidence federation (e.g., Cursor + Claude Code on same machine)
