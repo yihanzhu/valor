@@ -174,8 +174,8 @@ ticket→project classification is the agent's job (read the ticket).
 | `resolve --syncs JSON [--today YYYY-MM-DD]` | Resolve the current focus from dated per-project syncs; returns `current_project`, `next_project`, `transition_today` (JSON) |
 | `config` | Print the `project_focus` block (mode, flip rule, configured sync labels) |
 | `scan-due [--today YYYY-MM-DD]` | Whether the mapping is due for a periodic re-check (`due` bool) |
-| `baseline-diff --current JSON` | Diff current recurring-meeting titles vs the saved baseline; returns `seed` / `new` / `gone` |
-| `baseline-sync --current JSON` | Set the meeting baseline to the current recurring meetings (absorb as "known") |
+| `catalog-diff --current JSON` | Diff current recurring-meeting titles vs the catalog; returns `seed` / `new` / `gone` |
+| `catalog-sync --entries JSON` | Set the meeting catalog to categorized entries (`{title, category, project}`) |
 | `mark-scanned [--today YYYY-MM-DD]` | Stamp `project_focus.last_sync_scan = today` after a re-check |
 | `diff --observed JSON` | (legacy) Compare configured syncs to observed titles; returns `new` / `missing` |
 
@@ -203,18 +203,19 @@ ticket→project classification is the agent's job (read the ticket).
    yesterday → the focus just flipped), lead Suggested Priorities with a one-time
    line naming the new focus and when the other project resumes (`next_project` /
    `next_sync_date`). Outside the transition, don't preview off-focus work.
-4. **Proactive drift detection (briefing, only when due).** The mapping is set
-   once, but the project set changes. The calendar is stable in steady state, so
-   a recurring meeting that *wasn't there before* is the signal. Only when
-   `focus.py scan-due` is `due`, diff the current recurring-meeting titles vs the
-   baseline: `focus.py baseline-diff --current '[...]'`. If `seed` (no baseline
-   yet), absorb silently — no alerts. Otherwise, for each `new` meeting **read its
-   attached docs** to tell a per-project meeting from a team ceremony, and only
-   then pin a top-of-briefing "new project? add it" alert (the user confirms
-   before `project_focus.syncs` changes); `gone` meetings matching a configured
-   sync prompt a "drop it?". Then `focus.py baseline-sync --current '[...]'` +
-   `focus.py mark-scanned` so resolved items don't re-alert. *(Slack as an extra
-   signal is a planned phase 2.)*
+4. **Project & meeting intelligence (briefing, only when due).** The mapping is
+   set once, but the project set changes — and the calendar carries more than
+   project syncs. Only when `focus.py scan-due` is `due`, diff current
+   recurring-meeting titles vs the catalog: `focus.py catalog-diff --current
+   '[...]'`. **Categorize** the `new` ones (and ALL on a `seed`) by reading them
+   — `1:1` / `focus` / `standup` / `project_sync` / `team_planning` / `social` /
+   `demo_huddle` / `external` / `other` — **researching** the unclear or
+   project-looking ones via **attached docs → Confluence → Slack** (never
+   name-guess or ignore). Any `project_sync` whose project isn't already in
+   `project_focus.syncs` is pinned as a top-of-briefing "new project? add it" (the
+   user confirms before `syncs` changes), **including on a seed** — don't silently
+   absorb a third project. A `gone` project_sync prompts "drop it?". Persist with
+   `focus.py catalog-sync --entries '[...]'` + `focus.py mark-scanned`.
 
 ## Day Planning & Calendar Write
 
@@ -369,6 +370,6 @@ fields, so a fresh `state.json` with only installer fields is valid.
 | `escalate_in_one_on_one` | Carry-forward audit | List of claims that failed repeated verification; surfaced by 1:1 prep |
 | `planning` | Installer | Object: `calendar_auto_write` (write kill switch; read is gated by `integrations.calendar`), `workday_start`/`workday_end` (HH:MM), `deep_min_hours` (deep-block threshold, default 2), `post_meeting_break_minutes` (breather reserved after a real meeting, default 15), `block_granularity_minutes` (snap block start/end to this clock granularity, default 15), `morning_buffer_minutes` (no tasks until this many minutes after `workday_start`, default 0) |
 | `one_on_one` | Installer / setup | Object: `doc` (link/id/name of the user's running 1:1 doc, so `/valor-prep` can learn the format — local only, never committed), `format_notes` (optional format spec used if the doc can't be read) |
-| `project_focus` | Installer / setup | Optional customization (disabled by default). Object: `enabled`; `mode` (`meeting_derived` follows the next per-project sync on the calendar, `manual` uses `current`); `current`; `flip` (`after_sync`); `syncs` (sync-label → project map; local only); `sync_scan_interval_days` (re-check cadence, default 14) + `last_sync_scan`; `meeting_baseline` (known recurring-meeting titles — a new one is a "new project?" signal). When on, the briefing plans around the current project and hides the rest. |
+| `project_focus` | Installer / setup | Optional customization (disabled by default). Object: `enabled`; `mode` (`meeting_derived` follows the next per-project sync on the calendar, `manual` uses `current`); `current`; `flip` (`after_sync`); `syncs` (sync-label → project map; local only); `sync_scan_interval_days` (re-check cadence, default 14) + `last_sync_scan`; `meeting_catalog` (recurring meetings, each categorized — `project_sync` / `1:1` / `social` / …; a meeting not in it is "new — research it"). When on, the briefing plans around the current project and hides the rest. |
 | `installed_version` | Installer | Valor version at last install (semver) |
 | `installed_at` | Installer | ISO 8601 timestamp of last install |

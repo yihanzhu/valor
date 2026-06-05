@@ -149,40 +149,48 @@ def test_mark_scanned_missing_state_returns_empty(tmp_path, monkeypatch):
     assert focus.mark_scanned(today="2026-06-15") == ""
 
 
-# --- recurring-meeting baseline (proactive drift) -----------------------
-def test_baseline_diff_seed_when_empty():
-    d = focus.baseline_diff([], ["Standup", "Platform Sync"])
-    assert d["seed"] is True                       # cold start
-    assert d["new"] == ["Standup", "Platform Sync"]  # caller absorbs silently
+# --- recurring-meeting catalog (categorized; proactive drift) -----------
+def test_catalog_diff_seed_when_empty():
+    d = focus.catalog_diff([], ["Standup", "Platform Sync"])
+    assert d["seed"] is True                         # cold start
+    assert d["new"] == ["Standup", "Platform Sync"]  # categorize all, surface unmapped
     assert d["gone"] == []
 
 
-def test_baseline_diff_detects_new_and_gone():
-    baseline = ["weekly standup", "platform sync"]
+def test_catalog_diff_detects_new_and_gone():
+    catalog = [{"title": "weekly standup", "category": "standup", "project": None},
+               {"title": "platform sync", "category": "project_sync", "project": "platform"}]
     current = ["Weekly Standup", "New Project Kickoff"]  # platform sync gone; kickoff new
-    d = focus.baseline_diff(baseline, current)
+    d = focus.catalog_diff(catalog, current)
     assert d["seed"] is False
     assert d["new"] == ["New Project Kickoff"]
-    assert d["gone"] == ["platform sync"]
+    assert [e["title"] for e in d["gone"]] == ["platform sync"]
+    assert d["gone"][0]["project"] == "platform"  # gone carries category/project
 
 
-def test_baseline_diff_normalizes_case_and_whitespace():
-    d = focus.baseline_diff(["team   sync"], ["Team Sync"])
+def test_catalog_diff_normalizes_case_and_whitespace():
+    d = focus.catalog_diff([{"title": "team   sync", "category": "project_sync", "project": "x"}], ["Team Sync"])
     assert d["new"] == [] and d["gone"] == []
 
 
-def test_baseline_sync_writes_normalized_deduped_sorted(tmp_path, monkeypatch):
+def test_catalog_sync_writes_normalized_deduped(tmp_path, monkeypatch):
     home = tmp_path / ".valor"
     home.mkdir()
     (home / "state.json").write_text(json.dumps({"project_focus": {"enabled": True}}))
     monkeypatch.setattr(focus, "VALOR_HOME", home)
-    n = focus.baseline_sync(["Beta  Sync", "Alpha Standup", "Beta Sync"])
-    assert n == 2  # "Beta  Sync" and "Beta Sync" normalize to the same entry
-    state = json.loads((home / "state.json").read_text())
-    assert state["project_focus"]["meeting_baseline"] == ["alpha standup", "beta sync"]
-    assert state["project_focus"]["enabled"] is True  # other keys preserved
+    n = focus.catalog_sync([
+        {"title": "Beta  Sync", "category": "project_sync", "project": "beta"},
+        {"title": "Alpha Standup", "category": "standup"},
+        {"title": "Beta Sync", "category": "project_sync", "project": "beta"},  # dup by norm title
+    ])
+    assert n == 2
+    cat = json.loads((home / "state.json").read_text())["project_focus"]["meeting_catalog"]
+    assert [e["title"] for e in cat] == ["alpha standup", "beta sync"]  # normalized + sorted
+    assert cat[0]["category"] == "standup" and cat[0]["project"] is None  # missing project -> None
+    assert cat[1]["project"] == "beta"
+    assert json.loads((home / "state.json").read_text())["project_focus"]["enabled"] is True
 
 
-def test_baseline_sync_missing_state_returns_negative(tmp_path, monkeypatch):
+def test_catalog_sync_missing_state_returns_negative(tmp_path, monkeypatch):
     monkeypatch.setattr(focus, "VALOR_HOME", tmp_path / "nope")
-    assert focus.baseline_sync(["X"]) == -1
+    assert focus.catalog_sync([{"title": "X", "category": "other"}]) == -1
