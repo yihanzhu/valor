@@ -48,6 +48,7 @@ hardcoding one.
 | **Task Identifier**   | `/valor-tasks` or "what should I work on"      | High-impact work prioritized by career growth potential                         |
 | **Evening Wrap-up**   | Auto after 4pm, or `/valor-wrapup`             | Day summary, carry-forward items, and career reflection                         |
 | **1:1 Prep**          | `/valor-prep` or "prep for 1:1"                | Evidence-grounded prep, drafted in your own 1:1-doc format, with chronic blockers surfaced |
+| **Project Sync Prep** | `/valor-sync-prep` or "sync prep"              | Team-facing talk points for an upcoming project sync — progress, decisions, open questions |
 | **Setup**             | `/valor-setup` or "set up valor"               | Guided career framework, level, and integration configuration                  |
 
 

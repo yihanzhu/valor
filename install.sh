@@ -62,6 +62,7 @@ COMMAND_MAP=(
     "tasks:valor-tasks:valor-task-identifier:Valor task identifier: finds high-impact work opportunities prioritized by career growth potential and team need"
     "wrapup:valor-wrapup:valor-evening-wrapup:Valor evening wrap-up: summarizes the day's work, captures carry-forward items for tomorrow, and reflects on competencies exercised"
     "prep:valor-prep:valor-prep:Valor 1:1 prep: generates a structured document for manager 1:1s grounded in evidence, weekly summaries, and career framework alignment"
+    "sync-prep:valor-sync-prep:valor-sync-prep:Valor project sync prep: generates team-facing talk points for an upcoming project sync (progress since last sync, decisions to land, open questions) for the user to review and share"
     "setup:valor-setup:valor-setup:Valor setup: guided configuration of career framework, levels, and integrations"
 )
 
