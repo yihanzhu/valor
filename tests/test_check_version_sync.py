@@ -46,6 +46,17 @@ def test_detects_badge_mismatch(tmp_path):
     assert any("index.html" in p and "0.4.0" in p for p in problems)
 
 
+def test_detects_schema_doc_mismatch(tmp_path):
+    (tmp_path / "VERSION").write_text("1.2.3\n")
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "evidence_cli.py").write_text("STATE_SCHEMA_VERSION = 14\n")
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "architecture.md").write_text(
+        "... the installer adds new fields (currently at version 13). Migrations ...\n"
+    )
+    assert any("architecture.md" in p and "schema" in p for p in cvs.check(tmp_path))
+
+
 def test_invalid_manifest_json_reported(tmp_path):
     (tmp_path / "VERSION").write_text("1.2.3\n")
     (tmp_path / ".claude-plugin").mkdir()

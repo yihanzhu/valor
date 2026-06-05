@@ -170,6 +170,20 @@ after a few briefings accumulate evidence.
 - Autonomy & Scope (`autonomy_scope`): independent execution, PR reviews beyond own scope, design docs
 - Leadership (`leadership`): go-to expert, design decisions, identifying improvements
 
+**Ground every suggestion — no bare-metric nudges.** A low competency count is a
+signal to *look*, not a license to manufacture a task. Before surfacing a
+knowledge-sharing action (publish a write-up / 1-pager / doc), require **precedent
+or an explicit reason**, and cite it:
+- Does Confluence show your team or the parent epic documenting similar work?
+  (search it — don't assume.)
+- Does the career framework name this behavior for the target level?
+- Is there a finished artifact actually ready to share?
+
+If you can cite ≥1, surface it **with that evidence** (e.g. "the epic's sibling
+tickets all have Confluence write-ups; yours is the gap"). If you can't, **don't
+surface it** — a low metric alone is not a to-do. Same bar for Suggested
+Priorities: each carries its grounded *why*, never a bare number.
+
 ### Coaching Tone Evolution
 
 Use `context.briefing_meta.tone_tier` (pre-computed from briefing count):
