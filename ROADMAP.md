@@ -166,3 +166,8 @@ These are not committed but worth exploring:
   the current narrow guard can't (e.g. some events passed but an accepted one
   dropped). The empty-calendar tripwire was chosen as the high-precision 80%;
   this is the rest.
+- **Verification-gate completeness** — the gate fact-checks each carried claim it
+  is *handed*, but can't catch one the agent never submits (a skipped check → a
+  stale reminder repeats). The command protocol requires verifying before
+  surfacing; a mechanical backstop — reconcile the carried claims in state against
+  those actually checked this run — is deferred (real plumbing for a modest gain).
