@@ -435,10 +435,14 @@ Write"). In short:
    AND a writer is available. These are personal to-dos, so write them
    **private**: prefer a **Google Task** per block (private by nature) if a
    task-create tool exists; otherwise a **private** calendar event
-   (`visibility: private` + `transparency: transparent`/free + **`overrideReminders: []`**
-   so no popup fires) so the title is hidden from others, you're not shown busy, and
-   Valor blocks don't ping you — omit `overrideReminders` and the event inherits the
-   calendar's default reminder. **Write the task onto the
+   (`visibility: private` + `transparency: transparent`/free) so the title is
+   hidden from others and you're not shown busy. **Reminders are a known
+   limitation:** the calendar MCP writer can't suppress them — passing
+   `overrideReminders: []` is a no-op (the event keeps `useDefault: true` and
+   inherits the calendar's default popup), so expect Valor blocks to ping you at
+   the calendar's default. Only a direct Google Calendar API call
+   (`reminders: {useDefault: false, overrides: []}`) can zero it, where that path
+   is available. **Write the task onto the
    block** — a short actionable description (next action + the artifact's
    **clickable URL**, resolved so it doesn't 404) so it's readable at do-time,
    with a single `valor:task:<slug>` idempotency token appended (labeled "leave
