@@ -280,7 +280,7 @@ day's gaps and can write the plan back as calendar events. Ask two things:
 
 ```bash
 python3 ~/.valor/evidence_cli.py state-set planning \
-  '{"calendar_auto_write": true, "workday_start": "09:00", "workday_end": "18:00", "deep_min_hours": 2, "post_meeting_break_minutes": 15, "block_granularity_minutes": 15}'
+  '{"calendar_auto_write": true, "workday_start": "09:00", "workday_end": "18:00", "deep_min_hours": 2, "post_meeting_break_minutes": 15, "block_granularity_minutes": 15, "morning_buffer_minutes": 0}'
 ```
 
 `post_meeting_break_minutes` (default 15) reserves a breather after each real

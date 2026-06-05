@@ -16,9 +16,10 @@ Model:
     should override them with the user's calendar working-hours setting if the
     calendar tool exposes it.
   * Compute free gaps in the workday = [max(now, workday_start), workday_end]
-    minus blocking events. Blocking = regular meetings (accepted/tentative) and
-    out-of-office. NOT blocking = focus time (a deep-work slot to fill) and
-    working-location (informational) -- see NON_BLOCKING_EVENT_TYPES.
+    minus blocking events. Blocking = accepted real meetings and out-of-office.
+    NOT blocking = focus time (a deep-work slot to fill) and working-location
+    (see NON_BLOCKING_EVENT_TYPES); the agent also excludes declined / tentative
+    / optional-attendee events before passing them here (free to schedule over).
   * Classify each gap: `deep` if >= deep_min_hours of contiguous time, else
     `fragmented`. A gap ending at a meeting is flagged `pre_meeting`.
     A no-meeting day is naturally one big deep gap.
@@ -33,13 +34,16 @@ Model:
     own estimated duration -- the priority's `est_minutes` when the agent
     provides one (it should estimate per task and lean generous), else a per-
     shape fallback; multiple tasks can pack into one gap.
+  * No task starts before workday_start + morning_buffer_minutes (an AM-ritual
+    buffer), deep_only tasks prefer gaps overlapping a focus-time block, and
+    block starts/ends snap to block_granularity_minutes (clean clock boundaries).
   * Anything that doesn't fit is returned as `unassigned` (the agent surfaces it
     as "push to your next deep block").
 
 CLI:
     plan.py fit --events <json|-> --priorities <json|-> [--now ISO]
                 [--workday-start HH:MM] [--workday-end HH:MM] [--deep-hours N]
-                [--break-minutes N] [--granularity N]
+                [--break-minutes N] [--granularity N] [--morning-buffer N]
     plan.py shape --text "..."        # classify a single priority (debug)
 
 All output is JSON on stdout.
@@ -64,6 +68,9 @@ DEFAULTS = {
     # Snap block start/end to this clock granularity (minutes) so blocks line up
     # with meetings (:00/:15/:30/:45). Durations round up to a multiple of it.
     "block_granularity_minutes": 15,
+    # No tasks scheduled until this many minutes after workday_start — a morning
+    # ritual buffer (Slack catch-up, planning). 0 = tasks from workday_start.
+    "morning_buffer_minutes": 0,
     # Per-shape FALLBACK durations. The briefing should estimate each task's
     # duration from its nature (a publish is ~15 min; a pipeline change is hours)
     # and pass it as the priority's `est_minutes`; these are only used when it
@@ -106,7 +113,8 @@ def planning_config() -> dict:
     state_cfg = _read_state().get("planning", {})
     if isinstance(state_cfg, dict):
         for k in ("workday_start", "workday_end", "deep_min_hours",
-                  "post_meeting_break_minutes", "block_granularity_minutes"):
+                  "post_meeting_break_minutes", "block_granularity_minutes",
+                  "morning_buffer_minutes"):
             if k in state_cfg:
                 cfg[k] = state_cfg[k]
         if isinstance(state_cfg.get("est_minutes"), dict):
@@ -254,6 +262,7 @@ def _make_gap(start, end, deep_min, pre_meeting):
         "minutes": mins,
         "type": "deep" if mins >= deep_min else "fragmented",
         "pre_meeting": pre_meeting,
+        "has_focus": False,  # set in fit(): True if the gap overlaps focus-time
         "_start": start,  # internal, stripped before output
         "_cursor": start,
     }
@@ -263,7 +272,9 @@ def _make_gap(start, end, deep_min, pre_meeting):
 def _candidate_order(shape, gaps):
     """Return gaps in the order this shape should try them."""
     if shape == "deep_only":
-        return [g for g in gaps if g["type"] == "deep"]
+        deep = [g for g in gaps if g["type"] == "deep"]
+        # Prefer focus-time blocks for deep work — that's what they're reserved for.
+        return [g for g in deep if g.get("has_focus")] + [g for g in deep if not g.get("has_focus")]
     if shape == "fragmented_ok":
         # prefer fragmented (save deep blocks), then deep
         return [g for g in gaps if g["type"] == "fragmented"] + \
@@ -310,26 +321,35 @@ def assign(priorities, gaps, est_minutes, granularity=0):
 
 # --- top-level fit -------------------------------------------------------
 def fit(events, priorities, *, now=None, workday_start=None, workday_end=None,
-        deep_min_hours=None, break_minutes=None, granularity=None):
+        deep_min_hours=None, break_minutes=None, granularity=None, morning_buffer=None):
     cfg = planning_config()
     workday_start = workday_start or cfg["workday_start"]
     workday_end = workday_end or cfg["workday_end"]
     deep_min_hours = deep_min_hours if deep_min_hours is not None else cfg["deep_min_hours"]
     break_minutes = break_minutes if break_minutes is not None else cfg["post_meeting_break_minutes"]
     granularity = granularity if granularity is not None else cfg["block_granularity_minutes"]
+    morning_buffer = morning_buffer if morning_buffer is not None else cfg["morning_buffer_minutes"]
     est = cfg["est_minutes"]
 
     now_dt = _now(now)
     day_start = _at(now_dt, workday_start)
     day_end = _at(now_dt, workday_end)
-    # Don't plan in the past: the usable window starts at max(now, workday_start).
-    window_start = max(now_dt, day_start)
+    # No tasks before workday_start + morning_buffer (your AM ritual), and never
+    # in the past: the usable window starts at max(now, workday_start + buffer).
+    task_floor = day_start + timedelta(minutes=morning_buffer)
+    window_start = max(now_dt, task_floor)
     if window_start >= day_end:
         window_start = day_end  # workday over -> no gaps
 
     busy = []
+    focus_windows = []
     for ev in events:
         if ev.get("type") in NON_BLOCKING_EVENT_TYPES:
+            if ev.get("type") == "focusTime":  # a deep-work slot to prefer, not busy
+                try:
+                    focus_windows.append((_parse_iso(ev["start"]), _parse_iso(ev["end"])))
+                except (KeyError, ValueError):
+                    pass
             continue  # focus time / working-location: leave free for deep work
         try:
             busy.append((_parse_iso(ev["start"]), _parse_iso(ev["end"]), _is_real_meeting(ev)))
@@ -337,6 +357,9 @@ def fit(events, priorities, *, now=None, workday_start=None, workday_end=None,
             continue
 
     gaps = compute_gaps(busy, window_start, day_end, deep_min_hours, break_minutes=break_minutes)
+    # Flag gaps that overlap a focus-time block; deep work prefers these (#2).
+    for g in gaps:
+        g["has_focus"] = any(fs < _parse_iso(g["end"]) and fe > g["_start"] for fs, fe in focus_windows)
 
     norm_priorities = []
     for p in priorities:
@@ -382,7 +405,7 @@ def cmd_fit(args: argparse.Namespace) -> None:
         events, priorities, now=args.now,
         workday_start=args.workday_start, workday_end=args.workday_end,
         deep_min_hours=args.deep_hours, break_minutes=args.break_minutes,
-        granularity=args.granularity,
+        granularity=args.granularity, morning_buffer=args.morning_buffer,
     )
     print(json.dumps(result, indent=2))
 
@@ -409,6 +432,8 @@ def main() -> None:
                        help="Minutes reserved after a real meeting (default from state/15)")
     p_fit.add_argument("--granularity", type=int, default=None,
                        help="Snap block start/end to this clock granularity (default from state/15)")
+    p_fit.add_argument("--morning-buffer", type=int, default=None,
+                       help="Minutes after workday_start before tasks may start (default from state/0)")
 
     p_shape = sub.add_parser("shape", help="Classify a single priority's task shape")
     p_shape.add_argument("--text", required=True)

@@ -423,7 +423,7 @@ install_shared() {
     local detected_intg
     detected_intg=$(detect_integrations)
 
-    local schema_version=12
+    local schema_version=13
 
     if [ ! -f "$VALOR_HOME/state.json" ]; then
         cat > "$VALOR_HOME/state.json" <<STATEJSON
@@ -455,7 +455,8 @@ install_shared() {
     "workday_end": "18:00",
     "deep_min_hours": 2.0,
     "post_meeting_break_minutes": 15,
-    "block_granularity_minutes": 15
+    "block_granularity_minutes": 15,
+    "morning_buffer_minutes": 0
   },
   "one_on_one": {
     "doc": "",
@@ -515,6 +516,9 @@ else:
         changed = True
     if 'block_granularity_minutes' not in state['planning']:
         state['planning']['block_granularity_minutes'] = 15
+        changed = True
+    if 'morning_buffer_minutes' not in state['planning']:
+        state['planning']['morning_buffer_minutes'] = 0
         changed = True
 # v7: 1:1 doc config (presence-based).
 if not isinstance(state.get('one_on_one'), dict):
