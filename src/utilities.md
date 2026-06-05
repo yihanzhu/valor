@@ -245,7 +245,13 @@ blocks back as events. Skipped entirely if `integrations.calendar` is `false`.
 
 1. **Fetch today's calendar** (the same read discovery as the briefing Calendar
    section). Drop events the user **declined, marked tentative/maybe, or is only
-   an optional attendee on** — those are free to schedule over. Build the events list as
+   an optional attendee on** — those are free to schedule over. **Everything else —
+   accepted meetings *and* personal holds (lunch, OOO, "busy" blocks) — is busy:
+   always fit against it and never pass an empty event list.** If the user says the
+   day is "open" or there's "nothing on the calendar," that means **no hard syncs to
+   plan around, not that the calendar is empty** — still pass the accepted events +
+   holds and fill only the genuine gaps; a task written over an accepted event is
+   always a bug. Build the events list as
    `[{"start": ISO, "end": ISO, "summary": "...", "type": "<eventType>", "is_meeting": bool}]` —
    **include each event's `type`** (Google Calendar `eventType`:
    `default`/`focusTime`/`outOfOffice`/`workingLocation`). plan.py uses it:

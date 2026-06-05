@@ -399,7 +399,13 @@ Write"). In short:
 
 1. Reuse the calendar you already fetched (§3); **drop declined — plus anything
    you marked *tentative/maybe* or are only an *optional* attendee on; those are
-   free to schedule over, not busy.** Build events with each event's **`type`**
+   free to schedule over, not busy.** **Always fit against the real calendar —
+   never pass an empty event list.** Accepted meetings *and* personal holds (lunch,
+   OOO, "busy" blocks) stay busy; a task placed over one is always a bug. If the
+   user says the day is "open" or there's "nothing on the calendar," read that as
+   **no hard syncs to plan around — not as an empty day**: still pass the accepted
+   events + holds and fill only the genuine gaps. Build events with each event's
+   **`type`**
    (`default`/`focusTime`/`outOfOffice`/`workingLocation`)
    so plan.py leaves focus-time free for deep work and blocks only real meetings
    + OOO. Mark **real meetings** so plan.py adds a breather after them: set
