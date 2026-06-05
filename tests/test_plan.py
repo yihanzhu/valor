@@ -360,6 +360,7 @@ def test_cmd_fit_emits_warning_on_stderr_only(capsys):
         events="[]", priorities='["Publish the 1-pager"]', now=T("09:00"),
         workday_start="09:00", workday_end="18:00", deep_hours=2,
         break_minutes=None, granularity=None, morning_buffer=None,
+        pre_meeting_prep=None,
     )
     plan.cmd_fit(args)
     out = capsys.readouterr()
@@ -401,3 +402,80 @@ def test_blocks_never_overlap_busy_events():
         for s, e in busy:
             assert not (bs < plan._parse_iso(T(e)) and plan._parse_iso(T(s)) < be), \
                 f"{b['priority']} overlaps busy {s}-{e}"
+
+
+# --- pre-meeting prep blocks ---
+def _prep(start, end, summary="Proj Sync"):
+    # a prep-worthy meeting (project_sync / external)
+    return {**_mtg(start, end, summary), "prep": True}
+
+
+def test_prep_block_reserved_immediately_before_meeting():
+    r = plan.fit([_prep("14:30", "15:00", "Metadata Sync")], [],
+                 now=T("09:00"), workday_start="09:00", workday_end="18:00",
+                 deep_min_hours=2, pre_meeting_prep=30)
+    assert len(r["prep_blocks"]) == 1
+    b = r["prep_blocks"][0]
+    assert b["start"] == T("14:00") and b["end"] == T("14:30")
+    assert b["for_meeting"] == "Metadata Sync" and b["adjacent"] is True
+    assert r["prep_unassigned"] == []
+
+
+def test_no_prep_block_without_prep_flag():
+    # a plain meeting (no prep flag) earns no prep block -- back-compat
+    r = plan.fit([_mtg("14:30", "15:00", "Standup")], [],
+                 now=T("09:00"), workday_start="09:00", workday_end="18:00",
+                 deep_min_hours=2, pre_meeting_prep=30)
+    assert r["prep_blocks"] == [] and r["prep_unassigned"] == []
+
+
+def test_prep_unplaceable_is_flagged():
+    # a future sync at workday start with no room before it -> flagged, not dropped
+    r = plan.fit([_prep("09:00", "09:30", "Early Sync")], [],
+                 now=T("08:00"), workday_start="09:00", workday_end="18:00",
+                 deep_min_hours=2, pre_meeting_prep=30)
+    assert r["prep_blocks"] == []
+    assert len(r["prep_unassigned"]) == 1
+    assert r["prep_unassigned"][0]["for_meeting"] == "Early Sync"
+
+
+def test_prep_falls_back_to_earlier_gap_when_back_to_back():
+    # a prep sync right after another meeting -> prep lands in the earlier gap
+    r = plan.fit([_mtg("13:00", "14:00", "Team Mtg"), _prep("14:00", "14:30", "Proj Sync")],
+                 [], now=T("09:00"), workday_start="09:00", workday_end="18:00",
+                 deep_min_hours=2, pre_meeting_prep=30)
+    assert len(r["prep_blocks"]) == 1
+    b = r["prep_blocks"][0]
+    assert b["adjacent"] is False
+    assert b["end"] == T("13:00")  # tail of the morning gap, before the 13:00 mtg
+
+
+def test_prep_reservation_shrinks_the_gap():
+    # the reserved prep time is removed from the gaps tasks can use
+    r = plan.fit([_prep("11:00", "11:30", "Sync")], [],
+                 now=T("09:00"), workday_start="09:00", workday_end="18:00",
+                 deep_min_hours=2, pre_meeting_prep=30)
+    ends = [g["end"] for g in r["gaps"]]
+    assert T("10:30") in ends      # morning gap now ends at the prep start
+    assert T("11:00") not in ends  # not at the meeting start
+
+
+def test_pre_meeting_prep_zero_disables():
+    r = plan.fit([_prep("14:30", "15:00", "Sync")], [],
+                 now=T("09:00"), workday_start="09:00", workday_end="18:00",
+                 deep_min_hours=2, pre_meeting_prep=0)
+    assert r["prep_blocks"] == [] and r["prep_unassigned"] == []
+
+
+def test_cli_fit_pre_meeting_prep(tmp_path):
+    events = json.dumps([{"start": T("14:30"), "end": T("15:00"),
+                          "summary": "Sync", "is_meeting": True, "prep": True}])
+    r = subprocess.run(
+        [sys.executable, str(SCRIPT), "fit", "--events", events, "--priorities", "[]",
+         "--now", T("09:00"), "--workday-start", "09:00", "--workday-end", "18:00",
+         "--deep-hours", "2", "--pre-meeting-prep", "30"],
+        capture_output=True, text=True, env={"HOME": str(tmp_path)})
+    assert r.returncode == 0, r.stderr
+    out = json.loads(r.stdout)
+    assert len(out["prep_blocks"]) == 1
+    assert out["prep_blocks"][0]["start"] == T("14:00")

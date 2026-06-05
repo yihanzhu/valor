@@ -240,7 +240,7 @@ blocks back as events. Skipped entirely if `integrations.calendar` is `false`.
 
 | Subcommand | Purpose |
 |------------|---------|
-| `fit --events JSON --priorities JSON [--now ISO] [--workday-start HH:MM] [--workday-end HH:MM] [--deep-hours N] [--break-minutes N] [--granularity N] [--morning-buffer N]` | Fit priorities to calendar gaps; returns a time-blocked schedule (JSON). Priorities may carry per-task `est_minutes`; events may carry `is_meeting`/`attendees` |
+| `fit --events JSON --priorities JSON [--now ISO] [--workday-start HH:MM] [--workday-end HH:MM] [--deep-hours N] [--break-minutes N] [--granularity N] [--morning-buffer N] [--pre-meeting-prep N]` | Fit priorities to calendar gaps; returns a time-blocked schedule (JSON) incl. `prep_blocks` + `prep_unassigned`. Priorities may carry per-task `est_minutes`; events may carry `is_meeting`/`attendees`/`prep` |
 | `shape --text "..."` | Classify one priority's task shape (debug) |
 
 `--events`/`--priorities` accept inline JSON, `@file`, or `-` (stdin).
@@ -256,14 +256,19 @@ blocks back as events. Skipped entirely if `integrations.calendar` is `false`.
    plan around, not that the calendar is empty** — still pass the accepted events +
    holds and fill only the genuine gaps; a task written over an accepted event is
    always a bug. Build the events list as
-   `[{"start": ISO, "end": ISO, "summary": "...", "type": "<eventType>", "is_meeting": bool}]` —
+   `[{"start": ISO, "end": ISO, "summary": "...", "type": "<eventType>", "is_meeting": bool, "prep": bool}]` —
    **include each event's `type`** (Google Calendar `eventType`:
    `default`/`focusTime`/`outOfOffice`/`workingLocation`). plan.py uses it:
    focus-time and working-location are left **free** (focus time is a deep-work
    slot to fill); regular meetings and out-of-office **block**. Untyped events
    block, for safety. Also mark **real meetings** with `is_meeting: true` (or pass
    `attendees` — plan.py treats > 1 as a meeting) so a post-meeting break is
-   reserved after them; lunch / personal holds / OOO are not meetings.
+   reserved after them; lunch / personal holds / OOO are not meetings. Set
+   **`prep: true`** on meetings categorized `project_sync` or `external` (the ones
+   you present/decide at); plan.py reserves a `pre_meeting_prep_minutes` block
+   immediately before each (fallback: the nearest earlier gap that day; else a
+   `prep_unassigned` flag — "no prep slot, make room or prep the day before").
+   Standups / demos / planning you only attend get no prep.
 2. **Working hours.** If the calendar tool exposes the user's working-hours
    setting, pass it as `--workday-start HH:MM --workday-end HH:MM`. Most calendar
    APIs (including the Google Calendar MCP) do **not** expose this setting, so
@@ -392,7 +397,7 @@ fields, so a fresh `state.json` with only installer fields is valid.
 | `integrations` | Installer / User config | Object with boolean flags for github, jira, calendar, news |
 | `verification` | Installer | Object: `enabled` (gate kill switch), `escalation_threshold` (consecutive misses before 1:1 escalation, default 3), `ttl_overrides` (per-type cache TTL hours) |
 | `escalate_in_one_on_one` | Carry-forward audit | List of claims that failed repeated verification; surfaced by 1:1 prep |
-| `planning` | Installer | Object: `calendar_auto_write` (write kill switch; read is gated by `integrations.calendar`), `workday_start`/`workday_end` (HH:MM), `deep_min_hours` (deep-block threshold, default 2), `post_meeting_break_minutes` (breather reserved after a real meeting, default 15), `block_granularity_minutes` (snap block start/end to this clock granularity, default 15), `morning_buffer_minutes` (no tasks until this many minutes after `workday_start`, default 0) |
+| `planning` | Installer | Object: `calendar_auto_write` (write kill switch; read is gated by `integrations.calendar`), `workday_start`/`workday_end` (HH:MM), `deep_min_hours` (deep-block threshold, default 2), `post_meeting_break_minutes` (breather reserved after a real meeting, default 15), `block_granularity_minutes` (snap block start/end to this clock granularity, default 15), `morning_buffer_minutes` (no tasks until this many minutes after `workday_start`, default 0), `pre_meeting_prep_minutes` (a prep block reserved before each prep-worthy meeting — `project_sync` / `external` — default 30; 0 disables) |
 | `one_on_one` | Installer / setup | Object: `doc` (link/id/name of the user's running 1:1 doc, so `/valor-prep` can learn the format — local only, never committed), `format_notes` (optional format spec used if the doc can't be read) |
 | `project_focus` | Installer / setup | Optional customization (disabled by default). Object: `enabled`; `mode` (`meeting_derived` follows the next per-project sync on the calendar, `manual` uses `current`); `current`; `flip` (`after_sync`); `syncs` (sync-label → project map; local only); `sync_scan_interval_days` (re-check cadence, default 14) + `last_sync_scan`; `meeting_catalog` (recurring meetings, each categorized — `project_sync` / `1:1` / `social` / …; a meeting not in it is "new — research it"). When on, the briefing plans around the current project and hides the rest. |
 | `installed_version` | Installer | Valor version at last install (semver) |

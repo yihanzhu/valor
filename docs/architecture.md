@@ -64,7 +64,7 @@ and `utilities.md`).
 
 The `installed_version` and `installed_at` fields track when the last install
 happened. The `state_schema_version` field enables forward-only migrations
-when the installer adds new fields (currently at version 14). Migrations are
+when the installer adds new fields (currently at version 15). Migrations are
 non-destructive (only missing keys are added) and run in `_migrate_state_in_memory`.
 
 Key fields:
