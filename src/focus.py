@@ -240,8 +240,11 @@ def catalog_diff(catalog, current_titles) -> dict:
 
 def catalog_sync(entries) -> int:
     """Set project_focus.meeting_catalog to the given categorized entries
-    ({"title","category","project"}), deduped by normalized title. Best-effort
-    write preserving the rest of state. Returns the count, or -1 on failure."""
+    ({"title","category","project"} plus an optional "source" — "signals" if the
+    agent categorized it from the free calendar payload, "fetch" if it had to open
+    a doc/Confluence/Slack; surfaces where the name/signal heuristic is weak),
+    deduped by normalized title. Best-effort write preserving the rest of state.
+    Returns the count, or -1 on failure."""
     state_path = VALOR_HOME / "state.json"
     try:
         state = json.loads(state_path.read_text())
@@ -259,9 +262,12 @@ def catalog_sync(entries) -> int:
         if not title or title in seen:
             continue
         seen.add(title)
-        out.append({"title": title,
-                    "category": e.get("category") or "unknown",
-                    "project": e.get("project")})
+        entry = {"title": title,
+                 "category": e.get("category") or "unknown",
+                 "project": e.get("project")}
+        if e.get("source") in ("signals", "fetch"):
+            entry["source"] = e["source"]
+        out.append(entry)
     out.sort(key=lambda x: x["title"])
     pf["meeting_catalog"] = out
     try:

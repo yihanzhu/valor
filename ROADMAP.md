@@ -159,3 +159,10 @@ These are not committed but worth exploring:
 - local model support for privacy-sensitive environments
 - self-hosted or encrypted sync across machines
 - cross-agent evidence federation (e.g., Cursor + Claude Code on same machine)
+- **Day-plan overlap verification** — the planner avoids the busy events it is
+  *given*, and a stderr tripwire flags the empty-calendar case (a caller passing
+  no events). A fuller, deliberately-deferred check would re-fetch the calendar
+  after writing blocks and verify none overlaps a real event — catching mis-plans
+  the current narrow guard can't (e.g. some events passed but an accepted one
+  dropped). The empty-calendar tripwire was chosen as the high-precision 80%;
+  this is the rest.
