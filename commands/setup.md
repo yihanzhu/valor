@@ -311,7 +311,7 @@ schedules:
 3. Save it (enabled, meeting-derived, flips the day after each sync):
    ```bash
    python3 ~/.valor/evidence_cli.py state-set project_focus \
-     '{"enabled": true, "mode": "meeting_derived", "flip": "after_sync", "current": "", "syncs": [{"project": "Project A", "match": "Project A Sync"}, {"project": "Project B", "match": "Project B Sync"}], "sync_scan_interval_days": 14, "last_sync_scan": "", "meeting_baseline": []}'
+     '{"enabled": true, "mode": "meeting_derived", "flip": "after_sync", "current": "", "syncs": [{"project": "Project A", "match": "Project A Sync"}, {"project": "Project B", "match": "Project B Sync"}], "auto_sync_prep": true, "parked_projects": [], "meeting_catalog": []}'
    ```
    `match` is a case-insensitive substring of the meeting title; `project` is the
    user's label. If the user would rather just set the active project by hand,
@@ -319,15 +319,16 @@ schedules:
 4. **Seed the meeting catalog** so future runs only flag *new* meetings.
    Categorize the current recurring meetings (1:1 / standup / project_sync /
    social / …; research any unclear ones via their docs + Confluence/Slack) and
-   store them, then stamp the scan:
+   store them:
    ```bash
    python3 ~/.valor/focus.py catalog-sync --entries '[{"title": "Project A Sync", "category": "project_sync", "project": "Project A"}, {"title": "Team Standup", "category": "standup", "project": null}]'
-   python3 ~/.valor/focus.py mark-scanned
    ```
 
-`sync_scan_interval_days` (default 14) controls how often the briefing re-scans
-for sync meetings to catch changes to the project set; the current focus itself
-is re-derived from the calendar every briefing. The sync labels and project
+The briefing drift-checks the catalog **every day** (no periodic throttle) — a
+known meeting stays silent, only a genuinely new one surfaces; a project you
+decline to add is remembered in `parked_projects` so it's never re-prompted. When
+`auto_sync_prep` is on (default), the briefing also auto-schedules a
+`/valor-sync-prep` run before each `project_sync`. The sync labels and project
 names are **local only** — never committed.
 
 Skip silently if `calendar` is `false` or the user doesn't rotate.

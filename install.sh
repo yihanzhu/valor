@@ -424,7 +424,7 @@ install_shared() {
     local detected_intg
     detected_intg=$(detect_integrations)
 
-    local schema_version=15
+    local schema_version=16
 
     if [ ! -f "$VALOR_HOME/state.json" ]; then
         cat > "$VALOR_HOME/state.json" <<STATEJSON
@@ -470,8 +470,8 @@ install_shared() {
     "current": "",
     "flip": "after_sync",
     "syncs": [],
-    "sync_scan_interval_days": 14,
-    "last_sync_scan": "",
+    "auto_sync_prep": true,
+    "parked_projects": [],
     "meeting_catalog": []
   }
 }
@@ -531,14 +531,20 @@ if not isinstance(state.get('one_on_one'), dict):
     changed = True
 # v8: project-focus customization (presence-based; disabled by default).
 if not isinstance(state.get('project_focus'), dict):
-    state['project_focus'] = {'enabled': False, 'mode': 'meeting_derived', 'current': '', 'flip': 'after_sync', 'syncs': [], 'sync_scan_interval_days': 14, 'last_sync_scan': '', 'meeting_catalog': []}
+    state['project_focus'] = {'enabled': False, 'mode': 'meeting_derived', 'current': '', 'flip': 'after_sync', 'syncs': [], 'auto_sync_prep': True, 'parked_projects': [], 'meeting_catalog': []}
     changed = True
 else:
-    # v10/v11: fill sub-keys if the project_focus block predates them.
+    # v16: drop the 14-day re-scan throttle (drift-check runs daily); add auto_sync_prep + parked_projects.
     pf = state['project_focus']
-    if 'sync_scan_interval_days' not in pf:
-        pf['sync_scan_interval_days'] = 14
-        pf['last_sync_scan'] = ''
+    if 'sync_scan_interval_days' in pf or 'last_sync_scan' in pf:
+        pf.pop('sync_scan_interval_days', None)
+        pf.pop('last_sync_scan', None)
+        changed = True
+    if 'auto_sync_prep' not in pf:
+        pf['auto_sync_prep'] = True
+        changed = True
+    if 'parked_projects' not in pf:
+        pf['parked_projects'] = []
         changed = True
     if 'meeting_catalog' not in pf:
         pf['meeting_catalog'] = []

@@ -99,25 +99,6 @@ def test_malformed_sync_entries_are_skipped():
     assert out["current_project"] == "payments"
 
 
-# --- periodic mapping re-check ------------------------------------------
-def test_scan_due_when_never_scanned():
-    assert focus.scan_due({"enabled": True, "last_sync_scan": ""}) is True
-
-
-def test_scan_due_false_when_disabled():
-    assert focus.scan_due({"enabled": False, "last_sync_scan": ""}) is False
-
-
-def test_scan_due_respects_interval():
-    cfg = {"enabled": True, "last_sync_scan": "2026-06-01", "sync_scan_interval_days": 14}
-    assert focus.scan_due(cfg, today="2026-06-10") is False   # 9 days < 14
-    assert focus.scan_due(cfg, today="2026-06-15") is True     # 14 days >= 14
-
-
-def test_scan_due_bad_date_is_due():
-    assert focus.scan_due({"enabled": True, "last_sync_scan": "garbage"}) is True
-
-
 def test_diff_syncs_flags_new_and_missing():
     configured = [{"project": "platform", "match": "Platform Sync"},
                   {"project": "payments", "match": "Payments Sync"}]
@@ -133,20 +114,14 @@ def test_diff_syncs_all_matched():
     assert d["new"] == [] and d["missing"] == []
 
 
-def test_mark_scanned_writes_state(tmp_path, monkeypatch):
-    home = tmp_path / ".valor"
-    home.mkdir()
-    (home / "state.json").write_text(json.dumps({"project_focus": {"enabled": True}}))
-    monkeypatch.setattr(focus, "VALOR_HOME", home)
-    assert focus.mark_scanned(today="2026-06-15") == "2026-06-15"
-    state = json.loads((home / "state.json").read_text())
-    assert state["project_focus"]["last_sync_scan"] == "2026-06-15"
-    assert state["project_focus"]["enabled"] is True  # other keys preserved
-
-
-def test_mark_scanned_missing_state_returns_empty(tmp_path, monkeypatch):
-    monkeypatch.setattr(focus, "VALOR_HOME", tmp_path / "nope")
-    assert focus.mark_scanned(today="2026-06-15") == ""
+def test_config_defaults_include_new_keys(tmp_path, monkeypatch):
+    # schema-16: throttle fields gone; auto_sync_prep + parked_projects added.
+    monkeypatch.setattr(focus, "VALOR_HOME", tmp_path / "empty")
+    cfg = focus.focus_config()
+    assert cfg["auto_sync_prep"] is True
+    assert cfg["parked_projects"] == []
+    assert "sync_scan_interval_days" not in cfg
+    assert "last_sync_scan" not in cfg
 
 
 # --- recurring-meeting catalog (categorized; proactive drift) -----------

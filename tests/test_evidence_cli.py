@@ -1159,8 +1159,10 @@ def test_migrate_state_in_memory_adds_v8_project_focus_fields():
     assert migrated["project_focus"]["mode"] == "meeting_derived"
     assert migrated["project_focus"]["flip"] == "after_sync"
     assert migrated["project_focus"]["syncs"] == []
-    assert migrated["project_focus"]["sync_scan_interval_days"] == 14  # v10
-    assert migrated["project_focus"]["last_sync_scan"] == ""           # v10
+    assert migrated["project_focus"]["auto_sync_prep"] is True         # v16
+    assert migrated["project_focus"]["parked_projects"] == []          # v16
+    assert "sync_scan_interval_days" not in migrated["project_focus"]  # v16: throttle dropped
+    assert "last_sync_scan" not in migrated["project_focus"]           # v16: throttle dropped
     assert migrated["project_focus"]["meeting_catalog"] == []          # v14
     assert migrated["state_schema_version"] == STATE_SCHEMA_VERSION
 
@@ -1173,8 +1175,8 @@ def test_migrate_state_in_memory_preserves_project_focus():
     assert migrated["project_focus"]["current"] == "platform"
     assert migrated["project_focus"]["flip"] == "after_sync"  # missing sub-key filled
     assert migrated["project_focus"]["syncs"] == []  # missing sub-key filled
-    assert migrated["project_focus"]["sync_scan_interval_days"] == 14  # v10 sub-key filled
-    assert migrated["project_focus"]["last_sync_scan"] == ""           # v10 sub-key filled
+    assert migrated["project_focus"]["auto_sync_prep"] is True         # v16 sub-key filled
+    assert migrated["project_focus"]["parked_projects"] == []          # v16 sub-key filled
     assert migrated["project_focus"]["meeting_catalog"] == []          # v14 sub-key filled
 
 
@@ -1184,6 +1186,17 @@ def test_migrate_state_in_memory_drops_legacy_meeting_baseline():
     migrated = _migrate_state_in_memory(state)
     assert "meeting_baseline" not in migrated["project_focus"]   # superseded, dropped
     assert migrated["project_focus"]["meeting_catalog"] == []     # re-seeds next briefing
+
+
+def test_migrate_state_in_memory_drops_v16_scan_throttle():
+    # v16 removes the 14-day re-scan throttle; the briefing drift-checks daily.
+    state = {"project_focus": {"enabled": True, "sync_scan_interval_days": 14,
+                               "last_sync_scan": "2026-06-01"}}
+    migrated = _migrate_state_in_memory(state)
+    assert "sync_scan_interval_days" not in migrated["project_focus"]  # dropped
+    assert "last_sync_scan" not in migrated["project_focus"]           # dropped
+    assert migrated["project_focus"]["auto_sync_prep"] is True         # added
+    assert migrated["project_focus"]["parked_projects"] == []          # added
 
 
 def test_migrate_state_in_memory_preserves_verification_overrides():

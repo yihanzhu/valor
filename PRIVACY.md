@@ -77,9 +77,9 @@ A few behaviors are worth calling out specifically:
   duplicate), and Valor only ever touches items it created. Set
   `planning.calendar_auto_write` to `false` for plan-only (nothing written).
 - **Project focus** (`focus.py`, opt-in, off by default): if you enable it, the
-  briefing reads your calendar to resolve the current project and, on a throttled
-  re-check, reads a newly-appeared meeting's attached docs to tell whether it's a
-  new project. Your project/meeting labels (`project_focus`) live only in local
+  briefing reads your calendar to resolve the current project and, on its daily
+  drift-check, reads a newly-appeared meeting's attached docs to tell whether it's
+  a new project. Your project/meeting labels (`project_focus`) live only in local
   `state.json` and are never committed.
 
 The exact behavior depends on the host assistant, installed plugins, and the

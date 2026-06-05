@@ -234,10 +234,10 @@ Apply the result:
 
 This is cheap: reuse the §3 calendar read + one `focus.py` call.
 
-**Project & meeting intelligence (only when due).** Run `python3
-~/.valor/focus.py scan-due`; only if `due: true`, reconcile your recurring
+**Project & meeting intelligence (every briefing).** Reconcile your recurring
 meetings against the **catalog** (each meeting categorized; `focus.py config`
-shows the current one):
+shows the current one). This is a **daily drift-check** — known meetings stay
+silent, only genuinely new ones surface — so there's no periodic gate:
 
 1. Build the list of your **current recurring meeting titles** (scan **~3–4
    weeks** so biweeklies are caught; recurring only — has a `recurringEventId`;
@@ -265,17 +265,20 @@ shows the current one):
    through to `catalog-sync`. When any meeting needed a fetch, add a one-line note
    (*"opened 'X''s doc to classify it as project_sync"*); those mark where the
    signal heuristic is weak and worth revisiting over time.
-3. **Surface, don't swallow.** Any `project_sync` whose project is **not already
-   in your focus mapping** (`project_focus.syncs`) is a candidate new project —
-   pin a top-of-briefing **Heads up**: *"'X' looks like a new project (Y, per its
+3. **Surface, don't swallow — but only once.** A `project_sync` whose project is
+   **neither in your focus mapping (`project_focus.syncs`) nor in
+   `project_focus.parked_projects`** is a candidate new project — pin a
+   top-of-briefing **Heads up**: *"'X' looks like a new project (Y, per its
    docs/Slack) — add it to your rotation?"* On confirm, append `{project, match}`
-   to `syncs` via `state-set`. A `gone` project_sync prompts *"drop project Y?"*.
+   to `syncs`; **if the user declines or defers, append the project to
+   `parked_projects`** (via `state-set` on the whole `project_focus` block) so the
+   *daily* check never re-asks — a parked project (one you joined but set aside)
+   must not nag every morning. A `gone` project_sync prompts *"drop project Y?"*.
    Do this **even on a `seed`** (cold start): categorize everything, then flag the
-   unmapped project_syncs — don't silently absorb a third project.
-4. Write the categorized catalog + stamp the scan:
+   unmapped, **unparked** project_syncs — don't silently absorb a third project.
+4. Write the categorized catalog:
    ```bash
    python3 ~/.valor/focus.py catalog-sync --entries '[{"title":"...","category":"project_sync","project":"Y"}, ...]'
-   python3 ~/.valor/focus.py mark-scanned
    ```
 
 ### 6. Verification Gate (anti-phantom — run before Work Context and Priorities)
@@ -461,6 +464,18 @@ Write"). In short:
    unverified claims**, delete/complete items whose claim has since verified
    **resolved**, and never touch items Valor didn't create. No writer → present
    the plan only, note once.
+4. **Auto-schedule sync prep** — only if `context.project_focus.auto_sync_prep`
+   is `true` (the default) **and `planning.pre_meeting_prep_minutes` > 0** (0 means
+   prep is disabled — skip). For each **`project_sync` occurring today**, schedule a
+   one-off run of `/valor-sync-prep` at **(sync start − `planning.pre_meeting_prep_minutes`,
+   default 30 min)** via the scheduled-tasks tool, so your talk points are
+   generated right as the prep block opens. Rules: **idempotent** — first list
+   existing scheduled tasks and skip any sync already scheduled for today (one-off
+   tasks self-delete after firing); **multiple syncs** → one scheduled run each;
+   **past lead time** — if (sync − prep minutes) is already past, run
+   `/valor-sync-prep` now when the sync is still upcoming (within ~the hour), else
+   skip. The run keeps its own no-op safeguard (does nothing if no `project_sync`
+   is imminent), so a stale trigger is harmless.
 
 ## Monday / Return-from-Absence Mode
 
