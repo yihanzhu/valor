@@ -166,6 +166,20 @@ What shipped:
 - state schema v14 → v15 (`planning.pre_meeting_prep_minutes`).
 - version bump to 0.8.0
 
+## Phase 10: Project Sync Prep
+
+**Status:** Complete
+
+What shipped:
+
+- **`/valor-sync-prep` command**: generates team-facing talk points for an
+  upcoming `project_sync` — progress since the last sync, decisions to land, open
+  questions — scoped to the current project (distinct from the portfolio-wide,
+  manager-facing `/valor-prep`). Generate-only: the user reviews and pastes into
+  the project's shared notes. Pairs with the Phase 9 prep block — the block
+  reserves the 30 min, this fills it.
+- version bump to 0.9.0
+
 ## Future Considerations
 
 These are not committed but worth exploring:

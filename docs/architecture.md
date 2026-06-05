@@ -112,6 +112,7 @@ coaching layer:
 | Tasks      | `/valor-tasks`      | GitHub, Jira                 | Task identification              |
 | Wrap-up    | `/valor-wrapup`     | None                         | End-of-day summary               |
 | 1:1 Prep   | `/valor-prep`       | GitHub, Jira (optional)      | Manager 1:1 preparation          |
+| Sync Prep  | `/valor-sync-prep`  | GitHub, Jira (optional)      | Project sync talk points         |
 | *Ambient*  | Always-on rule      | None                         | Coaching annotations after tasks |
 
 
