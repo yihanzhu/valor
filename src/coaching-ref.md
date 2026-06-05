@@ -37,7 +37,9 @@ Two parts per coaching annotation:
 
 1. **What you did well** -- tie the activity to a specific target-level competency.
 2. **How [target level] would go further** -- concrete, actionable suggestion
-   referencing the target-level definition from the career framework.
+   referencing the target-level definition from the career framework. Ground it:
+   tie the suggestion to the framework's language or the work at hand, not a bare
+   "your X count is low" — a thin metric is a signal to look, not a to-do.
 
 **Inline:** Weave brief coaching into the response naturally. Example:
 "That's solid Subject Matter work. At [target], you'd also document the root

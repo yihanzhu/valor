@@ -56,6 +56,20 @@ def check(root: Path):
                 if token != badge:
                     problems.append(f"{path.relative_to(root)}: badge {token!r} != {badge!r}")
 
+    # State-schema version: architecture.md's stated version must match the code
+    # (STATE_SCHEMA_VERSION) — a different number from the app version, but it
+    # drifts the same way when a schema bump skips the docs.
+    src = root / "src" / "evidence_cli.py"
+    arch = root / "docs" / "architecture.md"
+    if src.exists() and arch.exists():
+        code = re.search(r"STATE_SCHEMA_VERSION\s*=\s*(\d+)", src.read_text())
+        doc = re.search(r"currently at version (\d+)", arch.read_text())
+        if code and doc and code.group(1) != doc.group(1):
+            problems.append(
+                f"docs/architecture.md: schema 'version {doc.group(1)}' != "
+                f"STATE_SCHEMA_VERSION {code.group(1)}"
+            )
+
     return problems
 
 
