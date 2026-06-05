@@ -150,6 +150,22 @@ What shipped:
   `project_focus.meeting_catalog`).
 - version bump to 0.7.0
 
+## Phase 9: Meeting Prep Blocks
+
+**Status:** Complete
+
+What shipped:
+
+- **Pre-meeting prep blocks** (`plan.py`): for meetings the briefing categorizes
+  `project_sync` or `external` (the ones you present/decide at), the day plan
+  auto-reserves a prep block (default 30 min, `pre_meeting_prep_minutes`)
+  immediately before the meeting to gather docs and frame talking points — falling
+  back to the nearest earlier gap that day, or flagging `prep_unassigned` when
+  there's no room. Meetings you only attend (standups, demos, planning) get none.
+  It's the mirror of the post-meeting break.
+- state schema v14 → v15 (`planning.pre_meeting_prep_minutes`).
+- version bump to 0.8.0
+
 ## Future Considerations
 
 These are not committed but worth exploring:

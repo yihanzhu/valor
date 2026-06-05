@@ -416,7 +416,11 @@ Write"). In short:
    + OOO. Mark **real meetings** so plan.py adds a breather after them: set
    **`is_meeting: true`** for collaborative meetings (or pass **`attendees`** and
    plan.py treats > 1 as a meeting). Lunch / personal holds / OOO are not meetings
-   and get no break. If the calendar tool exposes the user's working hours, pass
+   and get no break. **Flag prep-worthy meetings** — those categorized
+   `project_sync` or `external` in the catalog — with **`prep: true`** plus their
+   **`summary`**; plan.py reserves a prep block (default 30 min) immediately before
+   each. You only *attend* standups / demos / planning, so those get no prep. If
+   the calendar tool exposes the user's working hours, pass
    `--workday-start/--workday-end`; otherwise plan.py uses `state.planning`.
 2. Build the **post-gate** priorities (exclude any the §6 gate demoted to
    "unverified") as `{"text", "est_minutes"}` objects: **estimate each task's
@@ -430,7 +434,11 @@ Write"). In short:
    don't re-time, merge, or improvise the schedule. plan.py won't start tasks
    before `workday_start + morning_buffer_minutes` (your AM ritual) and **prefers
    focus-time blocks for deep work** (that's what they're for). Surface
-   `unassigned` `deep_only` items as "push to your next deep block".
+   `unassigned` `deep_only` items as "push to your next deep block". plan.py also
+   returns **`prep_blocks`** (a prep slot before each prep-worthy meeting — render
+   them in the plan alongside task blocks) and **`prep_unassigned`** (a prep-worthy
+   meeting with no free slot before it — surface as *"no prep time before X today —
+   make room, or prep the day before"*).
 3. **Calendar write** — only if `context.planning.calendar_auto_write` is `true`
    AND a writer is available. These are personal to-dos, so write them
    **private**: prefer a **Google Task** per block (private by nature) if a
@@ -446,7 +454,10 @@ Write"). In short:
    block** — a short actionable description (next action + the artifact's
    **clickable URL**, resolved so it doesn't 404) so it's readable at do-time,
    with a single `valor:task:<slug>` idempotency token appended (labeled "leave
-   it"; no shape tag). Idempotent via the `valor:task:` token (never duplicate), **skip
+   it"; no shape tag). **Prep blocks** (from `prep_blocks`) get written the same way
+   — title `Prep: <for_meeting>`, a "gather docs + frame 2–3 talking points"
+   description, and a `valor:prep:<slug>` token (idempotent like the task token).
+   Idempotent via the `valor:task:` token (never duplicate), **skip
    unverified claims**, delete/complete items whose claim has since verified
    **resolved**, and never touch items Valor didn't create. No writer → present
    the plan only, note once.

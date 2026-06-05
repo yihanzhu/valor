@@ -71,6 +71,9 @@ DEFAULTS = {
     # No tasks scheduled until this many minutes after workday_start — a morning
     # ritual buffer (Slack catch-up, planning). 0 = tasks from workday_start.
     "morning_buffer_minutes": 0,
+    # Minutes reserved immediately before a prep-worthy meeting (project_sync /
+    # external) to gather docs and organize talking points. 0 = no prep blocks.
+    "pre_meeting_prep_minutes": 30,
     # Per-shape FALLBACK durations. The briefing should estimate each task's
     # duration from its nature (a publish is ~15 min; a pipeline change is hours)
     # and pass it as the priority's `est_minutes`; these are only used when it
@@ -114,7 +117,7 @@ def planning_config() -> dict:
     if isinstance(state_cfg, dict):
         for k in ("workday_start", "workday_end", "deep_min_hours",
                   "post_meeting_break_minutes", "block_granularity_minutes",
-                  "morning_buffer_minutes"):
+                  "morning_buffer_minutes", "pre_meeting_prep_minutes"):
             if k in state_cfg:
                 cfg[k] = state_cfg[k]
         if isinstance(state_cfg.get("est_minutes"), dict):
@@ -268,6 +271,22 @@ def _make_gap(start, end, deep_min, pre_meeting):
     }
 
 
+def _find_prep_slot(gaps, meeting_start, minutes):
+    """Latest free slot of `minutes` ending at or before a meeting, preferring the
+    slot ending exactly at the meeting start (immediately before it). Returns a
+    (start, end) datetime pair, or None if no gap before the meeting is big
+    enough. Reserves the tail of the chosen gap — the part closest to the
+    meeting — so prep stays as late (as fresh) as possible."""
+    need = timedelta(minutes=minutes)
+    cand = sorted([g for g in gaps if _parse_iso(g["end"]) <= meeting_start],
+                  key=lambda g: _parse_iso(g["end"]), reverse=True)
+    for g in cand:
+        gs, ge = _parse_iso(g["start"]), _parse_iso(g["end"])
+        if ge - gs >= need:
+            return (ge - need, ge)
+    return None
+
+
 # --- assignment ----------------------------------------------------------
 def _candidate_order(shape, gaps):
     """Return gaps in the order this shape should try them."""
@@ -321,7 +340,8 @@ def assign(priorities, gaps, est_minutes, granularity=0):
 
 # --- top-level fit -------------------------------------------------------
 def fit(events, priorities, *, now=None, workday_start=None, workday_end=None,
-        deep_min_hours=None, break_minutes=None, granularity=None, morning_buffer=None):
+        deep_min_hours=None, break_minutes=None, granularity=None, morning_buffer=None,
+        pre_meeting_prep=None):
     cfg = planning_config()
     workday_start = workday_start or cfg["workday_start"]
     workday_end = workday_end or cfg["workday_end"]
@@ -329,6 +349,7 @@ def fit(events, priorities, *, now=None, workday_start=None, workday_end=None,
     break_minutes = break_minutes if break_minutes is not None else cfg["post_meeting_break_minutes"]
     granularity = granularity if granularity is not None else cfg["block_granularity_minutes"]
     morning_buffer = morning_buffer if morning_buffer is not None else cfg["morning_buffer_minutes"]
+    pre_meeting_prep = pre_meeting_prep if pre_meeting_prep is not None else cfg["pre_meeting_prep_minutes"]
     est = cfg["est_minutes"]
 
     now_dt = _now(now)
@@ -343,6 +364,7 @@ def fit(events, priorities, *, now=None, workday_start=None, workday_end=None,
 
     busy = []
     focus_windows = []
+    prep_meetings = []  # (start, summary) for meetings the agent flagged prep-worthy
     for ev in events:
         if ev.get("type") in NON_BLOCKING_EVENT_TYPES:
             if ev.get("type") == "focusTime":  # a deep-work slot to prefer, not busy
@@ -352,11 +374,42 @@ def fit(events, priorities, *, now=None, workday_start=None, workday_end=None,
                     pass
             continue  # focus time / working-location: leave free for deep work
         try:
-            busy.append((_parse_iso(ev["start"]), _parse_iso(ev["end"]), _is_real_meeting(ev)))
+            s, e = _parse_iso(ev["start"]), _parse_iso(ev["end"])
         except (KeyError, ValueError):
             continue
+        busy.append((s, e, _is_real_meeting(ev)))
+        if ev.get("prep"):
+            prep_meetings.append((s, ev.get("summary") or "meeting"))
 
-    gaps = compute_gaps(busy, window_start, day_end, deep_min_hours, break_minutes=break_minutes)
+    # Reserve a prep block immediately before each prep-worthy meeting (or, if
+    # that slot isn't free, the nearest earlier gap that day). Prep blocks are
+    # non-meeting busy — no post-meeting break after them — so gaps recomputed
+    # around them keep that time off-limits to other tasks.
+    prep_blocks, prep_unassigned, prep_busy = [], [], []
+    if pre_meeting_prep > 0:
+        for mstart, summary in sorted(prep_meetings, key=lambda t: t[0]):
+            if mstart <= now_dt:
+                continue  # meeting already underway / in the past — no prep
+            cur_gaps = compute_gaps(busy + prep_busy, window_start, day_end,
+                                    deep_min_hours, break_minutes=break_minutes)
+            slot = _find_prep_slot(cur_gaps, mstart, pre_meeting_prep)
+            if slot:
+                bs, be = slot
+                prep_blocks.append({
+                    "start": bs.isoformat(), "end": be.isoformat(),
+                    "minutes": pre_meeting_prep, "for_meeting": summary,
+                    "adjacent": be == mstart,
+                })
+                prep_busy.append((bs, be, False))
+            else:
+                prep_unassigned.append({
+                    "for_meeting": summary,
+                    "reason": "no free slot before the meeting today",
+                })
+        prep_blocks.sort(key=lambda b: b["start"])
+
+    gaps = compute_gaps(busy + prep_busy, window_start, day_end, deep_min_hours,
+                        break_minutes=break_minutes)
     # Flag gaps that overlap a focus-time block; deep work prefers these (#2).
     for g in gaps:
         g["has_focus"] = any(fs < _parse_iso(g["end"]) and fe > g["_start"] for fs, fe in focus_windows)
@@ -384,6 +437,8 @@ def fit(events, priorities, *, now=None, workday_start=None, workday_end=None,
         "no_meeting_day": len(busy) == 0,
         "gaps": public_gaps,
         "deep_gap_count": sum(1 for g in public_gaps if g["type"] == "deep"),
+        "prep_blocks": prep_blocks,
+        "prep_unassigned": prep_unassigned,
         "blocks": blocks,
         "unassigned": unassigned,
     }
@@ -431,6 +486,7 @@ def cmd_fit(args: argparse.Namespace) -> None:
         workday_start=args.workday_start, workday_end=args.workday_end,
         deep_min_hours=args.deep_hours, break_minutes=args.break_minutes,
         granularity=args.granularity, morning_buffer=args.morning_buffer,
+        pre_meeting_prep=args.pre_meeting_prep,
     )
     print(json.dumps(result, indent=2))
 
@@ -459,6 +515,8 @@ def main() -> None:
                        help="Snap block start/end to this clock granularity (default from state/15)")
     p_fit.add_argument("--morning-buffer", type=int, default=None,
                        help="Minutes after workday_start before tasks may start (default from state/0)")
+    p_fit.add_argument("--pre-meeting-prep", type=int, default=None,
+                       help="Minutes reserved before a prep-worthy meeting (default from state/30)")
 
     p_shape = sub.add_parser("shape", help="Classify a single priority's task shape")
     p_shape.add_argument("--text", required=True)
