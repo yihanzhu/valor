@@ -213,7 +213,13 @@ def cmd_add(args: argparse.Namespace) -> None:
     conn = get_conn()
     ensure_schema(conn)
     now = datetime.now(timezone.utc)
-    target_date = parse_ymd_date(args.date) if args.date else now.strftime("%Y-%m-%d")
+    # Default to the user's LOCAL calendar day so evidence lands in the same
+    # "today"/"this week" window used by cmd_stats and cmd_context (both local).
+    target_date = (
+        parse_ymd_date(args.date)
+        if args.date
+        else now.astimezone().strftime("%Y-%m-%d")
+    )
 
     existing = conn.execute(
         "SELECT id FROM evidence WHERE date = ? AND activity = ? "
@@ -494,8 +500,10 @@ def cmd_weekly_summary_save(args: argparse.Namespace) -> None:
     ensure_schema(conn)
     entry_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
-    summary_data = args.summary if isinstance(args.summary, str) else json.dumps(args.summary)
-    gaps_data = args.gaps if isinstance(args.gaps, str) else json.dumps(args.gaps)
+    # Always JSON-encode on write to mirror the json.loads on read (get/list);
+    # a passthrough for str inputs stored raw text that then crashed the reader.
+    summary_data = json.dumps(args.summary)
+    gaps_data = json.dumps(args.gaps)
     conn.execute(
         "INSERT INTO weekly_summary "
         "(id, week_start, week_end, summary, gaps, narrative, created_at) "

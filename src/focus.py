@@ -18,9 +18,9 @@ Two modes:
   * meeting_derived (default): focus = the project whose sync is the next one
     at or after today. After a sync passes, the next sync's project takes over,
     so the focus "flips" the day after each sync. `transition_today` is true on
-    a flip day (a sync fell yesterday) so the briefing can show a one-time
-    "focus now shifts to X" hand-off; `days_since_last_sync` lets the prompt be
-    lenient across weekends / skipped briefings.
+    the first working day after a sync (weekends roll forward to Monday, so a
+    Friday sync surfaces on Monday) and drives the briefing's one-time "focus now
+    shifts to X" hand-off; `days_since_last_sync` is how far back that sync was.
   * manual: focus = `project_focus.current`, unchanged until the user edits it.
 
 Ticket -> project classification is NOT done here (it needs to read the ticket).
@@ -42,7 +42,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 VALOR_HOME = Path.home() / ".valor"
@@ -94,6 +94,14 @@ def _parse_day(value) -> date:
     return date.fromisoformat(text)
 
 
+def _next_workday(d: date) -> date:
+    """First Mon-Fri date strictly after d (weekends roll forward to Monday)."""
+    nxt = d + timedelta(days=1)
+    while nxt.weekday() >= 5:  # 5=Sat, 6=Sun
+        nxt += timedelta(days=1)
+    return nxt
+
+
 def meeting_focus(syncs, today=None, flip="after_sync") -> dict:
     """syncs: list of {"project","date"}. Derive the focus from sync dates.
 
@@ -120,7 +128,14 @@ def meeting_focus(syncs, today=None, flip="after_sync") -> dict:
     most_recent_past = past[-1]["date"] if past else None
     days_since = (today - most_recent_past).days if most_recent_past else None
     days_until = (current["date"] - today).days if current and current["date"] >= today else None
-    transition_today = (flip == "after_sync" and days_since == 1)
+    # Fire the one-time hand-off on the first WORKING day after a sync, not only
+    # the literal next calendar day -- otherwise a Fri sync (next workday Mon,
+    # days_since==3) is silently skipped over the weekend.
+    transition_today = (
+        flip == "after_sync"
+        and most_recent_past is not None
+        and today == _next_workday(most_recent_past)
+    )
 
     return {
         "enabled": True,

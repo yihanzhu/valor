@@ -61,6 +61,25 @@ def test_flip_day_after_sync():
     assert out["days_since_last_sync"] == 1
 
 
+def test_flip_after_weekend_fires_on_monday():
+    # M0: a Friday sync's hand-off must fire on the following Monday (Sat+Sun
+    # gap, days_since==3), not be silently skipped because it wasn't days_since==1.
+    syncs = [{"project": "platform", "date": "2026-06-05"},   # a Friday
+             {"project": "payments", "date": "2026-06-12"}]   # the next Friday
+    out = focus.meeting_focus(syncs, today="2026-06-08")       # the Monday
+    assert out["current_project"] == "payments"
+    assert out["days_since_last_sync"] == 3
+    assert out["transition_today"] is True
+
+
+def test_flip_does_not_fire_on_weekend_day():
+    # The hand-off waits for the first working day -- it must not fire on the
+    # Saturday immediately after a Friday sync.
+    syncs = [{"project": "platform", "date": "2026-06-05"}]   # Friday
+    out = focus.meeting_focus(syncs, today="2026-06-06")       # Saturday
+    assert out["transition_today"] is False
+
+
 def test_all_syncs_past_falls_back_to_most_recent():
     out = focus.meeting_focus(SYNCS, today="2026-06-20")
     assert out["current_project"] == "payments"

@@ -54,7 +54,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 
 VALOR_HOME = Path.home() / ".valor"
@@ -134,7 +134,11 @@ def calendar_auto_write_enabled() -> bool:
 def _parse_iso(value: str) -> datetime:
     dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        # Calendar event times are local wall-clock; interpret a naive value as
+        # LOCAL (attach the local zone), not UTC. Coercing naive->UTC shifts the
+        # time by the local offset, which can push a meeting out of the day-plan
+        # window so it vanishes from the plan.
+        dt = dt.astimezone()
     return dt
 
 
