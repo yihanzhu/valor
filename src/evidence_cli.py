@@ -561,6 +561,12 @@ def _migrate_state_in_memory(state: dict) -> dict:
         state["manager"] = None
     if "host" not in state:
         state["host"] = None
+    # v3: update-check bookkeeping. Was install.sh-only; ensured here too so the
+    # CLI migrator is the single schema authority and install.sh can delegate.
+    if "last_update_check" not in state:
+        state["last_update_check"] = ""
+    if "update_check_interval_hours" not in state:
+        state["update_check_interval_hours"] = 24
     # v5: verification gate config (verify.py). Kill switch + escalation knob.
     # Per-type TTLs live in verify.py; ttl_overrides here can override them.
     if "verification" not in state or not isinstance(state.get("verification"), dict):
@@ -660,11 +666,45 @@ def _migrate_state_in_memory(state: dict) -> dict:
     return state
 
 
+def _quarantine_corrupt_state(state_path: Path) -> None:
+    """Move a corrupt state.json aside (timestamped) instead of overwriting it.
+
+    A subsequent write would otherwise persist all-defaults over the user's
+    profile. Renaming preserves the data for hand-recovery AND removes the file
+    from the read path, so it is never re-quarantined. Best-effort: a failed
+    move must not crash the caller, which still needs a usable state.
+    """
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    backup = state_path.with_name(f"{state_path.name}.corrupt-{stamp}")
+    try:
+        state_path.replace(backup)
+        print(
+            f"[valor] state.json was unreadable (corrupt JSON); quarantined to "
+            f"{backup.name} and starting from a fresh default.",
+            file=sys.stderr,
+        )
+    except OSError:
+        pass
+
+
 def _read_state() -> dict:
     state_path = VALOR_HOME / "state.json"
-    if state_path.exists():
-        state = json.loads(state_path.read_text())
-    else:
+    try:
+        raw = state_path.read_text()
+    except OSError:
+        # Genuinely missing/unreadable -> start clean. cmd_context runs at every
+        # session start, so a hard crash here would brick the whole agent rule.
+        return _migrate_state_in_memory({})
+    try:
+        state = json.loads(raw)
+        if not isinstance(state, dict):
+            state = {}
+    except json.JSONDecodeError:
+        # The file exists but is corrupt. Atomic writes (_write_state) make a
+        # torn read impossible, so this is real on-disk damage. Returning {} and
+        # letting the next write persist all-defaults would SILENTLY destroy the
+        # user's profile -- quarantine the file first so nothing is lost.
+        _quarantine_corrupt_state(state_path)
         state = {}
     return _migrate_state_in_memory(state)
 
@@ -672,7 +712,11 @@ def _read_state() -> dict:
 def _write_state(state: dict) -> None:
     state_path = VALOR_HOME / "state.json"
     state_path.parent.mkdir(parents=True, exist_ok=True)
-    state_path.write_text(json.dumps(state, indent=2))
+    # Atomic write: a killed process must not leave a half-written (corrupt)
+    # state.json that the next read would choke on.
+    tmp = state_path.with_name(state_path.name + ".tmp")
+    tmp.write_text(json.dumps(state, indent=2))
+    tmp.replace(state_path)
 
 
 def cmd_state_migrate(args: argparse.Namespace) -> None:
@@ -730,9 +774,11 @@ def cmd_context(args: argparse.Namespace) -> None:
         else:
             try:
                 last_ts = datetime.fromisoformat(last_update)
+                if last_ts.tzinfo is None:  # tolerate a tz-naive stored stamp
+                    last_ts = last_ts.replace(tzinfo=now.tzinfo)
                 elapsed_hours = (now - last_ts).total_seconds() / 3600
                 update_check_due = elapsed_hours >= update_interval
-            except ValueError:
+            except (ValueError, TypeError):
                 update_check_due = True
 
     # --- Briefing metadata ---

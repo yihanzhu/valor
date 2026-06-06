@@ -51,7 +51,7 @@ def _find_transcript_dirs() -> list[tuple[str, Path, str]]:
 
 
 def _workspace_label(folder_name: str) -> str:
-    """Convert 'Users-yihan-zhu-git-blocklist' -> 'git/blocklist'."""
+    """Convert 'Users-alex-kim-git-myrepo' -> 'git/myrepo'."""
     parts = folder_name.split("-")
     try:
         home_idx = next(

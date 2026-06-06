@@ -1,6 +1,4 @@
-import json
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -208,28 +206,24 @@ def test_getting_started_mentions_integrations():
     assert "integrations" in text
 
 
-def test_install_sh_migrator_drops_v16_throttle(tmp_path):
-    # The install.sh inline migrator must match evidence_cli's v16 behavior: drop
-    # the throttle keys and add auto_sync_prep + parked_projects. CI coverage for
-    # the install.sh half — a short-circuit pop bug slipped through here once.
+def test_installer_delegates_migration_to_evidence_cli():
+    # The schema migrator has ONE source of truth: evidence_cli._migrate_state_in_memory.
+    # install.sh must delegate to `evidence_cli.py state-migrate` rather than carry
+    # its own inline copy — the two had drifted to different key sets, and a
+    # short-circuit pop bug once slipped through the duplicate. This test forbids a
+    # reintroduction: the migration logic itself is covered in test_evidence_cli.py.
     install = Path("install.sh").read_text()
-    marker = 'migrate_msg=$(python3 -c "'
-    start = install.index(marker) + len(marker)
-    end = install.index('" "$VALOR_HOME/state.json"', start)
-    migrator = install[start:end]
-    state = {"state_schema_version": 15, "project_focus": {
-        "enabled": True, "mode": "meeting_derived", "current": "", "flip": "after_sync",
-        "syncs": [{"project": "alpha", "match": "Alpha Sync"}],
-        "sync_scan_interval_days": 14, "last_sync_scan": "2026-06-01",
-        "meeting_catalog": []}}
-    statefile = tmp_path / "state.json"
-    statefile.write_text(json.dumps(state))
-    r = subprocess.run([sys.executable, "-c", migrator, str(statefile), "16", "{}"],
-                       capture_output=True, text=True)
-    assert r.returncode == 0, r.stderr
-    pf = json.loads(statefile.read_text())["project_focus"]
-    assert "sync_scan_interval_days" not in pf            # v16: throttle dropped
-    assert "last_sync_scan" not in pf                     # v16: throttle dropped
-    assert pf["auto_sync_prep"] is True                   # v16: added
-    assert pf["parked_projects"] == []                    # v16: added
-    assert json.loads(statefile.read_text())["state_schema_version"] == 16
+    assert 'evidence_cli.py" state-migrate' in install, \
+        "install.sh must delegate schema migration to `evidence_cli.py state-migrate`"
+    assert 'migrate_msg=$(python3 -c "' not in install, \
+        "install.sh must not reintroduce an inline duplicate of the migrator"
+
+
+def test_installer_reads_schema_version_from_evidence_cli():
+    # The installer derives the schema version from evidence_cli.py's
+    # STATE_SCHEMA_VERSION instead of hardcoding a second literal that could drift.
+    install = Path("install.sh").read_text()
+    assert "STATE_SCHEMA_VERSION" in install, \
+        "install.sh should read STATE_SCHEMA_VERSION from evidence_cli.py"
+    assert "schema_version=16" not in install, \
+        "install.sh must not hardcode a schema-version literal"

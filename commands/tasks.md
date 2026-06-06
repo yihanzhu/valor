@@ -179,7 +179,7 @@ Wait for the user to choose a task or PR before taking further action.
 
 ## 6. RECORD EVIDENCE WHEN USER PICKS A TASK
 
-When the user explicitly chooses a task (e.g., "I'll take DS-456" or "let's work on that first"):
+When the user explicitly chooses a task (e.g., "I'll take PROJ-42" or "let's work on that first"):
 
 ```bash
 python3 ~/.valor/evidence_cli.py add \
@@ -189,7 +189,7 @@ python3 ~/.valor/evidence_cli.py add \
     --agent valor-task-identifier
 ```
 
-Replace `TICKET` with the issue key (e.g., DS-456) and `TITLE` with the ticket title.
+Replace `TICKET` with the issue key (e.g., PROJ-42) and `TITLE` with the ticket title.
 Use a truncated title if very long (e.g., first 60 chars).
 
 ## 7. FOLLOW-UP INTERACTIONS

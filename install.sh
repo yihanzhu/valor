@@ -187,6 +187,7 @@ apply_shared_transforms() {
         -e 's|/valor-weekly|valor-weekly-reflection skill|g' \
         -e 's|/valor-tasks|valor-task-identifier skill|g' \
         -e 's|/valor-wrapup|valor-evening-wrapup skill|g' \
+        -e 's|/valor-sync-prep|valor-sync-prep skill|g' \
         -e 's|/valor-prep|valor-prep skill|g' \
         -e 's|/valor-setup|valor-setup skill|g' \
         -e 's|Bash tool|Shell tool|g'
@@ -203,6 +204,7 @@ apply_rule_transforms() {
         -e "s|\`/valor-weekly\` command|\`~/$target_dir/skills/valor-weekly-reflection/SKILL.md\`|g" \
         -e "s|\`/valor-tasks\` command|\`~/$target_dir/skills/valor-task-identifier/SKILL.md\`|g" \
         -e "s|\`/valor-wrapup\` command|\`~/$target_dir/skills/valor-evening-wrapup/SKILL.md\`|g" \
+        -e "s|\`/valor-sync-prep\` command|\`~/$target_dir/skills/valor-sync-prep/SKILL.md\`|g" \
         -e "s|\`/valor-prep\` command|\`~/$target_dir/skills/valor-prep/SKILL.md\`|g" \
         -e "s|\`/valor-setup\` command|\`~/$target_dir/skills/valor-setup/SKILL.md\`|g"
 }
@@ -424,7 +426,13 @@ install_shared() {
     local detected_intg
     detected_intg=$(detect_integrations)
 
-    local schema_version=16
+    # Schema version is owned by evidence_cli.py (STATE_SCHEMA_VERSION); read it
+    # instead of hardcoding a second literal that could silently drift (M24).
+    # `|| true` keeps a no-match (constant renamed/file moved) from aborting the
+    # whole install under `set -euo pipefail`, so the fallback below can run.
+    local schema_version
+    schema_version=$(grep -oE 'STATE_SCHEMA_VERSION *= *[0-9]+' "$SCRIPT_DIR/src/evidence_cli.py" | grep -oE '[0-9]+' | head -1 || true)
+    if [ -z "$schema_version" ]; then schema_version=1; fi
 
     if [ ! -f "$VALOR_HOME/state.json" ]; then
         cat > "$VALOR_HOME/state.json" <<STATEJSON
@@ -477,91 +485,41 @@ install_shared() {
 }
 STATEJSON
         echo "  [OK] state.json (created)"
-    else
-        local migrate_msg
-        migrate_msg=$(python3 -c "
-import json, sys
-state = json.loads(open(sys.argv[1]).read())
-target_version = int(sys.argv[2])
-current_version = state.get('state_schema_version', 1)
-changed = False
-if current_version < 2:
-    if 'integrations' not in state:
-        state['integrations'] = json.loads(sys.argv[3])
-        changed = True
-    if 'state_schema_version' not in state:
-        changed = True
-if current_version < 3:
-    if 'last_update_check' not in state:
-        state['last_update_check'] = ''
-        changed = True
-    if 'update_check_interval_hours' not in state:
-        state['update_check_interval_hours'] = 24
-        changed = True
-# v5: verification gate config + 1:1 escalation list. Keyed on presence, not
-# version, so it self-heals even if an earlier run bumped the version number
-# without adding the keys.
-if not isinstance(state.get('verification'), dict):
-    state['verification'] = {'enabled': True, 'escalation_threshold': 3, 'ttl_overrides': {}}
-    changed = True
-if not isinstance(state.get('escalate_in_one_on_one'), list):
-    state['escalate_in_one_on_one'] = []
-    changed = True
-# v6: day-planning config (presence-based so it self-heals).
-if not isinstance(state.get('planning'), dict):
-    state['planning'] = {'calendar_auto_write': True, 'workday_start': '09:00', 'workday_end': '18:00', 'deep_min_hours': 2.0, 'post_meeting_break_minutes': 15, 'block_granularity_minutes': 15, 'morning_buffer_minutes': 0, 'pre_meeting_prep_minutes': 30}
-    changed = True
-else:
-    # v9/v12/v13/v15: fill day-planning sub-keys if the planning block predates them.
-    if 'post_meeting_break_minutes' not in state['planning']:
-        state['planning']['post_meeting_break_minutes'] = 15
-        changed = True
-    if 'block_granularity_minutes' not in state['planning']:
-        state['planning']['block_granularity_minutes'] = 15
-        changed = True
-    if 'morning_buffer_minutes' not in state['planning']:
-        state['planning']['morning_buffer_minutes'] = 0
-        changed = True
-    if 'pre_meeting_prep_minutes' not in state['planning']:
-        state['planning']['pre_meeting_prep_minutes'] = 30
-        changed = True
-# v7: 1:1 doc config (presence-based).
-if not isinstance(state.get('one_on_one'), dict):
-    state['one_on_one'] = {'doc': '', 'format_notes': ''}
-    changed = True
-# v8: project-focus customization (presence-based; disabled by default).
-if not isinstance(state.get('project_focus'), dict):
-    state['project_focus'] = {'enabled': False, 'mode': 'meeting_derived', 'current': '', 'flip': 'after_sync', 'syncs': [], 'auto_sync_prep': True, 'parked_projects': [], 'meeting_catalog': []}
-    changed = True
-else:
-    # v16: drop the 14-day re-scan throttle (drift-check runs daily); add auto_sync_prep + parked_projects.
-    pf = state['project_focus']
-    if 'sync_scan_interval_days' in pf or 'last_sync_scan' in pf:
-        pf.pop('sync_scan_interval_days', None)
-        pf.pop('last_sync_scan', None)
-        changed = True
-    if 'auto_sync_prep' not in pf:
-        pf['auto_sync_prep'] = True
-        changed = True
-    if 'parked_projects' not in pf:
-        pf['parked_projects'] = []
-        changed = True
-    if 'meeting_catalog' not in pf:
-        pf['meeting_catalog'] = []
-        changed = True
-    if pf.pop('meeting_baseline', None) is not None:  # v14: superseded by catalog
-        changed = True
-if state.get('state_schema_version', 1) < target_version:
-    state['state_schema_version'] = target_version
-    changed = True
-if changed:
-    open(sys.argv[1], 'w').write(json.dumps(state, indent=2))
-    print(f'migrated to schema v{target_version}')
-else:
-    print('up to date')
-" "$VALOR_HOME/state.json" "$schema_version" "$detected_intg" 2>/dev/null || echo "ok")
-        echo "  [OK] state.json ($migrate_msg)"
     fi
+
+    # Schema migration: the SINGLE source of truth is
+    # evidence_cli._migrate_state_in_memory. install.sh no longer carries a
+    # duplicate inline migrator (the two had drifted to different key sets).
+    # Delegate to the source CLI; it migrates ~/.valor/state.json in place and
+    # self-heals a freshly-created file too if the template ever lags the schema.
+    local migrate_out
+    if migrate_out=$(python3 "$SCRIPT_DIR/src/evidence_cli.py" state-migrate 2>&1); then
+        echo "  [OK] state.json (schema v$schema_version)"
+        # Surface any warning lines (e.g. a corrupt state.json quarantined to a
+        # backup); the normal status line is JSON, which we don't echo.
+        printf '%s\n' "$migrate_out" | grep -v '^{' | grep . | sed 's/^/      /' || true
+    else
+        echo "  [WARN] state.json schema migration failed; existing file left untouched:"
+        printf '%s\n' "$migrate_out" | sed 's/^/        /'
+    fi
+
+    # Integration DETECTION is install-specific (the CLI can't probe for the gh
+    # binary). Seed detected integrations only when the field is absent or empty,
+    # so a re-run won't overwrite a user's configured integrations.
+    python3 - "$VALOR_HOME/state.json" "$detected_intg" <<'PYEOF'
+import json, sys
+path, detected = sys.argv[1], sys.argv[2]
+try:
+    state = json.loads(open(path).read())
+except Exception:
+    sys.exit(0)
+if not isinstance(state, dict):
+    sys.exit(0)
+if not isinstance(state.get("integrations"), dict) or not state["integrations"]:
+    state["integrations"] = json.loads(detected)
+    with open(path, "w") as f:
+        f.write(json.dumps(state, indent=2))
+PYEOF
 
     cp "$SCRIPT_DIR/src/evidence_cli.py" "$VALOR_HOME/evidence_cli.py"
     echo "  [OK] evidence_cli.py"

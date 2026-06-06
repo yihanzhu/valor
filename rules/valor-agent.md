@@ -92,7 +92,7 @@ Skip: routine edits, basic questions, boilerplate, trivial tasks.
 For tool discovery patterns (Jira, GitHub, etc.), read `~/.valor/utilities.md`.
 
 **Auto-update:** If `context.update_check_due`, curl the VERSION file from
-`github.com/yihanzhu/valor/main/VERSION`, compare with `installed_version`.
+`https://raw.githubusercontent.com/yihanzhu/valor/main/VERSION`, compare with `installed_version`.
 Minor/patch: auto-update silently. Major: ask user. Always update timestamp
 via `state-set last_update_check "$(date -Iseconds)"`.
 
