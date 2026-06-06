@@ -226,8 +226,34 @@ def test_parse_pr_identifier_forms(verify_db):
     assert verify._parse_pr_identifier("owner/repo#123") == ("owner/repo", "123")
     assert verify._parse_pr_identifier("repo#123", "deflt") == ("deflt/repo", "123")
     assert verify._parse_pr_identifier("#123") == ("", "123")
+    assert verify._parse_pr_identifier("123") == ("", "123")  # bare int still works
     assert verify._parse_pr_identifier(
         "https://github.com/o/r/pull/55") == ("o/r", "55")
+
+
+def test_parse_pr_identifier_rejects_non_numeric(verify_db):
+    # L16: a non-integer number segment yields no PR number (rather than stripping
+    # non-digits and fabricating one), so a mis-routed Jira key can't look up a
+    # bogus PR. The repo portion's own digits are untouched.
+    verify, _, _ = verify_db
+    assert verify._parse_pr_identifier("PROJ-42") == ("", "")
+    assert verify._parse_pr_identifier("repo#12a", "deflt") == ("deflt/repo", "")
+    assert verify._parse_pr_identifier("repo-123#45", "deflt") == ("deflt/repo-123", "45")
+
+
+def test_github_jira_key_misrouted_is_unverified(verify_db, monkeypatch):
+    # A Jira-style key wrongly given to a github_pr claim must be reported
+    # unverified (-> perform_lookup) WITHOUT ever consulting gh against a
+    # fabricated PR number.
+    verify, _, _ = verify_db
+    monkeypatch.setattr(verify, "gh_available", lambda: True)
+    def _must_not_run(args):  # noqa: ANN001
+        raise AssertionError("gh must not be consulted for a non-numeric identifier")
+    monkeypatch.setattr(verify, "_run_gh", _must_not_run)
+    r = verify.check_artifact("github_pr", "PROJ-42", now=T0)
+    assert r["verdict"] == "unverified"
+    assert r["action"] == "perform_lookup"
+    assert r["detail"]["reason"] == "no PR number in identifier"
 
 
 # --- Escalation eligibility (Phase 3 reads this) -------------------------

@@ -40,6 +40,7 @@ Which integrations each command uses:
 | Task Identifier | Open issues, PRs to review | Unassigned, stale, high-priority tickets | -- | -- | Competency gaps for ranking |
 | Evening Wrap-up | -- | -- | -- | -- | Today's entries, carry-forward |
 | 1:1 Prep | Merged/reviewed PRs (optional) | Completed tickets (optional) | -- | -- | Primary source: evidence + weekly summaries |
+| Project Sync Prep | Project PRs since last sync (optional) | Project tickets since last sync (optional) | Identifies the next project sync | -- | Primary source: project progress since last sync |
 
 **Legend:** "Required" means the command cannot function without it. "--"
 means the command does not use that integration. All other entries are
@@ -106,6 +107,7 @@ If all integrations are set to `false`, Valor still works:
 - **Task Identifier:** Competency gap analysis with suggestions.
 - **Design Doc Coach:** Fully functional -- asks user for context directly.
 - **1:1 Prep:** Fully functional from evidence store and weekly summaries.
+- **Project Sync Prep:** Functional from the evidence store -- project progress since the last sync from recorded evidence.
 - **PR Review Coach:** Requires GitHub (cannot function without it).
 
 This is a valid workflow for users who want career coaching without

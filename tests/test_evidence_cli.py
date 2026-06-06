@@ -451,6 +451,59 @@ def test_cmd_export_filters_by_date_range(cli_db, capsys):
     assert "In range" in output
 
 
+def _add_dated(statement, d):
+    cmd_add(argparse.Namespace(
+        activity="code_written", competency="subject_matter",
+        statement=statement, agent="test-agent", metadata=None, date=d,
+    ))
+
+
+def _mock_local_today_jun9(monkeypatch):
+    # Pin a western TZ + mock "now" so the LOCAL day is 2026-06-09 even though
+    # UTC has rolled to 2026-06-10. days=1 => local cutoff 2026-06-08.
+    monkeypatch.setenv("TZ", "America/New_York")
+    time.tzset()
+    mock_now = datetime(2026, 6, 10, 1, 0, 0, tzinfo=timezone.utc)  # local 2026-06-09 21:00
+    monkeypatch.setattr("src.evidence_cli.datetime", type("MockDT", (datetime,), {
+        "now": staticmethod(lambda *a, **kw: mock_now),
+        "fromisoformat": datetime.fromisoformat,
+        "strptime": datetime.strptime,
+    }))
+
+
+def test_cmd_list_days_cutoff_uses_local_day_not_utc(cli_db, capsys, monkeypatch):
+    # --days must cut off on the user's LOCAL day (matching cmd_add), not SQLite's
+    # UTC date('now'). Near local midnight the UTC clock would wrongly drop a
+    # local "yesterday" entry.
+    _add_dated("On cutoff", "2026-06-08")
+    _add_dated("Before cutoff", "2026-06-07")
+    capsys.readouterr()
+    _mock_local_today_jun9(monkeypatch)
+    try:
+        cmd_list(argparse.Namespace(
+            days=1, from_date=None, to_date=None, competency=None, activity=None, limit=50,
+        ))
+        stmts = {e["evidence_statement"] for e in json.loads(capsys.readouterr().out)}
+        assert stmts == {"On cutoff"}  # 2026-06-07 is before the local cutoff 2026-06-08
+    finally:
+        time.tzset()
+
+
+def test_cmd_export_days_cutoff_uses_local_day_not_utc(cli_db, capsys, monkeypatch):
+    _add_dated("On cutoff", "2026-06-08")
+    _add_dated("Before cutoff", "2026-06-07")
+    capsys.readouterr()
+    _mock_local_today_jun9(monkeypatch)
+    try:
+        cmd_export(argparse.Namespace(
+            format="json", days=1, from_date=None, to_date=None, competency=None,
+        ))
+        stmts = {e["evidence_statement"] for e in json.loads(capsys.readouterr().out)}
+        assert stmts == {"On cutoff"}
+    finally:
+        time.tzset()
+
+
 # --- cmd_stats ---
 
 def test_cmd_stats_empty_db(cli_db, capsys):

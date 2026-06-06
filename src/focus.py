@@ -158,7 +158,7 @@ def decide(config, syncs, today=None) -> dict:
     """Top-level: dispatch on mode. Returns {enabled:false} when off."""
     if not config.get("enabled"):
         return {"enabled": False}
-    if config.get("mode") == "manual":
+    if str(config.get("mode") or "").strip().lower() == "manual":
         return {
             "enabled": True,
             "mode": "manual",

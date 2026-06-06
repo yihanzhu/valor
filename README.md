@@ -232,6 +232,7 @@ Commands:
 - `/valor-tasks`
 - `/valor-wrapup`
 - `/valor-prep`
+- `/valor-sync-prep`
 - `/valor-setup`
 
 Natural language also works:
@@ -243,6 +244,7 @@ Natural language also works:
 - "what should I work on"
 - "wrap up"
 - "prep for 1:1"
+- "sync prep"
 - "set up valor"
 
 Ambient coaching controls:

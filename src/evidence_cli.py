@@ -263,7 +263,12 @@ def cmd_list(args: argparse.Namespace) -> None:
     params: list = []
 
     if args.days:
-        conditions.append(f"date >= date('now', '-{args.days} days')")
+        # Cut off in the user's LOCAL calendar, matching cmd_add/cmd_stats/
+        # cmd_context (all local). SQLite's date('now',...) is UTC, which near
+        # local midnight would drop a local "today"/"yesterday" entry.
+        cutoff = (datetime.now().astimezone().date() - timedelta(days=args.days)).isoformat()
+        conditions.append("date >= ?")
+        params.append(cutoff)
     if getattr(args, "from_date", None):
         conditions.append("date >= ?")
         params.append(args.from_date)
@@ -377,7 +382,11 @@ def cmd_export(args: argparse.Namespace) -> None:
     params: list = []
 
     if getattr(args, "days", None):
-        conditions.append(f"date >= date('now', '-{args.days} days')")
+        # Local-calendar cutoff (see cmd_list): keep --days consistent with the
+        # local day used by cmd_add, not SQLite's UTC date('now', ...).
+        cutoff = (datetime.now().astimezone().date() - timedelta(days=args.days)).isoformat()
+        conditions.append("date >= ?")
+        params.append(cutoff)
     if getattr(args, "from_date", None):
         conditions.append("date >= ?")
         params.append(args.from_date)
@@ -560,7 +569,8 @@ VALOR_HOME = Path.home() / ".valor"
 def _migrate_state_in_memory(state: dict) -> dict:
     """Return state with current-schema keys ensured.
 
-    Non-destructive: only adds missing keys, never overwrites existing values.
+    Adds missing keys with safe defaults and prunes keys retired in later
+    schema versions; never overwrites existing user-set values.
     Idempotent — safe to call on already-migrated state.
     """
     if "routines" not in state or not isinstance(state.get("routines"), dict):
