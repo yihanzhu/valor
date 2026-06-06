@@ -34,6 +34,20 @@ def test_manual_mode_uses_configured_current():
     assert out["transition_today"] is False
 
 
+def test_manual_mode_comparison_is_case_and_whitespace_insensitive():
+    # L6: a hand-edited 'Manual' / ' manual ' must still dispatch to manual mode
+    # and honor the user's set current_project, not silently fall through to
+    # meeting-derived (which would resolve to the next upcoming sync instead).
+    for raw in ("Manual", "MANUAL", " manual "):
+        out = focus.decide(
+            {"enabled": True, "mode": raw, "current": "payments"},
+            SYNCS, today="2026-06-04",
+        )
+        assert out["mode"] == "manual", raw
+        assert out["current_project"] == "payments", raw  # not 'platform'
+        assert out["transition_today"] is False, raw
+
+
 # --- meeting-derived focus ----------------------------------------------
 def test_steady_state_focus_is_next_upcoming_sync():
     # Before the first sync: focus the project whose sync is coming up.

@@ -118,10 +118,25 @@ def planning_config() -> dict:
         for k in ("workday_start", "workday_end", "deep_min_hours",
                   "post_meeting_break_minutes", "block_granularity_minutes",
                   "morning_buffer_minutes", "pre_meeting_prep_minutes"):
-            if k in state_cfg:
-                cfg[k] = state_cfg[k]
-        if isinstance(state_cfg.get("est_minutes"), dict):
-            cfg["est_minutes"] = {**DEFAULTS["est_minutes"], **state_cfg["est_minutes"]}
+            if k not in state_cfg:
+                continue
+            v = state_cfg[k]
+            # Accept a state override only when its type matches the default's:
+            # an HH:MM string for the time fields, a real number (not bool) for
+            # the numeric ones. A bad type in a hand-edited state.json falls back
+            # to the default rather than crashing fit() later.
+            if isinstance(DEFAULTS[k], str):
+                if isinstance(v, str):
+                    cfg[k] = v
+            elif isinstance(v, (int, float)) and not isinstance(v, bool):
+                cfg[k] = v
+        sub = state_cfg.get("est_minutes")
+        if isinstance(sub, dict):
+            cfg["est_minutes"] = {
+                **DEFAULTS["est_minutes"],
+                **{kk: vv for kk, vv in sub.items()
+                   if isinstance(vv, (int, float)) and not isinstance(vv, bool)},
+            }
     return cfg
 
 
@@ -422,7 +437,7 @@ def fit(events, priorities, *, now=None, workday_start=None, workday_end=None,
     for p in priorities:
         if isinstance(p, str):
             norm_priorities.append({"text": p, "shape": classify_shape(p), "est_minutes": None})
-        else:
+        elif isinstance(p, dict):
             text = p.get("text", "")
             est_p = p.get("est_minutes")
             norm_priorities.append({
@@ -430,6 +445,8 @@ def fit(events, priorities, *, now=None, workday_start=None, workday_end=None,
                 "shape": p.get("shape") or classify_shape(text),
                 "est_minutes": est_p if isinstance(est_p, (int, float)) and est_p > 0 else None,
             })
+        # else: a non-str/non-dict entry (None, int, list) is junk -- skip it
+        # rather than crash the whole plan, like malformed events above.
 
     blocks, unassigned = assign(norm_priorities, gaps, est, granularity)
 
@@ -438,7 +455,7 @@ def fit(events, priorities, *, now=None, workday_start=None, workday_end=None,
         "date": now_dt.date().isoformat(),
         "workday": {"start": day_start.isoformat(), "end": day_end.isoformat()},
         "now": now_dt.isoformat(),
-        "no_meeting_day": len(busy) == 0,
+        "no_busy_events": len(busy) == 0,
         "gaps": public_gaps,
         "deep_gap_count": sum(1 for g in public_gaps if g["type"] == "deep"),
         "prep_blocks": prep_blocks,

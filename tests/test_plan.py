@@ -57,10 +57,10 @@ def test_shape_deep_wins_tie():
 
 
 # --- gaps ---
-def test_no_meeting_day_is_one_deep_gap():
+def test_no_busy_events_is_one_deep_gap():
     r = plan.fit([], ["Design X"], now=T("09:00"),
                  workday_start="09:00", workday_end="18:00", deep_min_hours=2)
-    assert r["no_meeting_day"] is True
+    assert r["no_busy_events"] is True
     assert len(r["gaps"]) == 1
     assert r["gaps"][0]["type"] == "deep"
     assert r["deep_gap_count"] == 1
@@ -92,7 +92,7 @@ def test_naive_event_time_is_local_not_utc(monkeypatch):
                      workday_start="09:00", workday_end="18:00", deep_min_hours=2)
         # Naive == explicit-local: the meeting does NOT shift or vanish.
         assert a["gaps"] == b["gaps"]
-        assert a["no_meeting_day"] is False and b["no_meeting_day"] is False
+        assert a["no_busy_events"] is False and b["no_busy_events"] is False
         # The 12:00-13:00 meeting is honored: a pre-meeting gap exists.
         assert any(g.get("pre_meeting") for g in a["gaps"])
     finally:
@@ -112,7 +112,7 @@ def test_focus_time_is_not_busy():
     ev = [{**_ev("10:00", "12:00"), "type": "focusTime"}]
     r = plan.fit(ev, [], now=T("09:00"), workday_start="09:00",
                  workday_end="18:00", deep_min_hours=2)
-    assert r["no_meeting_day"] is True
+    assert r["no_busy_events"] is True
     assert len(r["gaps"]) == 1 and r["gaps"][0]["type"] == "deep"
 
 
@@ -120,7 +120,7 @@ def test_working_location_is_not_busy():
     ev = [{**_ev("09:00", "18:00"), "type": "workingLocation"}]
     r = plan.fit(ev, [], now=T("09:00"), workday_start="09:00",
                  workday_end="18:00", deep_min_hours=2)
-    assert r["no_meeting_day"] is True
+    assert r["no_busy_events"] is True
 
 
 def test_out_of_office_blocks_the_day():
@@ -146,7 +146,7 @@ def test_untyped_event_still_blocks():
     # Backward compat: an event with no `type` is treated as blocking.
     r = plan.fit([_ev("10:00", "12:00")], [], now=T("09:00"), workday_start="09:00",
                  workday_end="18:00", deep_min_hours=2)
-    assert r["no_meeting_day"] is False
+    assert r["no_busy_events"] is False
 
 
 # --- assignment ---
@@ -338,7 +338,7 @@ def test_cli_fit(tmp_path):
     assert r.returncode == 0, r.stderr
     out = json.loads(r.stdout)
     assert len(out["blocks"]) == 2
-    assert out["no_meeting_day"] is False
+    assert out["no_busy_events"] is False
 
 
 def test_cli_shape():
@@ -503,3 +503,56 @@ def test_cli_fit_pre_meeting_prep(tmp_path):
     out = json.loads(r.stdout)
     assert len(out["prep_blocks"]) == 1
     assert out["prep_blocks"][0]["start"] == T("14:00")
+
+
+# --- L3: malformed planning config in state.json falls back to defaults ---
+def _write_planning_state(tmp_path, planning):
+    home = tmp_path / ".valor"
+    home.mkdir(parents=True, exist_ok=True)
+    (home / "state.json").write_text(json.dumps({"planning": planning}))
+
+
+def test_bad_config_types_fall_back_to_defaults(tmp_path):
+    # A hand-edited state.json with wrong-typed planning values must not crash
+    # fit(); each bad value falls back to its default.
+    _write_planning_state(tmp_path, {
+        "workday_start": 9, "deep_min_hours": "two",
+        "block_granularity_minutes": "15", "est_minutes": {"fragmented_ok": "lots"},
+    })
+    cfg = plan.planning_config()
+    assert cfg["workday_start"] == "09:00"
+    assert cfg["deep_min_hours"] == 2.0
+    assert cfg["block_granularity_minutes"] == 15
+    assert cfg["est_minutes"]["fragmented_ok"] == 30
+
+
+def test_good_config_types_are_honored(tmp_path):
+    _write_planning_state(tmp_path, {
+        "workday_start": "08:30", "deep_min_hours": 3,
+        "morning_buffer_minutes": 45, "est_minutes": {"deep_only": 120},
+    })
+    cfg = plan.planning_config()
+    assert cfg["workday_start"] == "08:30"
+    assert cfg["deep_min_hours"] == 3
+    assert cfg["morning_buffer_minutes"] == 45
+    assert cfg["est_minutes"]["deep_only"] == 120
+
+
+def test_bad_config_does_not_crash_fit(tmp_path):
+    _write_planning_state(tmp_path, {
+        "workday_start": 9, "deep_min_hours": "two", "block_granularity_minutes": "15",
+    })
+    # No explicit kwargs -> fit() pulls from planning_config(), which must absorb
+    # the bad types and return a usable plan rather than raising.
+    r = plan.fit([], ["Design X"], now=T("09:00"))
+    assert isinstance(r, dict) and r["gaps"]
+
+
+# --- L4: junk priority entries are skipped, not crash the whole plan ---
+def test_junk_priority_entries_are_skipped():
+    r = plan.fit(
+        [], ["Design X", None, 42, {"text": "Merge PR #1", "est_minutes": 30}],
+        now=T("09:00"), workday_start="09:00", workday_end="18:00", deep_min_hours=2,
+    )
+    # The None and 42 produced no blocks and no crash; the str + dict survived.
+    assert {b["priority"] for b in r["blocks"]} == {"Design X", "Merge PR #1"}

@@ -14,6 +14,7 @@ All data stays on the user's machine.
 valor repo (github.com/yihanzhu/valor)
 ├── .claude-plugin/       Plugin manifest (Claude Code plugin system)
 ├── commands/             Prompt files (one per Valor agent)
+├── rules/                Ambient agent rule (valor-agent.md)
 ├── src/                  Shared source (evidence CLI, career framework, coaching ref)
 ├── bin/                  Executable wrappers (valor-evidence)
 ├── skills/               Plugin skills (setup)
@@ -40,8 +41,10 @@ discovery but provide commands only -- no ambient rule or hooks. Use
 ## Local State (`~/.valor/`)
 
 All user data lives under `~/.valor/`. This directory is never checked into
-version control and is not overwritten by upgrades (except `evidence_cli.py`
-and `utilities.md`).
+version control. Upgrades overwrite the installer-managed runtime files
+(`evidence_cli.py`, `verify.py`, `plan.py`, `focus.py`, `collect_transcripts.py`,
+`utilities.md`, `coaching-ref.md`) but never touch user content like
+`career_framework.md`, `state.json`, or the evidence database.
 
 
 | File / Dir            | Purpose                                       | Managed by           |
@@ -64,8 +67,11 @@ and `utilities.md`).
 
 The `installed_version` and `installed_at` fields track when the last install
 happened. The `state_schema_version` field enables forward-only migrations
-when the installer adds new fields (currently at version 16). Migrations are
-non-destructive (only missing keys are added) and run in `_migrate_state_in_memory`.
+when the installer adds new fields (currently at version 16). Migrations
+add missing keys with safe defaults and prune keys removed in later schema
+versions (e.g. the v16 sync-rescan throttle), never overwriting existing user
+values; they run in `_migrate_state_in_memory` (src/evidence_cli.py). The
+installer delegates to this same migrator via `evidence_cli.py state-migrate`.
 
 Key fields:
 
@@ -99,7 +105,7 @@ dict maps version numbers to SQL statements.
 
 ## Agent Architecture
 
-Valor has 7 discrete agents (invoked via slash commands) plus an ambient
+Valor has 8 discrete agents (invoked via slash commands) plus an ambient
 coaching layer:
 
 

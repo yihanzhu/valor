@@ -8,7 +8,7 @@ as bookends for the workday.
 
 - User says: "wrap up", "end of day", "call it a day", "let's wrap up",
   "evening wrap-up", or signals they are done for the day
-- Auto-suggested after 4pm on weekdays (see valor-agent.mdc trigger)
+- Auto-suggested after 4pm on weekdays (see valor-agent.md trigger)
 
 ## Integration Check
 
@@ -74,7 +74,7 @@ python3 ~/.valor/collect_transcripts.py --days 1 --json
 ```
 
 This returns a JSON array of all sessions from the past 24 hours across
-every Cursor workspace. Each entry has: `uuid`, `workspace`, `title`,
+every workspace (both Claude Code and Cursor). Each entry has: `uuid`, `workspace`, `title`,
 `query_preview`, `mtime`, `file`, `size_kb`.
 
 **Process other sessions:** For each session that is NOT the current

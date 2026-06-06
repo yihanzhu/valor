@@ -242,7 +242,11 @@ def _parse_pr_identifier(identifier: str, default_owner: str = "") -> tuple[str,
         repo_spec = repo_spec.strip()
     else:
         repo_spec, num = "", identifier
-    num = re.sub(r"\D", "", num)
+    # A PR number is a bare integer. Reject anything else (e.g. a Jira key like
+    # 'PROJ-42' mis-routed here, or 'repo#12a') by returning no number, rather
+    # than stripping non-digits and fabricating a bogus PR number to look up.
+    num = num.strip()
+    num = num if num.isdigit() else ""
     if repo_spec and "/" not in repo_spec and default_owner:
         repo_spec = f"{default_owner}/{repo_spec}"
     return repo_spec, num
