@@ -1286,6 +1286,49 @@ def test_state_migrate_handles_missing_state_file(cli_db, capsys):
     assert on_disk["host"] is None
 
 
+def test_state_migrate_quarantines_corrupt_file_instead_of_wiping(cli_db, capsys):
+    """A corrupt state.json must be preserved (quarantined), never silently
+    overwritten with defaults -- that would wipe the user's profile. A migrate on
+    a corrupt file (install.sh runs this on every upgrade) must keep the original
+    recoverable while still producing a usable fresh state."""
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    state_path = valor_home / "state.json"
+    # Torn / truncated JSON that still carries real profile data.
+    corrupt = '{"current_level": "Senior", "target_level": "Staff", "github_owner": "octo'
+    state_path.write_text(corrupt)
+
+    cmd_state_migrate(argparse.Namespace())
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert result["status"] == "ok"
+    assert "quarantined" in captured.err  # user is warned, not left in the dark
+
+    # A fresh default is written so the agent stays usable...
+    on_disk = json.loads(state_path.read_text())
+    assert on_disk["state_schema_version"] == STATE_SCHEMA_VERSION
+
+    # ...but the corrupt original is preserved verbatim in a timestamped backup,
+    # so nothing is silently destroyed.
+    backups = list(valor_home.glob("state.json.corrupt-*"))
+    assert len(backups) == 1, "corrupt state.json should be quarantined, not lost"
+    assert backups[0].read_text() == corrupt
+
+
+def test_read_state_does_not_quarantine_missing_file(cli_db):
+    """A genuinely-absent state.json is a normal first-run case -- it must start
+    clean WITHOUT creating a spurious .corrupt-* backup."""
+    import src.evidence_cli as cli_module
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    state_path = valor_home / "state.json"
+    if state_path.exists():
+        state_path.unlink()
+    state = cli_module._read_state()
+    assert state["state_schema_version"] == STATE_SCHEMA_VERSION
+    assert list(valor_home.glob("state.json.corrupt-*")) == []
+
+
 def test_context_includes_routines_enabled_and_manager_set(cli_db, capsys):
     db_path, _ = cli_db
     valor_home = db_path.parent / ".valor"

@@ -18,9 +18,10 @@ tell the user: "PR review requires GitHub -- set `integrations.github` to
 
 ### Preferred: Use an existing PR review skill (if available)
 
-Check if the `/sa-ds-pr-review` skill is available. If it is, use
-it for the actual code analysis in report mode (no GitHub submission), then
-ADD Valor's career coaching layer on top (sections 2-6 below).
+Check if a dedicated PR-review skill (for example `/pr-review`, or one your
+org provides) is available. If it is, use it for the actual code analysis in
+report mode (no GitHub submission), then ADD Valor's career coaching layer on
+top (sections 2-6 below).
 
 ### Fallback: Direct analysis
 
