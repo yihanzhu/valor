@@ -3,6 +3,7 @@
 import json
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -73,6 +74,29 @@ def test_meeting_splits_into_pre_and_terminal_gaps():
     assert r["gaps"][0]["pre_meeting"] is True
     assert r["gaps"][1]["pre_meeting"] is False
     assert all(g["type"] == "deep" for g in r["gaps"])
+
+
+def test_naive_event_time_is_local_not_utc(monkeypatch):
+    # M1: a naive (offset-less) event time must be read as LOCAL wall-clock, not
+    # UTC. Pin the local zone to EDT (-04:00, matching the suite's TZ constant)
+    # so a naive 12:00 behaves identically to an explicit 12:00-04:00 -- i.e. the
+    # meeting stays in the plan instead of being shifted out of the workday window.
+    monkeypatch.setenv("TZ", "America/New_York")  # June -> EDT -04:00
+    time.tzset()
+    try:
+        naive = {"start": "2026-06-03T12:00:00", "end": "2026-06-03T13:00:00", "summary": "mtg"}
+        explicit = _ev("12:00", "13:00")  # carries -04:00 via T()
+        a = plan.fit([naive], ["Design X"], now=T("09:00"),
+                     workday_start="09:00", workday_end="18:00", deep_min_hours=2)
+        b = plan.fit([explicit], ["Design X"], now=T("09:00"),
+                     workday_start="09:00", workday_end="18:00", deep_min_hours=2)
+        # Naive == explicit-local: the meeting does NOT shift or vanish.
+        assert a["gaps"] == b["gaps"]
+        assert a["no_meeting_day"] is False and b["no_meeting_day"] is False
+        # The 12:00-13:00 meeting is honored: a pre-meeting gap exists.
+        assert any(g.get("pre_meeting") for g in a["gaps"])
+    finally:
+        time.tzset()
 
 
 def test_window_starts_at_now_not_workday_start():

@@ -72,6 +72,7 @@ VALOR_VERSION="$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "unknown")"
 # --- Parse arguments ---
 TARGET="all"
 CHECK_ONLY=false
+DID_UPGRADE_PULL=false
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -102,6 +103,12 @@ while [ "$#" -gt 0 ]; do
                 VALOR_VERSION="$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "unknown")"
                 echo "[OK] Updated to Valor $VALOR_VERSION"
                 echo ""
+                # The git pull just replaced this very file on disk, but bash is
+                # still running the OLD body. Defer the re-exec until AFTER arg
+                # parsing (below the loop) so the freshly pulled installer runs
+                # with the user's fully-resolved --target/--check, not a
+                # partially-parsed arg set.
+                DID_UPGRADE_PULL=true
             else
                 echo "Not a git repo -- cannot auto-upgrade. Run 'git pull' manually."
                 exit 1
@@ -135,6 +142,18 @@ while [ "$#" -gt 0 ]; do
     esac
     shift
 done
+
+# An --upgrade just pulled a new install.sh, but this process is still running
+# the old body. Re-exec the updated script now that --target/--check are fully
+# parsed, forwarding both. VALOR_UPGRADE_REEXEC stops the child (which runs a
+# normal install/check, not --upgrade) from ever looping back here.
+if [ "$DID_UPGRADE_PULL" = true ] && [ -z "${VALOR_UPGRADE_REEXEC:-}" ]; then
+    if [ "$CHECK_ONLY" = true ]; then
+        VALOR_UPGRADE_REEXEC=1 exec bash "$SCRIPT_DIR/install.sh" --target "$TARGET" --check
+    else
+        VALOR_UPGRADE_REEXEC=1 exec bash "$SCRIPT_DIR/install.sh" --target "$TARGET"
+    fi
+fi
 
 RULE_SOURCE="$SCRIPT_DIR/rules/valor-agent.md"
 

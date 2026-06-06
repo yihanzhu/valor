@@ -2,7 +2,8 @@ import argparse
 import json
 import sqlite3
 import sys
-from datetime import date, datetime, timedelta
+import time
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
@@ -191,6 +192,38 @@ def test_cmd_add_invalid_date_raises(cli_db):
     )
     with pytest.raises(argparse.ArgumentTypeError):
         cli_module.parse_ymd_date(args.date)
+
+
+def test_cmd_add_default_date_uses_local_day_not_utc(cli_db, capsys, monkeypatch):
+    # NEW: the default entry date must be the user's LOCAL calendar day, not UTC.
+    # Mock "now" to just past UTC midnight and pin a western zone so the local day
+    # is the PREVIOUS date -- evidence logged in the evening must land on today,
+    # not UTC-tomorrow (otherwise it drops out of local "today"/"this week").
+    monkeypatch.setenv("TZ", "America/New_York")  # June -> EDT -04:00
+    time.tzset()
+    try:
+        db_path, _ = cli_db
+        mock_now = datetime(2026, 6, 10, 0, 30, 0, tzinfo=timezone.utc)  # 20:30 EDT, Jun 9
+        monkeypatch.setattr("src.evidence_cli.datetime", type("MockDT", (datetime,), {
+            "now": staticmethod(lambda *a, **kw: mock_now),
+            "fromisoformat": datetime.fromisoformat,
+            "strptime": datetime.strptime,
+        }))
+        cmd_add(argparse.Namespace(
+            activity="code_written", competency="subject_matter",
+            statement="Logged near UTC midnight", agent="test-agent",
+            metadata=None, date=None,
+        ))
+        assert json.loads(capsys.readouterr().out)["status"] == "ok"
+        conn = _make_conn(db_path)
+        row = conn.execute(
+            "SELECT date FROM evidence WHERE evidence_statement = ?",
+            ("Logged near UTC midnight",),
+        ).fetchone()
+        conn.close()
+        assert row["date"] == "2026-06-09"  # local day, not the UTC day (2026-06-10)
+    finally:
+        time.tzset()
 
 
 # --- cmd_list ---
@@ -401,11 +434,17 @@ def test_cmd_export_filters_by_days(cli_db, capsys):
 
 
 def test_cmd_export_filters_by_date_range(cli_db, capsys):
-    _add_entry("code_written", "subject_matter", "In range")
+    # Pin the entry's date and the query window to the SAME computed value so the
+    # test is TZ-independent and immune to a UTC/local midnight rollover (the add
+    # default and the query previously disagreed near local midnight).
+    target = date.today().isoformat()
+    cmd_add(argparse.Namespace(
+        activity="code_written", competency="subject_matter",
+        statement="In range", agent="test-agent", metadata=None, date=target,
+    ))
     capsys.readouterr()
-    today = date.today().isoformat()
     cmd_export(argparse.Namespace(
-        format="markdown", days=None, from_date=today, to_date=today,
+        format="markdown", days=None, from_date=target, to_date=target,
         competency=None,
     ))
     output = capsys.readouterr().out
@@ -650,6 +689,26 @@ def test_weekly_summary_save_and_get(cli_db, capsys):
     assert entry["summary"]["subject_matter"] == 3
     assert entry["gaps"] == ["leadership"]
     assert entry["narrative"] == "Good week overall."
+
+
+def test_weekly_summary_roundtrip_plain_string_summary(cli_db, capsys):
+    # M14: write always JSON-encodes to mirror the json.loads on read. A plain
+    # (non-JSON) string must round-trip through save->get and save->list instead
+    # of crashing the reader with JSONDecodeError.
+    cmd_weekly_summary_save(argparse.Namespace(
+        week_start="2026-05-04", week_end="2026-05-10",
+        summary="plain text summary, not json",
+        gaps="leadership gap, not json", narrative="n",
+    ))
+    capsys.readouterr()
+    cmd_weekly_summary_get(argparse.Namespace(week_start="2026-05-04"))
+    entry = json.loads(capsys.readouterr().out)
+    assert entry["summary"] == "plain text summary, not json"
+    assert entry["gaps"] == "leadership gap, not json"
+    cmd_weekly_summary_list(argparse.Namespace(limit=10))
+    entries = json.loads(capsys.readouterr().out)
+    assert entries[0]["summary"] == "plain text summary, not json"
+    assert entries[0]["gaps"] == "leadership gap, not json"
 
 
 def test_weekly_summary_save_upserts_same_week(cli_db, capsys):

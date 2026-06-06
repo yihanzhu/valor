@@ -197,8 +197,9 @@ ticket→project classification is the agent's job (read the ticket).
    approval (a review is a focus session, and the user asked to hold that
    single-project boundary). Applies to Work Context, PR Situation, Suggested
    Priorities, and the Day Plan.
-3. **Transition hand-off.** When `transition_today` is true (a sync fell
-   yesterday → the focus just flipped), lead Suggested Priorities with a one-time
+3. **Transition hand-off.** When `transition_today` is true (the first working
+   day after a sync — Monday for a Friday sync — so the focus just flipped), lead
+   Suggested Priorities with a one-time
    line naming the new focus and when the other project resumes (`next_project` /
    `next_sync_date`). Outside the transition, don't preview off-focus work.
 4. **Project & meeting intelligence (briefing, every run).** The mapping is set

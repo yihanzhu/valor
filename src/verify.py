@@ -370,7 +370,11 @@ def record_result(
 
     now_dt = _now(now)
     now_iso = now_dt.isoformat()
-    today = now_dt.date().isoformat()
+    # Per-day dedup is a *calendar-day* boundary the user reasons about locally
+    # ("did briefing + wrapup both run today?"). Use the local day, not UTC --
+    # otherwise a re-check near local midnight lands on a different UTC date and
+    # double-counts (or two distinct local days collapse into one).
+    today = now_dt.astimezone().date().isoformat()
     chash = claim_hash(claim_type, identifier)
 
     conn = get_conn()
@@ -522,6 +526,24 @@ def check_artifact(
         gh_result = check_github_pr(identifier, expect_state=expect_state)
         verdict = gh_result["verdict"]
         recorded = record_result(claim_type, identifier, verdict, now=now)
+        # Only a definitive verdict (resolved/unresolved) counts as "checked".
+        # An unverified verdict means the lookup couldn't confirm anything (gh
+        # missing, lookup error, no PR number); demote to a needs_lookup so the
+        # agent confirms instead of trusting a non-check as fact.
+        if verdict == "unverified":
+            return {
+                **base,
+                "status": "needs_lookup",
+                "action": "perform_lookup",
+                "verdict": "unverified",
+                "display": recorded["display"],
+                "day_count": recorded["day_count"],
+                "miss_count": recorded["miss_count"],
+                "frozen": bool(recorded["frozen"]),
+                "fresh": False,
+                "detail": gh_result.get("detail", {}),
+                "lookup": lookup_directive(claim_type, identifier),
+            }
         return {
             **base,
             "status": "checked",

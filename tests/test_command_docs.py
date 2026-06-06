@@ -182,6 +182,43 @@ def test_state_json_template_exists_in_installer():
     assert "STATEJSON" in text, "install.sh should contain the state template"
 
 
+def _upgrade_case_body(text):
+    start = text.index("--upgrade)")
+    return text[start:text.index(";;", start)]
+
+
+def test_upgrade_reexecs_after_pull():
+    """M25: --upgrade must re-exec the freshly pulled install.sh -- running the
+    stale in-process body would apply new files with old installer logic. The
+    case body only flags the pull; the re-exec happens after arg parsing."""
+    text = Path("install.sh").read_text()
+    assert "DID_UPGRADE_PULL=true" in _upgrade_case_body(text), \
+        "--upgrade case should flag the pull for a deferred re-exec"
+    assert "VALOR_UPGRADE_REEXEC=1 exec bash" in text, \
+        "install.sh does not re-exec the updated install.sh after an upgrade pull"
+
+
+def test_upgrade_reexec_guard_prevents_loop():
+    """The re-exec is gated on the guard var being unset, so the re-exec'd child
+    (a plain install) cannot pull+re-exec again."""
+    text = Path("install.sh").read_text()
+    assert '[ -z "${VALOR_UPGRADE_REEXEC:-}" ]' in text
+
+
+def test_upgrade_reexec_runs_after_parsing_and_forwards_flags():
+    """The deferred re-exec must run AFTER the arg-parsing loop (so --target and
+    --check are fully resolved) and forward both -- otherwise `--upgrade --check`
+    would silently become a mutating install (regression that was fixed)."""
+    text = Path("install.sh").read_text()
+    # Re-exec is positioned after the parse loop closes, not inside the case.
+    loop_end = text.index("    esac\n    shift\ndone")
+    assert text.index("VALOR_UPGRADE_REEXEC=1 exec bash") > loop_end, \
+        "re-exec must run after the arg-parsing loop, not mid-parse"
+    # Both a plain-install and a --check-forwarding branch exist.
+    assert 'exec bash "$SCRIPT_DIR/install.sh" --target "$TARGET" --check' in text
+    assert 'if [ "$CHECK_ONLY" = true ]; then' in text
+
+
 # --- Utilities reference tests ---
 
 def test_utilities_documents_integrations():

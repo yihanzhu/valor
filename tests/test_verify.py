@@ -6,6 +6,7 @@ demoted (not blindly re-incremented) within two gated runs.
 """
 
 import json
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -55,16 +56,49 @@ def test_claim_hash_differs_by_type(verify_db):
 
 
 # --- State machine (locked decision #3: cumulative) ----------------------
-def test_unresolved_increments_once_per_day(verify_db):
-    verify, _, _ = verify_db
-    r = verify.record_result("confluence", "X", "unresolved", now=T0)
-    assert r["day_count"] == 1 and r["miss_count"] == 1
-    # Same calendar day -> no double-count (briefing + wrapup both run).
-    r = verify.record_result("confluence", "X", "unresolved", now=T0 + timedelta(hours=6))
-    assert r["day_count"] == 1 and r["miss_count"] == 1
-    # Next day -> increments.
-    r = verify.record_result("confluence", "X", "unresolved", now=T0 + timedelta(days=1))
-    assert r["day_count"] == 2 and r["miss_count"] == 2
+def test_unresolved_increments_once_per_day(verify_db, monkeypatch):
+    # Pin UTC so the local-day dedup boundary is deterministic regardless of the
+    # CI runner's timezone (T0 is 09:00 UTC; +6h stays the same UTC/local day).
+    monkeypatch.setenv("TZ", "UTC")
+    time.tzset()
+    try:
+        verify, _, _ = verify_db
+        r = verify.record_result("confluence", "X", "unresolved", now=T0)
+        assert r["day_count"] == 1 and r["miss_count"] == 1
+        # Same calendar day -> no double-count (briefing + wrapup both run).
+        r = verify.record_result("confluence", "X", "unresolved", now=T0 + timedelta(hours=6))
+        assert r["day_count"] == 1 and r["miss_count"] == 1
+        # Next day -> increments.
+        r = verify.record_result("confluence", "X", "unresolved", now=T0 + timedelta(days=1))
+        assert r["day_count"] == 2 and r["miss_count"] == 2
+    finally:
+        time.tzset()  # monkeypatch restores TZ env; re-sync libc
+
+
+def test_unresolved_dedup_uses_local_day_not_utc(verify_db, monkeypatch):
+    # M13: the per-day dedup must key on the user's LOCAL day, not the UTC day.
+    # Pin a western zone so local midnight != UTC midnight, then straddle UTC
+    # midnight within a single local day.
+    monkeypatch.setenv("TZ", "America/New_York")
+    time.tzset()
+    try:
+        verify, _, _ = verify_db
+        # Both instants are the SAME local day (June 5 evening, EDT -04:00) but
+        # straddle UTC midnight: 23:00Z (local 19:00) and next-UTC-day 01:00Z.
+        t_eve = datetime(2026, 6, 5, 23, 0, tzinfo=UTC)
+        t_late = datetime(2026, 6, 6, 1, 0, tzinfo=UTC)
+        r = verify.record_result("confluence", "Y", "unresolved", now=t_eve)
+        assert r["day_count"] == 1 and r["miss_count"] == 1
+        # Same LOCAL day -> must NOT double-count (the bug counted this as 2).
+        r = verify.record_result("confluence", "Y", "unresolved", now=t_late)
+        assert r["day_count"] == 1 and r["miss_count"] == 1
+        assert r["last_counted_date"] == "2026-06-05"
+        # A genuinely new local day still increments.
+        t_next = datetime(2026, 6, 7, 1, 0, tzinfo=UTC)  # local June 6, 21:00
+        r = verify.record_result("confluence", "Y", "unresolved", now=t_next)
+        assert r["day_count"] == 2 and r["miss_count"] == 2
+    finally:
+        time.tzset()
 
 
 def test_resolved_clears_counters(verify_db):
@@ -156,6 +190,25 @@ def test_github_missing_gh_is_unverified(verify_db, monkeypatch):
     monkeypatch.setattr(verify, "gh_available", lambda: False)
     r = verify.check_artifact("github_pr", "repo#456", now=T0)
     assert r["verdict"] == "unverified"
+    assert r["frozen"] is True
+    # M12: an unconfirmable lookup must not masquerade as a definitive "checked";
+    # it is demoted to a lookup directive so the agent confirms instead.
+    assert r["status"] == "needs_lookup"
+    assert r["action"] == "perform_lookup"
+    assert r["fresh"] is False
+    assert r["lookup"]["method"] == "gh"
+
+
+def test_github_lookup_failure_is_unverified_not_checked(verify_db, monkeypatch):
+    # gh is present but the lookup itself fails (returns None) -> unverified, and
+    # demoted to perform_lookup rather than reported as a real check (M12).
+    verify, _, _ = verify_db
+    monkeypatch.setattr(verify, "gh_available", lambda: True)
+    monkeypatch.setattr(verify, "_run_gh", lambda args: None)
+    r = verify.check_artifact("github_pr", "repo#789", now=T0)
+    assert r["verdict"] == "unverified"
+    assert r["status"] == "needs_lookup"
+    assert r["action"] == "perform_lookup"
     assert r["frozen"] is True
 
 

@@ -226,7 +226,7 @@ Apply the result:
   Context, PR Situation, Suggested Priorities, and the Day Plan. A PR that only
   needs your approval still counts as off-focus: a review is a focus session, not
   a click, and the user has asked to hold that boundary.
-- **`transition_today` is true** (the focus just flipped — a sync fell yesterday):
+- **`transition_today` is true** (the focus just flipped — today is the first working day after a sync):
   lead Suggested Priorities with a one-time hand-off line, e.g. *"Focus shifts to
   [current_project] this cycle; [next_project] resumes after its sync on
   [next_sync_date]."* Outside the transition, do not preview the off-focus project
