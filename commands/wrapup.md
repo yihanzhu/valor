@@ -133,7 +133,47 @@ today), skip the reconciliation against priorities.
 This reconciliation step ensures the evidence store reflects actual work done,
 not just work done inside the current session.
 
-### 1.7 Verification Gate (run before writing carry-forward)
+### 1.7 Capture Meeting Notes
+
+Meeting notes (e.g. Gemini "I took notes for you") live only on the calendar
+event — nothing else reads them, so what happened in a sync is invisible to
+later `/valor-prep` and `/valor-weekly` unless it's captured here. Skip this step
+if `integrations.calendar` is `false`.
+
+1. List **today's** calendar events (the same calendar source the briefing uses).
+   A meeting that has **notes attached** — a notes doc in the event's
+   `attachments`, or notes / a notes-doc link in the `description` — was
+   substantive enough to capture.
+2. **Skip short recurring standups** — a daily/weekly recurring meeting ≤ ~15 min
+   (e.g. "standup", "daily", "scrum", "check-in") — even if notes are attached;
+   that's status noise, not the work. Capture project syncs, 1:1s, design/decision
+   reviews, externals, and other substantive meetings.
+3. Read the notes with the same docs-read capability `/valor-prep` uses for the
+   1:1 doc (a Drive/Docs MCP, or a docs slash command). If no docs reader is
+   available, fall back to the event `description`; if neither has content, skip
+   that meeting.
+4. Record each as a **concise** evidence entry (a summary + a link — never the
+   full doc) so it lands in the "last 2 weeks" window `/valor-prep` and
+   `/valor-weekly` read:
+   ```bash
+   python3 ~/.valor/evidence_cli.py add \
+     --activity meeting_notes \
+     --competency <best-fit> \
+     --statement "<meeting> (<who>): <2-3 line summary — decisions, outcomes, action items>. Notes: <link>" \
+     --agent valor-evening-wrapup \
+     --date $(date +%Y-%m-%d)
+   ```
+   Pick the dominant competency from the content (a cross-team sync →
+   `collaboration`; a technical decision → `subject_matter`; driving the call →
+   `leadership`). Keep the full-notes **link** in the statement so detail is one
+   click away without bloating the store. **Before recording, list today's
+   already-captured notes (`python3 ~/.valor/evidence_cli.py list --days 1`) and
+   skip any meeting already in there.** The CLI only auto-dedupes a *byte-identical*
+   statement, and a re-run will reword the summary — so this explicit skip is what
+   keeps a second wrap-up from double-recording the same meeting (which would then
+   double-count in the window `/valor-prep` and `/valor-weekly` read).
+
+### 1.8 Verification Gate (run before writing carry-forward)
 
 The wrap-up is where phantom claims are *born*: an unchecked "PROJ-42 1-pager
 unposted" gets written to carry-forward, and tomorrow's briefing reads it as
@@ -190,7 +230,7 @@ List tasks that need attention tomorrow. For each item, note:
 - What it is (specific and actionable)
 - Current state (where it was left off)
 - Any blockers or dependencies
-- **Verification status** for artifact claims (from §1.7): a verified-missing
+- **Verification status** for artifact claims (from §1.8): a verified-missing
   item shows its real day count (e.g. "unresolved — 14d"); an unconfirmable one
   is written as "unverified — confirm or drop?" with the counter frozen. Do not
   carry an artifact claim forward without one of these states.

@@ -155,6 +155,34 @@ def test_prep_drafts_in_doc_format_and_surfaces_chronic():
     assert "Chronic" in text               # surfaced as a section
 
 
+def test_wrapup_captures_meeting_notes():
+    """Wrap-up captures meeting notes (e.g. Gemini) into evidence so a sync whose
+    notes live only on the calendar still informs later 1:1 prep / weekly, and it
+    skips short recurring standups."""
+    text = Path("commands/wrapup.md").read_text()
+    assert "Capture Meeting Notes" in text
+    assert "meeting_notes" in text                       # the evidence activity
+    assert "attach" in text.lower()                      # reads event attachments
+    assert "standup" in text.lower()                     # the skip-standups rule
+    assert "integrations.calendar" in text               # gated on calendar
+
+
+def test_prep_uses_captured_meeting_notes():
+    """1:1 prep stays a pure evidence reader -- it uses the wrap-up-captured
+    meeting_notes entries rather than re-reading the calendar itself."""
+    text = Path("commands/prep.md").read_text()
+    assert "meeting_notes" in text
+
+
+@pytest.mark.parametrize("cmd", ["prep", "sync-prep"])
+def test_paste_ready_output_is_plain_text(cmd):
+    """Paste-ready deliverables must be plain text -- markdown asterisks paste
+    literally into the user's doc and break their formatting."""
+    text = (COMMANDS_DIR / f"{cmd}.md").read_text()
+    assert "plain text" in text.lower()
+    assert "no `*`" in text  # the explicit no-asterisks rule
+
+
 def test_installer_seeds_one_on_one_state():
     text = Path("install.sh").read_text()
     assert '"one_on_one"' in text
