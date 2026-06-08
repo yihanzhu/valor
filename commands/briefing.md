@@ -142,8 +142,13 @@ Select 2-3 headlines per category. For AI/ML news, add a brief note on
 relevance to the user's work if applicable.
 
 **Source URLs:** Every news headline must be plain text, with the source URL on
-an indented line below. Use the URLs returned by the WebSearch tool. If a
-headline has no URL, omit it rather than showing an unsourced item.
+an indented line below. The link must point to the **specific article** — never a
+homepage, section, topic, or daily-roundup/aggregator page (e.g. `site.com/`,
+`site.com/topic/ai`, or a "news briefs for [date]" roundup). Those drop the reader
+into dozens of unrelated items — the #1 complaint about this section. Prefer the
+article permalink WebSearch returns; if a result only yields a hub/section page,
+`WebFetch` it and cite the specific story's link instead. If a headline has no
+specific-article URL, omit it rather than linking a hub or showing it unsourced.
 
 ### 5. Career Coaching
 
@@ -391,6 +396,7 @@ drop?", never as numbered priorities with a day count.]
 [Time-blocked schedule from the §7 day-planning pass. Omit if calendar is off.]
 - [HH:MM]–[HH:MM] — [priority] *(deep)*
 - [HH:MM]–[HH:MM] — [priority] *(fragmented)*
+[**Open windows:** [HH:MM]–[HH:MM] (Nm)[, …] — free slots for a quick win or overflow (from plan.py `open_windows`); if any]
 [**Push to next deep block:** [unassigned deep_only items], if any]
 [*Calendar: N events written/updated* — only if auto-write ran]
 ```
@@ -434,14 +440,19 @@ Write"). In short:
    python3 ~/.valor/plan.py fit --events "$EVENTS" --priorities "$PRIORITIES"
    ```
    Render `blocks` **exactly as plan.py returns them** — its times, in order;
-   don't re-time, merge, or improvise the schedule. plan.py won't start tasks
-   before `workday_start + morning_buffer_minutes` (your AM ritual) and **prefers
-   focus-time blocks for deep work** (that's what they're for). Surface
+   don't re-time, merge, or improvise the schedule — and never invent a block for
+   a task plan.py left `unassigned`. plan.py won't start tasks before
+   `workday_start + morning_buffer_minutes` (your AM ritual) and **prefers
+   focus-time blocks for deep work** (that's what they're for); a short task that
+   only fits a small window now lands there instead of being pushed. Surface
    `unassigned` `deep_only` items as "push to your next deep block". plan.py also
-   returns **`prep_blocks`** (a prep slot before each prep-worthy meeting — render
-   them in the plan alongside task blocks) and **`prep_unassigned`** (a prep-worthy
-   meeting with no free slot before it — surface as *"no prep time before X today —
-   make room, or prep the day before"*).
+   returns **`open_windows`** (free slots ≥15 min left after assignment, including
+   the leftover of a partly-used gap — render them as **"Open windows: …"** quick-
+   win / overflow slots so short free gaps aren't invisible), **`prep_blocks`** (a
+   prep slot before each prep-worthy meeting — render them in the plan alongside
+   task blocks) and **`prep_unassigned`** (a prep-worthy meeting with no free slot
+   before it — surface as *"no prep time before X today — make room, or prep the
+   day before"*).
 3. **Calendar write** — only if `context.planning.calendar_auto_write` is `true`
    AND a writer is available. These are personal to-dos, so write them
    **private**: prefer a **Google Task** per block (private by nature) if a

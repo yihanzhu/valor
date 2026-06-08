@@ -150,15 +150,58 @@ def test_untyped_event_still_blocks():
 
 
 # --- assignment ---
-def test_deep_only_unassigned_on_fragmented_day():
-    # Meetings chop the day so no gap reaches 2h.
+def test_long_deep_task_unassigned_when_no_window_fits():
+    # Meetings chop the day so no gap is long enough for a 150-min deep task.
     events = [_ev("10:30", "11:00"), _ev("12:30", "13:30"),
               _ev("14:30", "15:00"), _ev("16:00", "16:30")]
-    r = plan.fit(events, ["Design the system"], now=T("09:00"),
+    r = plan.fit(events, [{"text": "Design the system", "est_minutes": 150}], now=T("09:00"),
                  workday_start="09:00", workday_end="18:00", deep_min_hours=2)
     assert r["deep_gap_count"] == 0
     assert not r["blocks"]
-    assert r["unassigned"][0]["reason"] == "no deep block today"
+    assert r["unassigned"][0]["reason"] == "no block long enough today"
+
+
+def test_short_deep_task_falls_back_to_fitting_fragment_window():
+    # No 2h block all day, but a deep task that FITS a smaller window is placed
+    # there rather than pushed -- otherwise a usable 90-min gap sits idle while
+    # the task waits for a deep block that never comes. (The fix for the misshaped
+    # "publish the 1-pager" case: a short task shouldn't be stranded by its shape.)
+    events = [_ev("10:30", "11:00"), _ev("12:30", "13:30"),
+              _ev("14:30", "15:00"), _ev("16:00", "16:30")]
+    r = plan.fit(events, [{"text": "Design the system", "est_minutes": 60}], now=T("09:00"),
+                 workday_start="09:00", workday_end="18:00", deep_min_hours=2)
+    assert r["deep_gap_count"] == 0
+    assert len(r["blocks"]) == 1
+    assert r["blocks"][0]["gap_type"] == "fragmented"
+    assert not r["unassigned"]
+
+
+def test_fragmented_task_avoids_focus_window():
+    # A focus-time gap (09:00-10:00) and a plain fragment window (11:15-12:00,
+    # after a real meeting's break). A quick task should take the plain window and
+    # leave the focus block free for deep work.
+    events = [{"start": T("09:00"), "end": T("10:00"), "type": "focusTime"},
+              _mtg("10:00", "11:00"),          # real meeting -> 15m break after
+              _ev("12:00", "18:00")]           # fills the rest of the day
+    r = plan.fit(events, ["Merge PR #1"], now=T("09:00"),
+                 workday_start="09:00", workday_end="18:00", deep_min_hours=2)
+    assert len(r["blocks"]) == 1
+    blk = r["blocks"][0]
+    assert blk["priority"] == "Merge PR #1"
+    assert blk["start"] == T("11:15")                     # the plain window
+    assert not (T("09:00") <= blk["start"] < T("10:00"))  # NOT the focus block
+
+
+def test_open_windows_surface_unfilled_free_time():
+    # Free time the planner couldn't auto-fill is surfaced (>= 15 min), including
+    # the leftover of a gap a task only partially consumed.
+    events = [_ev("10:00", "10:30"), _ev("12:00", "12:30")]   # two short holds
+    r = plan.fit(events, [{"text": "Merge PR #1", "est_minutes": 30}], now=T("09:00"),
+                 workday_start="09:00", workday_end="18:00", deep_min_hours=2)
+    assert r["open_windows"]
+    assert all(w["minutes"] >= 15 for w in r["open_windows"])
+    # the 30m task consumed 09:00-09:30; its gap's leftover 09:30-10:00 is surfaced
+    assert any(w["start"] == T("09:30") and w["minutes"] == 30 for w in r["open_windows"])
 
 
 def test_fragmented_task_assigned_and_preserves_deep_block():
