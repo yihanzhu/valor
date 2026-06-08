@@ -75,8 +75,13 @@ not a self-review. Skip any empty section.
 Print the talk points for the user to **proof and paste** into the project's
 shared sync doc/agenda themselves. Do **not** write to any doc or send anything:
 sync docs live in different places per project, and the user wants to read-proof
-first. Close with a one-line offer, e.g. *"Want me to tighten any section or
-reframe a point?"*
+first.
+
+Because it's pasted into a doc that renders markdown literally, emit the brief as
+**plain text — no `*`, `**`, `_`, or `#`** (no bold/italic/markdown bullets or
+headers; a plain leading `- ` for a list item is fine, `*` is not). The user
+formats it in their doc. Close with a one-line offer, e.g. "Want me to tighten any
+section or reframe a point?"
 
 ## Notes
 

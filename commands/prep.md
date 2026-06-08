@@ -33,6 +33,12 @@ This is the primary data source. Group entries by competency and count.
 If the evidence store is empty, note it and proceed with whatever other
 data is available.
 
+Entries may include **meeting notes captured at wrap-up** (`activity:
+meeting_notes` — a per-meeting summary with a link to the full notes). Use these
+to ground the "what happened / last week" talking points in specific syncs and
+the decisions made in them; follow the link if you need detail. This is how a
+sync whose notes live only on the calendar still informs the 1:1.
+
 ### 2.2 Weekly Summaries (trend context)
 
 ```bash
@@ -142,9 +148,14 @@ Using the format learned in §2.6, draft **this week's entry, ready to paste**
 into the user's doc. This is the main output — not a pile of key points the user
 must reformat afterward.
 
-- **Mirror the doc exactly:** the same section labels (verbatim), order,
-  bullet/numbered convention and nesting, tone, and length. Title/date the entry
-  for the upcoming 1:1 and place it where new entries go (usually the top).
+- **Plain text — no markdown.** The entry is pasted into a doc that renders
+  markdown literally, so emit **no `*`, `**`, `_`, or `#`** — no bold, italic,
+  markdown bullets, or `#` headers (a plain leading `- ` for a list item is fine;
+  `*` is not). The user applies their doc's real formatting (bold, bullets) after
+  pasting — don't pre-bake it, and don't make them strip stray asterisks first.
+- **Mirror the doc's structure:** the same section labels (verbatim), order,
+  tone, and length — rendered as plain text per the rule above. Title/date the
+  entry for the upcoming 1:1 and place it where new entries go (usually the top).
 - **Fill each section by meaning, not by Valor's labels:** recent shipped work
   / status (evidence entries, merged PRs, closed tickets) → the "what happened /
   last week" section; **chronic escalation candidates (§2.5)** → the "roadblocks
@@ -167,24 +178,32 @@ to go deeper. The entry in §4.1 is the deliverable; this is backup.
 ### 4.3 Fallback — no doc format available
 
 If no 1:1 doc is configured and no docs reader is available, produce the generic
-layout instead, and note once: *"Set `one_on_one.doc` (your 1:1 doc link) to get
-this drafted in your doc's own format."*
+layout instead, and note once: "Set `one_on_one.doc` (your 1:1 doc link) to get
+this drafted in your doc's own format." This layout is also a **paste-ready
+deliverable — keep it plain text (no `*`/`**`/`_`), so the user can paste without
+stripping markup**:
 
-```markdown
-# 1:1 Prep — [date range]
-## Highlights
+```text
+1:1 Prep — [date range]
+
+Highlights
 - [Top 2-3 accomplishments with specific evidence]
-## By Competency
-### [Competency Name] — [N entries, strength/developing/gap]
-- **Evidence / Target-level alignment / Talking point**
-## Gaps to Discuss
-- **[Gap competency]:** 0 entries this period. Suggestion: [specific action]
-## Chronic — consider raising
+
+By Competency
+[Competency Name] — [N entries, strength/developing/gap]
+- Evidence / Target-level alignment / Talking point
+
+Gaps to Discuss
+- [Gap competency]: 0 entries this period. Suggestion: [specific action]
+
+Chronic — consider raising
 - [§2.5 escalation candidates, with how long stuck]
-## Suggested Asks
+
+Suggested Asks
 - [1-2 asks grounded in gaps]
-## Narrative
-"[3-5 sentence opener, grounded in evidence]"
+
+Narrative
+[3-5 sentence opener, grounded in evidence]
 ```
 
 ## 5. Tone and Framing
