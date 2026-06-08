@@ -141,17 +141,19 @@ later `/valor-prep` and `/valor-weekly` unless it's captured here. Skip this ste
 if `integrations.calendar` is `false`.
 
 1. List **today's** calendar events (the same calendar source the briefing uses).
-   A meeting that has **notes attached** — a notes doc in the event's
-   `attachments`, or notes / a notes-doc link in the `description` — was
-   substantive enough to capture.
+   The notes are an **attachment** on the event — Gemini saves them as a Google
+   Doc titled **"Notes by Gemini"** (treat any Doc-type attachment as a notes
+   doc). An event's `description` is the meeting *agenda*, not the notes — don't
+   use it as a notes source. So: a meeting with a notes attachment is one to capture.
 2. **Skip short recurring standups** — a daily/weekly recurring meeting ≤ ~15 min
    (e.g. "standup", "daily", "scrum", "check-in") — even if notes are attached;
    that's status noise, not the work. Capture project syncs, 1:1s, design/decision
    reviews, externals, and other substantive meetings.
-3. Read the notes with the same docs-read capability `/valor-prep` uses for the
-   1:1 doc (a Drive/Docs MCP, or a docs slash command). If no docs reader is
-   available, fall back to the event `description`; if neither has content, skip
-   that meeting.
+3. Read the notes doc (the attachment's `fileUrl`) with the same docs-read
+   capability `/valor-prep` uses for the 1:1 doc (a Drive/Docs MCP, or a docs
+   slash command) and summarize it. **If no docs reader is available, still record
+   the meeting with the notes-doc link** so the user can open it — do *not* fall
+   back to the agenda in `description`.
 4. Record each as a **concise** evidence entry (a summary + a link — never the
    full doc) so it lands in the "last 2 weeks" window `/valor-prep` and
    `/valor-weekly` read:
