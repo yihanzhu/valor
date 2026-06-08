@@ -28,17 +28,21 @@ Model:
   * A gap that immediately follows a real meeting (attendees > 1, or the agent
     set is_meeting) has its start pushed back by post_meeting_break_minutes -- a
     breather between back-to-backs. No break after lunch / a personal hold / OOO.
-  * Assign greedily in priority order, respecting shape: deep_only only lands in
-    deep gaps; fragmented_ok prefers fragmented gaps (preserving deep blocks for
-    deep work); either prefers fragmented then falls back. Each task consumes its
-    own estimated duration -- the priority's `est_minutes` when the agent
-    provides one (it should estimate per task and lean generous), else a per-
-    shape fallback; multiple tasks can pack into one gap.
+  * Assign greedily in priority order. Shape sets PREFERENCE, duration sets fit:
+    deep_only prefers deep/focus gaps but falls back to any fragment window it
+    fits (a short deep task is no longer pushed just because no >=deep_min_hours
+    block exists); fragmented_ok/either fill ordinary (non-focus) fragment windows
+    first and use focus/deep gaps only as a last resort, so deep blocks stay free
+    for deep work. Each task consumes its own estimated duration -- the priority's
+    `est_minutes` when the agent provides one (it should estimate per task and
+    lean generous), else a per-shape fallback; multiple tasks can pack into one gap.
   * No task starts before workday_start + morning_buffer_minutes (an AM-ritual
-    buffer), deep_only tasks prefer gaps overlapping a focus-time block, and
-    block starts/ends snap to block_granularity_minutes (clean clock boundaries).
-  * Anything that doesn't fit is returned as `unassigned` (the agent surfaces it
-    as "push to your next deep block").
+    buffer), and block starts/ends snap to block_granularity_minutes (clean clock
+    boundaries).
+  * A task is returned as `unassigned` only when no window is long enough for it
+    (the agent surfaces it as "push to your next deep block"). Free time left over
+    after assignment (>= 15 min, incl. a partly-used gap's leftover) is returned
+    as `open_windows` so short gaps aren't invisible.
 
 CLI:
     plan.py fit --events <json|-> --priorities <json|-> [--now ISO]
@@ -102,6 +106,10 @@ FRAGMENTED_KW = (
 # caller tags each event with its type (Google Calendar `eventType`); untyped
 # events default to blocking, preserving older behavior.
 NON_BLOCKING_EVENT_TYPES = ("focusTime", "workingLocation")
+
+# Free time left after assignment that is at least this long is surfaced as an
+# `open_window` (a quick-win / overflow slot) so short gaps aren't invisible.
+OPEN_WINDOW_MIN_MINUTES = 15
 
 
 def _read_state() -> dict:
@@ -308,18 +316,30 @@ def _find_prep_slot(gaps, meeting_start, minutes):
 
 # --- assignment ----------------------------------------------------------
 def _candidate_order(shape, gaps):
-    """Return gaps in the order this shape should try them."""
+    """Return gaps in the order this shape should try them.
+
+    Placement is gated by duration in assign() (`remaining >= need`); this only
+    sets PREFERENCE. Both branches can reach every gap, so a task is pushed only
+    when no window is long enough for it -- not merely because its preferred gap
+    type is absent.
+    """
+    deep = [g for g in gaps if g["type"] == "deep"]
+    frag = [g for g in gaps if g["type"] == "fragmented"]
+    deep_focus = [g for g in deep if g.get("has_focus")]
+    deep_plain = [g for g in deep if not g.get("has_focus")]
+    frag_focus = [g for g in frag if g.get("has_focus")]
+    frag_plain = [g for g in frag if not g.get("has_focus")]
     if shape == "deep_only":
-        deep = [g for g in gaps if g["type"] == "deep"]
-        # Prefer focus-time blocks for deep work — that's what they're reserved for.
-        return [g for g in deep if g.get("has_focus")] + [g for g in deep if not g.get("has_focus")]
-    if shape == "fragmented_ok":
-        # prefer fragmented (save deep blocks), then deep
-        return [g for g in gaps if g["type"] == "fragmented"] + \
-               [g for g in gaps if g["type"] == "deep"]
-    # either
-    return [g for g in gaps if g["type"] == "fragmented"] + \
-           [g for g in gaps if g["type"] == "deep"]
+        # Deep work prefers focus/deep gaps. A short deep task that fits only a
+        # smaller window falls back to a fragment gap rather than being pushed --
+        # preferring a plain window over focus time so it doesn't eat a focus
+        # block. A genuinely long deep task won't fit any fragment gap and stays
+        # unassigned (correctly).
+        return deep_focus + deep_plain + frag_plain + frag_focus
+    # fragmented_ok / either: save the scarce deep AND focus gaps for deep work --
+    # fill ordinary (non-focus) fragment windows first, then non-focus deep, and
+    # only land on focus-time gaps as a last resort.
+    return frag_plain + deep_plain + frag_focus + deep_focus
 
 
 def assign(priorities, gaps, est_minutes, granularity=0):
@@ -352,7 +372,7 @@ def assign(priorities, gaps, est_minutes, granularity=0):
             unassigned.append({
                 "priority": p["text"],
                 "shape": shape,
-                "reason": "no deep block today" if shape == "deep_only" else "day is full",
+                "reason": "no block long enough today" if shape == "deep_only" else "day is full",
             })
     return blocks, unassigned
 
@@ -450,6 +470,21 @@ def fit(events, priorities, *, now=None, workday_start=None, workday_end=None,
 
     blocks, unassigned = assign(norm_priorities, gaps, est, granularity)
 
+    # Free time left in each gap after assignment (cursor -> end). Surface it so a
+    # short window the planner couldn't auto-fill is still visible to the user as
+    # a quick-win / overflow slot, instead of silently disappearing.
+    open_windows = []
+    for g in gaps:
+        free_start = g["_cursor"]
+        free_min = _minutes(free_start, _parse_iso(g["end"]))
+        if free_min >= OPEN_WINDOW_MIN_MINUTES:
+            open_windows.append({
+                "start": free_start.isoformat(),
+                "end": g["end"],
+                "minutes": free_min,
+                "has_focus": g["has_focus"],
+            })
+
     public_gaps = [{k: v for k, v in g.items() if not k.startswith("_")} for g in gaps]
     return {
         "date": now_dt.date().isoformat(),
@@ -458,6 +493,7 @@ def fit(events, priorities, *, now=None, workday_start=None, workday_end=None,
         "no_busy_events": len(busy) == 0,
         "gaps": public_gaps,
         "deep_gap_count": sum(1 for g in public_gaps if g["type"] == "deep"),
+        "open_windows": open_windows,
         "prep_blocks": prep_blocks,
         "prep_unassigned": prep_unassigned,
         "blocks": blocks,

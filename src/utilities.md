@@ -244,7 +244,7 @@ blocks back as events. Skipped entirely if `integrations.calendar` is `false`.
 
 | Subcommand | Purpose |
 |------------|---------|
-| `fit --events JSON --priorities JSON [--now ISO] [--workday-start HH:MM] [--workday-end HH:MM] [--deep-hours N] [--break-minutes N] [--granularity N] [--morning-buffer N] [--pre-meeting-prep N]` | Fit priorities to calendar gaps; returns a time-blocked schedule (JSON) incl. `prep_blocks` + `prep_unassigned`. Priorities may carry per-task `est_minutes`; events may carry `is_meeting`/`attendees`/`prep` |
+| `fit --events JSON --priorities JSON [--now ISO] [--workday-start HH:MM] [--workday-end HH:MM] [--deep-hours N] [--break-minutes N] [--granularity N] [--morning-buffer N] [--pre-meeting-prep N]` | Fit priorities to calendar gaps; returns a time-blocked schedule (JSON) incl. `open_windows` + `prep_blocks` + `prep_unassigned`. Priorities may carry per-task `est_minutes`; events may carry `is_meeting`/`attendees`/`prep` |
 | `shape --text "..."` | Classify one priority's task shape (debug) |
 
 `--events`/`--priorities` accept inline JSON, `@file`, or `-` (stdin).
@@ -291,15 +291,19 @@ blocks back as events. Skipped entirely if `integrations.calendar` is `false`.
    (`deep` ≥ `deep_min_hours`, else `fragmented`), reserves a
    `post_meeting_break_minutes` breather (default 15) after each real meeting, and
    assigns greedily — each task taking its `est_minutes` (shape fallback if
-   absent); `deep_only` only lands in deep gaps; `fragmented_ok` prefers
-   fragmented gaps so deep blocks stay free for deep work, and **`deep_only`
-   prefers focus-time blocks** (that's what they're reserved for). No tasks start
+   absent). **`deep_only` prefers deep/focus-time blocks** (that's what they're
+   reserved for) but a short deep task **falls back to any fragment window it
+   fits** rather than being pushed; `fragmented_ok`/`either` fill ordinary
+   fragment windows first and **avoid focus-time gaps** so deep blocks stay free
+   for deep work. A task is unassigned only when no window is long enough. No tasks start
    before `workday_start + morning_buffer_minutes` (the AM ritual). Block
    starts/ends snap to `block_granularity_minutes` (default 15) so they land on
    clean clock boundaries (:00/:15/:30/:45) like meetings, not odd times like 2:09.
-4. **Present** the `blocks` as a "Day Plan" section (time-blocked). Surface each
-   `unassigned` item as "push to your next deep block" (for `deep_only`, the
-   next no-meeting / ≥`deep_min_hours` window).
+4. **Present** the `blocks` as a "Day Plan" section (time-blocked), then list
+   **`open_windows`** (free slots ≥15 min left after assignment, including a
+   partly-used gap's leftover) as "open windows for a quick win / overflow" so
+   short gaps aren't invisible. Surface each `unassigned` item as "push to your
+   next deep block" (for `deep_only`, the next window long enough for it).
 
 ### Calendar write (optional)
 
