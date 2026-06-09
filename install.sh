@@ -585,6 +585,44 @@ if p.exists():
 " 2>/dev/null
 }
 
+# Remove orphaned Valor artifacts left behind by a RETIRED command, so retiring a
+# command self-cleans instead of lingering on every host. STRICTLY scoped: only
+# touches the `valor-*` names Valor generates, and only those NOT in the current
+# COMMAND_MAP — a user's own (non-`valor-`) commands/skills are never removed.
+prune_orphans() {
+    local kind="$1" dir="$2"   # kind: command (valor-*.md files) | skill (valor-*/ dirs)
+    [ -d "$dir" ] || return 0
+    local expected=" " entry src cc sk desc
+    for entry in "${COMMAND_MAP[@]}"; do
+        IFS=':' read -r src cc sk desc <<< "$entry"
+        if [ "$kind" = command ]; then expected+="$cc "; else expected+="$sk "; fi
+    done
+    local path name
+    if [ "$kind" = command ]; then
+        for path in "$dir"/valor-*.md; do
+            [ -e "$path" ] || continue
+            name=$(basename "$path" .md)
+            case "$expected" in
+                *" $name "*) : ;;
+                *) rm -f "$path"; echo "  [prune] removed retired command ${path##*/}" ;;
+            esac
+        done
+    else
+        for path in "$dir"/valor-*/; do
+            [ -e "$path" ] || continue
+            name=$(basename "$path")
+            case "$expected" in
+                *" $name "*) : ;;
+                # Strip the trailing slash and pass `--`: on a *symlinked* dir, `rm -rf`
+                # with a trailing slash dereferences the link and deletes the TARGET's
+                # contents (which may live outside this dir). `${path%/}` makes rm act on
+                # the entry itself, so a retired symlink is merely unlinked.
+                *) rm -rf -- "${path%/}"; echo "  [prune] removed retired skill $name" ;;
+            esac
+        done
+    fi
+}
+
 install_target_compact() {
     local t="$1"
     local label=""
@@ -611,6 +649,7 @@ install_target_compact() {
                 IFS=':' read -r src_name cc_name skill_name description <<< "$entry"
                 cp "$SCRIPT_DIR/commands/$src_name.md" "$ccmds/$cc_name.md"
             done
+            prune_orphans command "$ccmds"
 
             echo "$label:"
             echo "  [OK] Agent rule -> ~/.claude/CLAUDE.md"
@@ -638,6 +677,7 @@ install_target_compact() {
                 generate_skill "$SCRIPT_DIR/commands/$src_name.md" \
                     "$cskills/$skill_name/SKILL.md" "$skill_name" "$description"
             done
+            prune_orphans skill "$cskills"
 
             echo "$label:"
             echo "  [OK] Agent rule -> ~/.codex/AGENTS.md"
@@ -657,6 +697,7 @@ install_target_compact() {
                 generate_skill "$SCRIPT_DIR/commands/$src_name.md" \
                     "$cskills/$skill_name/SKILL.md" "$skill_name" "$description"
             done
+            prune_orphans skill "$cskills"
 
             echo "$label:"
             echo "  [OK] Agent rule -> ~/.cursor/rules/valor-agent.mdc"
