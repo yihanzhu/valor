@@ -327,6 +327,62 @@ When you do record a claim, identify it by its **stable id** (ticket key, PR
 number, doc title) — not a prose phrasing that drifts day to day — so the same
 item stays one claim instead of fragmenting into near-duplicates.
 
+### 6.5 Prioritize against the week's goals + dependencies (before the Day Plan)
+
+Runs after focus (§5.5) and the gate (§6), before the Day Plan (§7). The candidate
+todos are already focus-filtered and verified; this step decides their **order** so
+the plan schedules the *right* work — not just the most recently-updated ticket
+(the failure mode: a downstream "In Progress" task outranking the week's actual
+goal). Read the inputs from the session-start context: `context.prioritization`
+(`week_goals` — this week's ordered goals; `week_goals_stale`; `week_start_current`
+— the authoritative ISO-Monday) and `context.standing_rules` (durable
+sequencing/priority corrections, e.g. *"READ pipeline waits until WRITE is in
+prod"*; a separate top-level field).
+
+**Refresh goals when stale — silently, never ask.** If `week_goals_stale` is true
+(new week) or `week_goals` is empty, and a docs reader is available and
+`one_on_one.doc` is set, **read the 1:1 doc** (the same capability `/valor-prep`
+uses) and extract this week's goals *by meaning* — the short list of what the user
+said they're driving this week (format varies per person; don't assume a section).
+The 1:1 *meeting's* captured notes (`activity: meeting_notes`) are a secondary
+cross-check on what was actually agreed. Store and move on — set `week_start` to
+`context.prioritization.week_start_current` **verbatim** (don't compute it yourself,
+or the stale check will never match):
+```bash
+python3 ~/.valor/evidence_cli.py state-set prioritization \
+  '{"week_goals": ["..."], "week_start": "<context.prioritization.week_start_current>", "goals_source": "one_on_one_doc"}'
+```
+This writes only the goals block; `standing_rules` live in their own key and are
+untouched here. No doc/reader available → keep the cached goals (or none) and rank
+without goal weighting. Never block, never ask to confirm.
+
+**Rank the candidate todos**, in this order:
+1. **Dependencies first (hard rule, not a tie-breaker).** Apply `standing_rules`: a
+   todo blocked behind unfinished upstream is **held** — listed under "Held
+   (blocked)", *never* as a numbered priority — until its blocker is done.
+2. **Goal alignment.** A todo that advances or unblocks a `week_goal` outranks one
+   that doesn't.
+3. **Closeness-to-done / unblocks-others**, then **staleness** (the existing
+   tie-breakers).
+
+Show the **why** on each priority line ("advances week goal: <goal>"; "unblocks
+<goal>") so a wrong call is obvious at a glance and the user can correct it in one
+line. If the in-progress load clearly exceeds a week, add the one-line over-commit
+heads-up (a nudge, not estimation math).
+
+**Make corrections stick.** When the user corrects the order ("READ should wait for
+WRITE in prod"; "X is this week's focus, not Y"), append it to the `standing_rules`
+key so the next briefing honors it automatically — they shouldn't re-correct the
+same thing weekly. Re-emit the existing rules from `context.standing_rules` plus the
+new one (`state-set` replaces the whole list — never drop an existing rule):
+```bash
+python3 ~/.valor/evidence_cli.py state-set standing_rules \
+  '[<existing rules from context.standing_rules>, "READ pipeline waits until WRITE is in prod"]'
+```
+Keep rules short and stable; if a correction contradicts an existing rule, replace
+that rule rather than stacking a conflicting one. `standing_rules` and `week_goals`
+are user-visible state — the user can ask to see or prune them anytime.
+
 ## Briefing Format
 
 Present the full briefing in this structure. Use markdown formatting.
@@ -383,9 +439,15 @@ nothing.]
   2. [specific action]
 
 ### Suggested Priorities
-1. [action] -- [why first]
-2. [action]
+[Ranked by the §6.5 pass — week goals + dependencies first. Each line shows *why*.]
+1. [action] -- [why first, e.g. "advances week goal: <goal>" or "unblocks <goal>"]
+2. [action] -- [why]
 3. ...
+
+[**Held (blocked):** [item] — behind [unfinished upstream], per a standing rule;
+not surfaced as actionable until its blocker is done. Only if something is held.]
+[**Heads-up:** this looks like more than a week's work — consider deferring
+[item(s)]. Only when clearly over-committed; no estimation math, just a nudge.]
 
 [Carried artifact claims appear here only after passing the §6 gate. Verified
 resolved items are dropped (or shown as just-completed); unconfirmable ones are

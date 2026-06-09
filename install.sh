@@ -500,7 +500,13 @@ install_shared() {
     "auto_sync_prep": true,
     "parked_projects": [],
     "meeting_catalog": []
-  }
+  },
+  "prioritization": {
+    "week_goals": [],
+    "week_start": "",
+    "goals_source": ""
+  },
+  "standing_rules": []
 }
 STATEJSON
         echo "  [OK] state.json (created)"

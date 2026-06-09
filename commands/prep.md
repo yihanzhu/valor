@@ -109,6 +109,20 @@ drafted **in the format the user already uses** -- not Valor's generic layout.
 
 Do not impose a structure -- mirror theirs exactly. Formats are personal.
 
+**While the doc is open, capture this week's goals** (silently — don't ask). Extract
+the short list of what the user said they're driving this week (by meaning; format
+varies) and store it so the morning briefing ranks the day's todos against it. Set
+`week_start` to `context.prioritization.week_start_current` **verbatim** (don't
+compute it):
+```bash
+python3 ~/.valor/evidence_cli.py state-set prioritization \
+  '{"week_goals": ["..."], "week_start": "<context.prioritization.week_start_current>", "goals_source": "one_on_one_doc"}'
+```
+This writes only the goals block; `standing_rules` are a separate key and aren't
+touched here. If no goals are stated yet, leave it untouched. The briefing also
+refreshes this on its own when stale, so this is just the natural place to catch
+them at the 1:1.
+
 ## 3. Analyze
 
 ### 3.1 Competency Map
