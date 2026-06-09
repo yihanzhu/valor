@@ -40,7 +40,7 @@ from pathlib import Path
 DB_PATH = Path.home() / ".valor" / "evidence.sqlite"
 BACKUP_DIR = Path.home() / ".valor" / "backups"
 
-STATE_SCHEMA_VERSION = 16
+STATE_SCHEMA_VERSION = 17
 
 ROUTINE_SLOTS = ("briefing", "wrapup", "weekly", "prep")
 
@@ -680,6 +680,27 @@ def _migrate_state_in_memory(state: dict) -> dict:
         # v14: drop the flat baseline; the catalog re-seeds (categorized) next run.
         pf.setdefault("meeting_catalog", [])
         pf.pop("meeting_baseline", None)
+    # v17: weekly prioritization. `week_goals` is the short, ordered list of this
+    # week's goals (extracted silently from the 1:1 doc; the briefing ranks todos
+    # against them); `week_start` is the ISO-Monday those goals cover (empty or
+    # stale -> the briefing re-reads the doc); `goals_source` records where they
+    # came from.
+    if "prioritization" not in state or not isinstance(state.get("prioritization"), dict):
+        state["prioritization"] = {"week_goals": [], "week_start": "", "goals_source": ""}
+    else:
+        pr = state["prioritization"]
+        if not isinstance(pr.get("week_goals"), list):
+            pr["week_goals"] = []
+        pr.setdefault("week_start", "")
+        pr.setdefault("goals_source", "")
+    # `standing_rules` are durable sequencing/priority corrections the user made
+    # (e.g. "READ after WRITE in prod") that future briefings honor so they're
+    # never re-corrected. Kept as a SEPARATE top-level key — NOT inside
+    # `prioritization` — so the weekly goal-refresh (which rewrites the whole
+    # prioritization block) can never accidentally drop them. Correcting the order
+    # writes here; refreshing goals writes there.
+    if not isinstance(state.get("standing_rules"), list):
+        state["standing_rules"] = []
     state["state_schema_version"] = STATE_SCHEMA_VERSION
     return state
 
@@ -883,6 +904,25 @@ def cmd_context(args: argparse.Namespace) -> None:
             "auto_sync_prep": bool((state.get("project_focus") or {}).get("auto_sync_prep", True)),
             "parked_projects": (state.get("project_focus") or {}).get("parked_projects", []) or [],
         },
+        "prioritization": {
+            "week_goals": (state.get("prioritization") or {}).get("week_goals", []) or [],
+            "week_start": (state.get("prioritization") or {}).get("week_start", "") or "",
+            "goals_source": (state.get("prioritization") or {}).get("goals_source", "") or "",
+            # The authoritative current ISO-Monday. Writers must copy this into
+            # `week_start` VERBATIM (not hand-compute it) so the stale check below
+            # always matches — otherwise a mis-computed Monday keeps goals "stale"
+            # forever and re-reads the doc every run.
+            "week_start_current": (now.date() - timedelta(days=weekday)).isoformat(),
+            # Stale (or unset) -> the briefing re-reads the 1:1 doc for this week's
+            # goals. True when the stored week doesn't match the current ISO Monday.
+            "week_goals_stale": (
+                ((state.get("prioritization") or {}).get("week_start", "") or "")
+                != (now.date() - timedelta(days=weekday)).isoformat()
+            ),
+        },
+        # Durable sequencing/priority corrections (separate top-level key so the
+        # goal-refresh can't clobber them). Surfaced for the briefing to apply.
+        "standing_rules": state.get("standing_rules", []) or [],
         "state_schema_version": state.get("state_schema_version", STATE_SCHEMA_VERSION),
     }
     print(json.dumps(result, indent=2))

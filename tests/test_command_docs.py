@@ -188,6 +188,31 @@ def test_installer_seeds_one_on_one_state():
     assert '"one_on_one"' in text
 
 
+def test_installer_seeds_prioritization_state():
+    text = Path("install.sh").read_text()
+    assert '"prioritization"' in text
+    assert '"week_goals"' in text
+    assert '"standing_rules"' in text
+
+
+def test_briefing_prioritizes_against_week_goals_and_dependencies():
+    """The briefing ranks todos against the week's goals + standing-rule
+    dependencies before planning, instead of by Jira status/recency alone."""
+    text = Path("commands/briefing.md").read_text()
+    assert "week_goals" in text
+    assert "standing_rules" in text
+    assert "Held (blocked)" in text                 # dependency-held items surfaced, not planned
+    assert "Prioritize against the week" in text    # the §6.5 ranking pass exists
+
+
+def test_prep_captures_week_goals():
+    """1:1 prep extracts this week's goals from the doc into prioritization state
+    (silently) so the briefing can rank against them."""
+    text = Path("commands/prep.md").read_text()
+    assert "week_goals" in text
+    assert "prioritization" in text
+
+
 # --- Install script tests ---
 
 def test_install_script_syntax():

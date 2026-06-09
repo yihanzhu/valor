@@ -1292,6 +1292,31 @@ def test_migrate_state_in_memory_preserves_project_focus():
     assert migrated["project_focus"]["meeting_catalog"] == []          # v14 sub-key filled
 
 
+def test_migrate_state_in_memory_adds_v17_prioritization_fields():
+    migrated = _migrate_state_in_memory({"current_level": "L3"})
+    assert migrated["prioritization"] == {"week_goals": [], "week_start": "", "goals_source": ""}
+    assert migrated["standing_rules"] == []  # separate top-level key (clobber-safe)
+    assert migrated["state_schema_version"] == STATE_SCHEMA_VERSION
+
+
+def test_migrate_state_in_memory_preserves_prioritization():
+    state = {
+        "prioritization": {"week_goals": ["ship the write pipeline to prod"], "week_start": "2026-06-08"},
+        "standing_rules": ["READ pipeline waits until WRITE is in prod"],
+    }
+    migrated = _migrate_state_in_memory(state)
+    assert migrated["prioritization"]["week_goals"] == ["ship the write pipeline to prod"]
+    assert migrated["prioritization"]["week_start"] == "2026-06-08"
+    assert migrated["prioritization"]["goals_source"] == ""  # missing sub-key filled
+    assert migrated["standing_rules"] == ["READ pipeline waits until WRITE is in prod"]
+
+
+def test_migrate_state_in_memory_repairs_non_list_prioritization():
+    migrated = _migrate_state_in_memory({"prioritization": {"week_goals": "oops"}, "standing_rules": "oops"})
+    assert migrated["prioritization"]["week_goals"] == []
+    assert migrated["standing_rules"] == []
+
+
 def test_migrate_state_in_memory_drops_legacy_meeting_baseline():
     # v11 meeting_baseline (flat titles) -> v14 meeting_catalog (re-seeds categorized).
     state = {"project_focus": {"enabled": True, "meeting_baseline": ["old sync"]}}
@@ -1506,6 +1531,61 @@ def test_context_planning_defaults_when_absent(cli_db, capsys):
     result = json.loads(capsys.readouterr().out)
     assert result["planning"]["calendar_auto_write"] is True
     assert result["planning"]["deep_min_hours"] == 2.0
+
+
+def _mock_now_monday(monkeypatch):
+    # 2026-06-08 is a Monday -> current ISO week_start is 2026-06-08.
+    mock_now = datetime(2026, 6, 8, 9, 0, 0)
+    monkeypatch.setattr("src.evidence_cli.datetime", type("MockDT", (datetime,), {
+        "now": staticmethod(lambda *a, **kw: mock_now),
+        "fromisoformat": datetime.fromisoformat,
+        "strptime": datetime.strptime,
+    }))
+
+
+def test_context_includes_prioritization_block(cli_db, capsys, monkeypatch):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    _mock_now_monday(monkeypatch)
+    (valor_home / "state.json").write_text(json.dumps({
+        "prioritization": {
+            "week_goals": ["ship the write pipeline to prod"],
+            "week_start": "2026-06-08",  # this Monday -> fresh
+            "goals_source": "one_on_one_doc",
+        },
+        "standing_rules": ["READ pipeline waits until WRITE is in prod"],
+    }))
+    cmd_context(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["prioritization"]["week_goals"] == ["ship the write pipeline to prod"]
+    assert result["prioritization"]["goals_source"] == "one_on_one_doc"
+    assert result["prioritization"]["week_start_current"] == "2026-06-08"  # authoritative Monday
+    assert result["prioritization"]["week_goals_stale"] is False  # week_start == this Monday
+    assert result["standing_rules"] == ["READ pipeline waits until WRITE is in prod"]  # separate key
+
+
+def test_context_prioritization_stale_when_week_old_or_unset(cli_db, capsys, monkeypatch):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    _mock_now_monday(monkeypatch)
+    # Last week's goals -> stale (briefing should re-read the 1:1 doc).
+    (valor_home / "state.json").write_text(json.dumps({"prioritization": {
+        "week_goals": ["old goal"], "week_start": "2026-06-01"}}))
+    cmd_context(argparse.Namespace())
+    assert json.loads(capsys.readouterr().out)["prioritization"]["week_goals_stale"] is True
+
+
+def test_context_prioritization_defaults_when_absent(cli_db, capsys, monkeypatch):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    _mock_now_monday(monkeypatch)
+    (valor_home / "state.json").write_text(json.dumps({"current_level": "L3"}))
+    cmd_context(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["prioritization"]["week_goals"] == []
+    assert result["prioritization"]["goals_source"] == ""
+    assert result["standing_rules"] == []  # separate top-level key
+    assert result["prioritization"]["week_goals_stale"] is True  # unset -> stale
 
 
 def test_context_one_on_one_doc_set_flag(cli_db, capsys):
