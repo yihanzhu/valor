@@ -25,7 +25,6 @@ def test_weekly_reflection_uses_explicit_week_window():
 COMMANDS_NEEDING_INTEGRATION_CHECK = [
     "briefing",
     "weekly",
-    "tasks",
     "design-doc",
     "pr-review",
     "prep",
@@ -39,13 +38,13 @@ def test_commands_reference_integrations(cmd):
     assert "integrations" in text, f"{cmd} does not reference integrations"
 
 
-@pytest.mark.parametrize("cmd", ["briefing", "weekly", "tasks"])
+@pytest.mark.parametrize("cmd", ["briefing", "weekly"])
 def test_commands_with_jira_reference_integrations_jira(cmd):
     text = (COMMANDS_DIR / f"{cmd}.md").read_text()
     assert "integrations.jira" in text, f"{cmd} uses Jira but does not check integrations.jira"
 
 
-@pytest.mark.parametrize("cmd", ["briefing", "weekly", "tasks"])
+@pytest.mark.parametrize("cmd", ["briefing", "weekly"])
 def test_commands_with_github_reference_integrations_github(cmd):
     text = (COMMANDS_DIR / f"{cmd}.md").read_text()
     assert "integrations.github" in text, f"{cmd} uses GitHub but does not check integrations.github"
@@ -193,6 +192,28 @@ def test_installer_seeds_prioritization_state():
     assert '"prioritization"' in text
     assert '"week_goals"' in text
     assert '"standing_rules"' in text
+
+
+def test_tasks_command_retired():
+    """/valor-tasks was folded into the briefing's spare-capacity pickups and the
+    standalone command removed — assert no trace remains anywhere."""
+    assert not Path("commands/tasks.md").exists()
+    install = Path("install.sh").read_text()
+    assert "valor-tasks" not in install and "task-identifier" not in install
+    assert "Task Identifier" not in install          # the agent-summary list too
+    for f in ("rules/valor-agent.md", "README.md", "docs/architecture.md",
+              "commands/setup.md", "docs/getting-started.md", "docs/integrations.md"):
+        assert "/valor-tasks" not in Path(f).read_text(), f
+        assert "Task Identifier" not in Path(f).read_text(), f
+
+
+def test_briefing_folds_in_spare_capacity_backlog():
+    """The backlog-discovery /valor-tasks did is preserved as an optional
+    spare-capacity pickup in the briefing (surfaced only when the day is light)."""
+    text = Path("commands/briefing.md").read_text()
+    assert "Spare capacity" in text
+    assert "backlog" in text.lower()
+    assert "task_identified" in text  # proactivity still recorded as evidence
 
 
 def test_briefing_prioritizes_against_week_goals_and_dependencies():

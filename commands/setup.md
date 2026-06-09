@@ -700,15 +700,15 @@ Your Valor agents:
   2. PR Review Coach   -- 'review PR #NNN'
   3. Design Doc Coach  -- 'design doc for TICKET'
   4. Weekly Reflection -- auto-suggests Friday
-  5. Task Identifier   -- 'what should I work on'
-  6. Evening Wrap-up   -- auto-suggests after 4pm
-  7. 1:1 Prep          -- 'prep for 1:1'
+  5. Evening Wrap-up   -- auto-suggests after 4pm
+  6. 1:1 Prep          -- 'prep for 1:1'
+  7. Project Sync Prep -- 'sync prep' before a project sync
   8. Setup             -- /valor-setup or 'set up valor'
   9. Ambient Coaching  -- always on ('valor quiet' to suppress)
 ```
 
 - "Try: 'morning briefing' to see your first briefing"
-- "Agents 1, 4, and 6 auto-suggest at the right time -- just start a conversation"
+- "Agents 1, 4, and 5 auto-suggest at the right time -- just start a conversation"
 - "Say 'valor quiet' anytime to suppress coaching for a conversation"
 - "Say 'valor off' to disable coaching entirely (re-enable with 'valor on')"
 

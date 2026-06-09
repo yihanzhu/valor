@@ -166,8 +166,8 @@ Which competencies have 0 or low entries this week? For each gap, suggest **spec
 - **Autonomy & Scope:** "Draft a design doc for an upcoming ticket or review 3+ PRs."
 - **Leadership:** "Identify one improvement and document it; or be the go-to on a technical decision."
 
-If gaps suggest the user needs help finding work, mention the task identifier:
-"Say 'what should I work on' to find high-impact tasks that fill these gaps."
+If gaps suggest the user needs help finding work, note that the morning briefing
+surfaces high-impact backlog pickups (filling gaps like these) when the day is light.
 
 ## 5. Generate 1:1 Narrative
 

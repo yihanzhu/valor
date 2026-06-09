@@ -37,7 +37,6 @@ Which integrations each command uses:
 | PR Review Coach | **Required** -- fetches PR diff and metadata | -- | -- | -- | Records review evidence |
 | Design Doc Coach | -- | Ticket lookup for context | -- | -- | Records design doc evidence |
 | Weekly Reflection | Merged PRs, reviewed PRs | Tickets completed this week | -- | -- | Competency breakdown, trends |
-| Task Identifier | Open issues, PRs to review | Unassigned, stale, high-priority tickets | -- | -- | Competency gaps for ranking |
 | Evening Wrap-up | -- | -- | -- | -- | Today's entries, carry-forward |
 | 1:1 Prep | Merged/reviewed PRs (optional) | Completed tickets (optional) | -- | -- | Primary source: evidence + weekly summaries |
 | Project Sync Prep | Project PRs since last sync (optional) | Project tickets since last sync (optional) | Identifies the next project sync | -- | Primary source: project progress since last sync |
@@ -104,7 +103,6 @@ If all integrations are set to `false`, Valor still works:
   priorities based on recent activity.
 - **Evening Wrap-up:** Git log, evidence entries, carry-forward items.
 - **Weekly Reflection:** Evidence-based competency breakdown and trends.
-- **Task Identifier:** Competency gap analysis with suggestions.
 - **Design Doc Coach:** Fully functional -- asks user for context directly.
 - **1:1 Prep:** Fully functional from evidence store and weekly summaries.
 - **Project Sync Prep:** Functional from the evidence store -- project progress since the last sync from recorded evidence.
