@@ -1,6 +1,8 @@
 
 # Valor Weekly Reflection
 
+<!-- valor:integrations github=optional jira=optional calendar=none news=none -->
+
 Generate a weekly reflection that maps the user's activities to target-level
 competencies (from `~/.valor/career_framework.md`), identifies gaps, and
 produces a concise 1:1 narrative for their manager.

@@ -1,6 +1,8 @@
 
 # Valor Morning Briefing
 
+<!-- valor:integrations github=optional jira=optional calendar=optional news=optional -->
+
 Generate a comprehensive morning briefing that cross-references the user's work
 items, surfaces opportunities for career growth, and provides relevant news.
 

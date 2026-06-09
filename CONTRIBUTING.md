@@ -66,6 +66,12 @@ comment on that line. Do not bypass the hook with `--no-verify` for real terms.
 - Prefer plain text and inspectable formats over opaque storage where practical.
 - If you update installed artifacts or installer behavior, keep `install.sh`,
   `rules/`, and `commands/` consistent.
+- Each workflow command declares its integration surface in a
+  `<!-- valor:integrations github=… jira=… calendar=… news=… -->` comment near
+  its title (values: `required`/`optional`/`none`). The `docs/integrations.md`
+  Integration Matrix is checked against those declarations by
+  `tests/test_command_docs.py` — change a command's integrations and update both,
+  or CI fails.
 
 ## Pull Requests
 

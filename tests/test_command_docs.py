@@ -1,3 +1,4 @@
+import re
 import subprocess
 from pathlib import Path
 
@@ -333,6 +334,146 @@ def test_state_json_template_exists_in_installer():
     """install.sh should contain the state.json template marker."""
     text = Path("install.sh").read_text()
     assert "STATEJSON" in text, "install.sh should contain the state template"
+
+
+# --- Integration matrix <-> command declaration contract -----------------
+#
+# Each workflow command declares its integration surface in a machine-readable
+# comment near its title, e.g.:
+#     <!-- valor:integrations github=optional jira=optional calendar=optional news=none -->
+# (values: required | optional | none). The docs/integrations.md Integration
+# Matrix must agree with those declarations cell-for-cell. This enforces the
+# doc/behavior contract mechanically: change a command's integration surface and
+# the matrix is forced to follow (and vice versa), instead of being re-audited
+# by hand each release.
+
+INTEGRATIONS = ("github", "jira", "calendar", "news")
+_DECL_VALUES = ("required", "optional", "none")
+
+# docs/integrations.md matrix display-name -> command file stem.
+# setup.md is intentionally excluded: it *configures* integrations, it does not
+# consume them as a data source, so it has no matrix row and no declaration.
+MATRIX_NAME_TO_CMD = {
+    "Morning Briefing": "briefing",
+    "PR Review Coach": "pr-review",
+    "Design Doc Coach": "design-doc",
+    "Weekly Reflection": "weekly",
+    "Evening Wrap-up": "wrapup",
+    "1:1 Prep": "prep",
+    "Project Sync Prep": "sync-prep",
+}
+NON_WORKFLOW_COMMANDS = {"setup"}
+
+_DECL_RE = re.compile(r"<!--\s*valor:integrations\s+(.*?)\s*-->")
+
+
+def _parse_command_declaration(stem):
+    """Return {integration: required|optional|none} from a command's
+    `<!-- valor:integrations ... -->` declaration."""
+    text = (COMMANDS_DIR / f"{stem}.md").read_text()
+    match = _DECL_RE.search(text)
+    assert match, (
+        f"commands/{stem}.md is missing its "
+        "<!-- valor:integrations github=... jira=... calendar=... news=... --> declaration"
+    )
+    decl = {}
+    for token in match.group(1).split():
+        key, sep, val = token.partition("=")
+        assert sep and key in INTEGRATIONS, f"{stem}: bad integration token '{token}'"
+        assert val in _DECL_VALUES, (
+            f"{stem}: bad value '{val}' for {key} (want one of {_DECL_VALUES})"
+        )
+        decl[key] = val
+    missing = set(INTEGRATIONS) - set(decl)
+    assert not missing, f"{stem}: declaration missing {sorted(missing)}"
+    return decl
+
+
+def _classify_matrix_cell(cell):
+    """Map a matrix cell to required | optional | none."""
+    text = cell.strip()
+    if text in ("", "--", "—", "-"):
+        return "none"
+    if "required" in text.lower():
+        return "required"
+    return "optional"
+
+
+def _parse_integration_matrix():
+    """Parse the Integration Matrix table in docs/integrations.md into
+    {display_name: {integration: required|optional|none}}."""
+    doc = Path("docs/integrations.md").read_text()
+    assert "## Integration Matrix" in doc, "docs/integrations.md lost its Integration Matrix"
+    section = doc.split("## Integration Matrix", 1)[1].split("\n## ", 1)[0]
+    rows = [ln for ln in section.splitlines() if ln.strip().startswith("|")]
+    assert len(rows) >= 3, "Integration Matrix table not found / malformed"
+    header = [c.strip() for c in rows[0].strip().strip("|").split("|")]
+    col = {}
+    for integ in INTEGRATIONS:
+        matches = [i for i, h in enumerate(header) if h.lower() == integ]
+        assert matches, f"matrix header has no '{integ}' column: {header}"
+        col[integ] = matches[0]
+    matrix = {}
+    for row in rows[2:]:  # rows[0]=header, rows[1]=separator
+        cells = [c.strip() for c in row.strip().strip("|").split("|")]
+        if len(cells) != len(header):
+            continue
+        name = cells[0].replace("*", "").strip()
+        matrix[name] = {integ: _classify_matrix_cell(cells[col[integ]]) for integ in INTEGRATIONS}
+    return matrix
+
+
+def test_integration_matrix_matches_command_declarations():
+    """The docs/integrations.md matrix must agree, cell for cell, with each
+    command's valor:integrations declaration."""
+    matrix = _parse_integration_matrix()
+    assert set(matrix) == set(MATRIX_NAME_TO_CMD), (
+        f"matrix commands {sorted(matrix)} != expected {sorted(MATRIX_NAME_TO_CMD)}; "
+        "update MATRIX_NAME_TO_CMD and the matrix together"
+    )
+    mismatches = []
+    for name, stem in MATRIX_NAME_TO_CMD.items():
+        decl = _parse_command_declaration(stem)
+        for integ in INTEGRATIONS:
+            if matrix[name][integ] != decl[integ]:
+                mismatches.append(
+                    f"{name} ({stem}.md) / {integ}: matrix='{matrix[name][integ]}' "
+                    f"vs command declares '{decl[integ]}'"
+                )
+    assert not mismatches, (
+        "Integration matrix <-> command declaration drift:\n  " + "\n  ".join(mismatches)
+    )
+
+
+def test_every_workflow_command_is_declared_and_in_the_matrix():
+    """Every command except setup must declare its integrations and have a
+    matrix row, so a new command can't silently skip the contract."""
+    stems = {p.stem for p in COMMANDS_DIR.glob("*.md")}
+    expected = set(MATRIX_NAME_TO_CMD.values()) | NON_WORKFLOW_COMMANDS
+    assert stems == expected, (
+        f"command set changed: {sorted(stems)} != {sorted(expected)}. A new workflow "
+        "command needs a valor:integrations declaration + a matrix row (or, if it does "
+        "not consume integrations like setup, add it to NON_WORKFLOW_COMMANDS)."
+    )
+    for stem in MATRIX_NAME_TO_CMD.values():
+        _parse_command_declaration(stem)  # asserts presence + validity
+
+
+def test_command_integration_flags_match_declaration():
+    """Any `integrations.<name>` flag a command's prose gates on must be declared
+    as used (required/optional), never 'none' — catches a command that starts
+    using an integration without updating its declaration."""
+    token_re = re.compile(r"integrations\.(github|jira|calendar|news)")
+    violations = []
+    for stem in MATRIX_NAME_TO_CMD.values():
+        text = (COMMANDS_DIR / f"{stem}.md").read_text()
+        decl = _parse_command_declaration(stem)
+        for integ in set(token_re.findall(text)):
+            if decl[integ] == "none":
+                violations.append(
+                    f"{stem}.md gates on integrations.{integ} but declares it 'none'"
+                )
+    assert not violations, "\n".join(violations)
 
 
 def _upgrade_case_body(text):

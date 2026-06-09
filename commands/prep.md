@@ -1,5 +1,7 @@
 # Valor 1:1 Prep
 
+<!-- valor:integrations github=optional jira=optional calendar=none news=none -->
+
 Generate a structured document for your next 1:1 with your manager, grounded
 in evidence from the last 1--2 weeks plus any saved weekly reflections.
 

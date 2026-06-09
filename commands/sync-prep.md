@@ -1,5 +1,7 @@
 # Valor Project Sync Prep
 
+<!-- valor:integrations github=optional jira=optional calendar=optional news=none -->
+
 Generate talk points for an upcoming **project sync** — the recurring meeting
 where you walk the team through your project's progress. The output is a short,
 team-facing brief you **review, proof, and paste** into wherever that project's
