@@ -61,9 +61,10 @@ history.
 
 ### Evening wrap-up
 
-Say "wrap up" or use `/valor-wrapup`. Valor summarizes what you did today
-from git history and evidence entries, and saves carry-forward items for
-tomorrow.
+Say "wrap up" or use `/valor-wrapup`. Valor reconstructs the day from git
+history, evidence entries, and your agent sessions across workspaces, captures
+meeting notes from calendar-event attachments into your evidence store, and
+saves carry-forward items for tomorrow.
 
 ### Record evidence manually
 
@@ -92,8 +93,8 @@ As you connect more tools, enable them in `state.json`:
 | Integration | What you need | What it adds |
 |-------------|---------------|--------------|
 | GitHub | `gh auth login` | PR tracking, review history, merged PR summaries |
-| Jira | Atlassian MCP plugin | Ticket tracking, sprint context, task discovery |
-| Calendar | Google Calendar plugin | Meeting prep, schedule-aware prioritization |
+| Jira | Atlassian MCP plugin | Ticket tracking, sprint context, spare-capacity backlog pickups |
+| Calendar | Google Calendar plugin | Meeting prep, time-blocked day plan, meeting-notes capture |
 | News | WebSearch support | AI/ML and tech news in morning briefings |
 
 Each integration enriches the commands but none are required for the core
