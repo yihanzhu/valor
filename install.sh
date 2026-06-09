@@ -59,7 +59,6 @@ COMMAND_MAP=(
     "pr-review:valor-pr-review:valor-pr-review-coach:Valor PR review coach: helps give senior-level code review feedback with architecture, testing, and career coaching annotations"
     "design-doc:valor-design-doc:valor-design-doc-coach:Valor design doc coach: helps write technical design documents with structured options, trade-offs, and career coaching"
     "weekly:valor-weekly:valor-weekly-reflection:Valor weekly reflection: summarizes the week's work mapped to target-level competencies, identifies gaps, generates narrative for 1:1 with manager"
-    "tasks:valor-tasks:valor-task-identifier:Valor task identifier: finds high-impact work opportunities prioritized by career growth potential and team need"
     "wrapup:valor-wrapup:valor-evening-wrapup:Valor evening wrap-up: summarizes the day's work, captures carry-forward items for tomorrow, and reflects on competencies exercised"
     "prep:valor-prep:valor-prep:Valor 1:1 prep: generates a structured document for manager 1:1s grounded in evidence, weekly summaries, and career framework alignment"
     "sync-prep:valor-sync-prep:valor-sync-prep:Valor project sync prep: generates team-facing talk points for an upcoming project sync (progress since last sync, decisions to land, open questions) for the user to review and share"
@@ -204,7 +203,6 @@ apply_shared_transforms() {
         -e 's|/valor-pr-review|valor-pr-review-coach skill|g' \
         -e 's|/valor-design-doc|valor-design-doc-coach skill|g' \
         -e 's|/valor-weekly|valor-weekly-reflection skill|g' \
-        -e 's|/valor-tasks|valor-task-identifier skill|g' \
         -e 's|/valor-wrapup|valor-evening-wrapup skill|g' \
         -e 's|/valor-sync-prep|valor-sync-prep skill|g' \
         -e 's|/valor-prep|valor-prep skill|g' \
@@ -221,7 +219,6 @@ apply_rule_transforms() {
         -e "s|\`/valor-pr-review\` command|\`~/$target_dir/skills/valor-pr-review-coach/SKILL.md\`|g" \
         -e "s|\`/valor-design-doc\` command|\`~/$target_dir/skills/valor-design-doc-coach/SKILL.md\`|g" \
         -e "s|\`/valor-weekly\` command|\`~/$target_dir/skills/valor-weekly-reflection/SKILL.md\`|g" \
-        -e "s|\`/valor-tasks\` command|\`~/$target_dir/skills/valor-task-identifier/SKILL.md\`|g" \
         -e "s|\`/valor-wrapup\` command|\`~/$target_dir/skills/valor-evening-wrapup/SKILL.md\`|g" \
         -e "s|\`/valor-sync-prep\` command|\`~/$target_dir/skills/valor-sync-prep/SKILL.md\`|g" \
         -e "s|\`/valor-prep\` command|\`~/$target_dir/skills/valor-prep/SKILL.md\`|g" \
@@ -702,9 +699,9 @@ print_summary_all() {
     echo "  2. PR Review Coach   -- 'review PR #NNN'"
     echo "  3. Design Doc Coach  -- 'design doc for TICKET'"
     echo "  4. Weekly Reflection -- auto-suggests Friday"
-    echo "  5. Task Identifier   -- 'what should I work on'"
-    echo "  6. Evening Wrap-up   -- auto-suggests after 4pm"
-    echo "  7. 1:1 Prep          -- 'prep for 1:1'"
+    echo "  5. Evening Wrap-up   -- auto-suggests after 4pm"
+    echo "  6. 1:1 Prep          -- 'prep for 1:1'"
+    echo "  7. Project Sync Prep -- 'sync prep' before a project sync"
     echo "  8. Setup             -- /valor-setup or 'set up valor'"
     echo "  9. Ambient Coaching  -- always on ('valor quiet' to suppress)"
     echo ""

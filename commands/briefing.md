@@ -383,6 +383,26 @@ Keep rules short and stable; if a correction contradicts an existing rule, repla
 that rule rather than stacking a conflicting one. `standing_rules` and `week_goals`
 are user-visible state — the user can ask to see or prune them anytime.
 
+**Spare capacity → backlog pickups.** *Only* when the day plan is genuinely light
+(open windows, or ≤2 real priorities), surface 1–2 *backlog* pickups so the user can
+proactively grab high-impact work — never pad a full day with them. Pull from the
+backlog, gated on the integration:
+- **Jira** (`integrations.jira`): unassigned, stale (>2w), or High/Highest-priority
+  tickets in `context.jira_projects`.
+- **GitHub** (`integrations.github`): open PRs in your domain worth picking up —
+  **skip any PR already listed under PR Situation (§2)** so a review-requested PR
+  appears once, not twice (say "review PR repo#N" to start a coached review).
+
+Rank them by the **same lens** as priorities: advances a `week_goal`, fills a
+competency **gap** (from §5's stats — e.g. a low `industry_knowledge` or `leadership`
+count), or is a cross-team / design task (stronger career signal), plus Jira
+urgency/staleness. Surface under "Spare capacity" with a one-line *why*. If the user
+picks one up, record it so the proactivity counts as evidence:
+```bash
+python3 ~/.valor/evidence_cli.py add --activity task_identified --competency <gap> \
+  --statement "Proactively picked up <KEY>: <title>" --agent valor-morning-briefing
+```
+
 ## Briefing Format
 
 Present the full briefing in this structure. Use markdown formatting.
@@ -448,6 +468,8 @@ nothing.]
 not surfaced as actionable until its blocker is done. Only if something is held.]
 [**Heads-up:** this looks like more than a week's work — consider deferring
 [item(s)]. Only when clearly over-committed; no estimation math, just a nudge.]
+[**Spare capacity (only if the day is light):** 1–2 backlog pickups — [KEY/PR] [why:
+gap/goal/team-need]. Omit unless there's real slack.]
 
 [Carried artifact claims appear here only after passing the §6 gate. Verified
 resolved items are dropped (or shown as just-completed); unconfirmable ones are

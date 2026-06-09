@@ -45,7 +45,6 @@ hardcoding one.
 | **PR Review Coach**   | `/valor-pr-review` or "help me review"         | Senior-level code review guidance with architecture, testing, and tone coaching |
 | **Design Doc Coach**  | `/valor-design-doc` or "how should I approach" | Structured design guidance with options, trade-offs, and recommendations        |
 | **Weekly Reflection** | Auto Friday, or `/valor-weekly`                | Week summary mapped to competencies, gap analysis, and 1:1 narrative            |
-| **Task Identifier**   | `/valor-tasks` or "what should I work on"      | High-impact work prioritized by career growth potential                         |
 | **Evening Wrap-up**   | Auto after 4pm, or `/valor-wrapup`             | Day summary, carry-forward items, and career reflection                         |
 | **1:1 Prep**          | `/valor-prep` or "prep for 1:1"                | Evidence-grounded prep, drafted in your own 1:1-doc format, with chronic blockers surfaced |
 | **Project Sync Prep** | `/valor-sync-prep` or "sync prep"              | Team-facing talk points for an upcoming project sync — progress, decisions, open questions |
@@ -229,7 +228,6 @@ Commands:
 - `/valor-pr-review`
 - `/valor-design-doc`
 - `/valor-weekly`
-- `/valor-tasks`
 - `/valor-wrapup`
 - `/valor-prep`
 - `/valor-sync-prep`
@@ -241,7 +239,6 @@ Natural language also works:
 - "review PR #892"
 - "design doc for PROJ-123"
 - "what did I do this week"
-- "what should I work on"
 - "wrap up"
 - "prep for 1:1"
 - "sync prep"
