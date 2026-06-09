@@ -218,8 +218,10 @@ def test_install_prune_orphans_removes_only_retired_valor_artifacts(tmp_path):
     """install.sh prunes orphaned valor-* commands/skills from a retired command,
     but NEVER touches a current command or a user's own (non-valor) files."""
     fn = _extract_prune_orphans()
-    cmds = tmp_path / "commands"; cmds.mkdir()
-    skills = tmp_path / "skills"; skills.mkdir()
+    cmds = tmp_path / "commands"
+    cmds.mkdir()
+    skills = tmp_path / "skills"
+    skills.mkdir()
     (cmds / "valor-briefing.md").write_text("x")   # in COMMAND_MAP -> keep
     (cmds / "valor-tasks.md").write_text("x")       # retired -> prune
     (cmds / "my-custom.md").write_text("x")         # user's own (non-valor) -> keep
@@ -241,7 +243,8 @@ def test_install_prune_orphans_removes_only_retired_valor_artifacts(tmp_path):
 def test_install_prune_orphans_noop_when_all_current(tmp_path):
     """When every deployed valor-* artifact is still in COMMAND_MAP, prune removes nothing."""
     fn = _extract_prune_orphans()
-    cmds = tmp_path / "commands"; cmds.mkdir()
+    cmds = tmp_path / "commands"
+    cmds.mkdir()
     (cmds / "valor-briefing.md").write_text("x")
     harness = (
         'set -euo pipefail\n'
@@ -257,8 +260,10 @@ def test_install_prune_orphans_does_not_follow_symlinks(tmp_path):
     """A retired valor-* skill that is a SYMLINK must be unlinked, never followed —
     rm must not delete the link target's contents (which may live outside the dir)."""
     fn = _extract_prune_orphans()
-    skills = tmp_path / "skills"; skills.mkdir()
-    outside = tmp_path / "outside"; outside.mkdir()
+    skills = tmp_path / "skills"
+    skills.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
     (outside / "precious.txt").write_text("keep me")
     (skills / "valor-task-identifier").symlink_to(outside, target_is_directory=True)  # retired + symlinked
     harness = (
