@@ -207,6 +207,80 @@ def test_tasks_command_retired():
         assert "Task Identifier" not in Path(f).read_text(), f
 
 
+def _extract_prune_orphans():
+    install = Path("install.sh").read_text()
+    start = install.index("prune_orphans() {")
+    end = install.index("\n}\n", start) + len("\n}\n")
+    return install[start:end]
+
+
+def test_install_prune_orphans_removes_only_retired_valor_artifacts(tmp_path):
+    """install.sh prunes orphaned valor-* commands/skills from a retired command,
+    but NEVER touches a current command or a user's own (non-valor) files."""
+    fn = _extract_prune_orphans()
+    cmds = tmp_path / "commands"; cmds.mkdir()
+    skills = tmp_path / "skills"; skills.mkdir()
+    (cmds / "valor-briefing.md").write_text("x")   # in COMMAND_MAP -> keep
+    (cmds / "valor-tasks.md").write_text("x")       # retired -> prune
+    (cmds / "my-custom.md").write_text("x")         # user's own (non-valor) -> keep
+    (skills / "valor-morning-briefing").mkdir()      # in COMMAND_MAP -> keep
+    (skills / "valor-task-identifier").mkdir()       # retired -> prune
+    (skills / "my-custom-skill").mkdir()             # user's own -> keep
+    harness = (
+        'set -euo pipefail\n'
+        'COMMAND_MAP=("briefing:valor-briefing:valor-morning-briefing:d")\n'
+        + fn +
+        f'\nprune_orphans command "{cmds}"\nprune_orphans skill "{skills}"\n'
+    )
+    r = subprocess.run(["bash", "-c", harness], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    assert {p.name for p in cmds.iterdir()} == {"valor-briefing.md", "my-custom.md"}
+    assert {p.name for p in skills.iterdir()} == {"valor-morning-briefing", "my-custom-skill"}
+
+
+def test_install_prune_orphans_noop_when_all_current(tmp_path):
+    """When every deployed valor-* artifact is still in COMMAND_MAP, prune removes nothing."""
+    fn = _extract_prune_orphans()
+    cmds = tmp_path / "commands"; cmds.mkdir()
+    (cmds / "valor-briefing.md").write_text("x")
+    harness = (
+        'set -euo pipefail\n'
+        'COMMAND_MAP=("briefing:valor-briefing:valor-morning-briefing:d")\n'
+        + fn + f'\nprune_orphans command "{cmds}"\n'
+    )
+    r = subprocess.run(["bash", "-c", harness], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    assert {p.name for p in cmds.iterdir()} == {"valor-briefing.md"}
+
+
+def test_install_prune_orphans_does_not_follow_symlinks(tmp_path):
+    """A retired valor-* skill that is a SYMLINK must be unlinked, never followed —
+    rm must not delete the link target's contents (which may live outside the dir)."""
+    fn = _extract_prune_orphans()
+    skills = tmp_path / "skills"; skills.mkdir()
+    outside = tmp_path / "outside"; outside.mkdir()
+    (outside / "precious.txt").write_text("keep me")
+    (skills / "valor-task-identifier").symlink_to(outside, target_is_directory=True)  # retired + symlinked
+    harness = (
+        'set -euo pipefail\n'
+        'COMMAND_MAP=("briefing:valor-briefing:valor-morning-briefing:d")\n'
+        + fn + f'\nprune_orphans skill "{skills}"\n'
+    )
+    r = subprocess.run(["bash", "-c", harness], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    assert not (skills / "valor-task-identifier").is_symlink()      # orphan symlink unlinked
+    assert (outside / "precious.txt").read_text() == "keep me"      # target NOT followed/deleted
+
+
+def test_install_calls_prune_orphans_for_each_target():
+    """Each install target prunes after deploying (commands for Claude Code, skills
+    for Codex/Cursor)."""
+    text = Path("install.sh").read_text()
+    assert text.count("prune_orphans ") >= 3  # the helper def uses "prune_orphans()", calls use "prune_orphans <kind>"
+    assert "prune_orphans command " in text
+    assert "prune_orphans skill " in text
+
+
 def test_briefing_folds_in_spare_capacity_backlog():
     """The backlog-discovery /valor-tasks did is preserved as an optional
     spare-capacity pickup in the briefing (surfaced only when the day is light)."""
