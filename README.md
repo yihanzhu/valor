@@ -41,13 +41,13 @@ hardcoding one.
 
 | Agent                 | Trigger                                        | What it does                                                                    |
 | --------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------- |
-| **Morning Briefing**  | Auto before 11am, or `/valor-briefing`         | Jira tickets, PRs, calendar, news, coaching, priorities                         |
+| **Morning Briefing**  | Auto before 11am, or `/valor-briefing`         | Jira tickets, PRs, calendar, news, coaching, and priorities ranked by week goals + dependencies |
 | **PR Review Coach**   | `/valor-pr-review` or "help me review"         | Senior-level code review guidance with architecture, testing, and tone coaching |
 | **Design Doc Coach**  | `/valor-design-doc` or "how should I approach" | Structured design guidance with options, trade-offs, and recommendations        |
 | **Weekly Reflection** | Auto Friday, or `/valor-weekly`                | Week summary mapped to competencies, gap analysis, and 1:1 narrative            |
-| **Evening Wrap-up**   | Auto after 4pm, or `/valor-wrapup`             | Day summary, carry-forward items, and career reflection                         |
-| **1:1 Prep**          | `/valor-prep` or "prep for 1:1"                | Evidence-grounded prep, drafted in your own 1:1-doc format, with chronic blockers surfaced |
-| **Project Sync Prep** | `/valor-sync-prep` or "sync prep"              | Team-facing talk points for an upcoming project sync — progress, decisions, open questions |
+| **Evening Wrap-up**   | Auto after 4pm, or `/valor-wrapup`             | Day summary, carry-forward items, career reflection, and meeting-notes capture from calendar attachments |
+| **1:1 Prep**          | `/valor-prep` or "prep for 1:1"                | Evidence-grounded prep, drafted in your own 1:1-doc format, with chronic blockers surfaced — plain-text, paste-ready |
+| **Project Sync Prep** | `/valor-sync-prep` or "sync prep"              | Team-facing talk points for an upcoming project sync — progress, decisions, open questions — plain-text, paste-ready |
 | **Setup**             | `/valor-setup` or "set up valor"               | Guided career framework, level, and integration configuration                  |
 
 
@@ -58,14 +58,19 @@ competencies, and suggest one concrete "next-level" move.
 A few cross-cutting behaviors run inside those workflows. A **verification gate**
 checks carried-forward claims against their source (a PR's state, whether a doc
 was posted or a message sent) before any briefing or wrap-up re-asserts them —
-so a "still blocked, N days" note never rides on an unchecked guess. The briefing
-turns its priorities into a **day plan** fit to your calendar's real gaps (deep
-vs fragmented), sizing each task and leaving a breather after meetings, optionally
-written back as private calendar items that carry the task on the block and land
-on clean clock times. And for
+so a "still blocked, N days" note never rides on an unchecked guess. Before it
+plans, the briefing **ranks the day's work** against this week's goals — read from
+your 1:1 doc — and your standing dependency rules, showing the *why* on each
+priority, and surfaces spare-capacity backlog pickups when the day is light. The
+briefing then turns its priorities into a **day plan** fit to your calendar's real
+gaps (deep vs fragmented), sizing each task and leaving a breather after meetings,
+optionally written back as private calendar items that carry the task on the block
+and land on clean clock times. And for
 people who rotate between projects, an opt-in **project focus** plans around the
 project whose sync is next and hides the rest — noticing on its own when you pick
-up or drop a project.
+up or drop a project. At day's end, the **wrap-up** pulls meeting notes from your
+calendar events' attachments into the evidence store, so 1:1 prep and weekly
+reflection can draw on what actually happened in the room.
 
 ## Local Data Model
 

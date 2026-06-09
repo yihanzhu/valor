@@ -19,7 +19,7 @@ What shipped:
 
 - local evidence store and CLI
 - configurable career framework template
-- six assistant workflows (expanded to seven in Phase 5)
+- six assistant workflows (expanded over later phases to the current eight)
 - ambient coaching rules
 - install flow for Claude Code, with Cursor kept as a legacy target
 
@@ -200,6 +200,33 @@ What shipped:
 - state schema v15 → v16 (drop `sync_scan_interval_days` + `last_sync_scan`; add
   `auto_sync_prep` + `parked_projects`).
 - version bump to 0.10.0
+
+## Phase 12: Goal-Driven Prioritization & Meeting Capture
+
+**Status:** Complete
+
+What shipped:
+
+- **Goal-driven briefing prioritization**: the briefing now ranks the day's
+  todos against this week's goals — silently extracted from the 1:1 doc into a
+  new `prioritization.week_goals` block (refreshed weekly) — plus durable
+  dependency `standing_rules`, applying both *before* planning the day, showing
+  the "why" on each priority, and surfacing spare-capacity backlog pickups when
+  the day is light. Backlog discovery (the former standalone `/valor-tasks`
+  workflow) is now a briefing capability rather than a separate command.
+- **Wrap-up meeting-notes capture**: the evening wrap-up reads a notes
+  attachment on the day's calendar events (e.g. a Gemini "Notes by Gemini" Doc,
+  not the event agenda) and records it as a `meeting_notes` evidence entry, so
+  `/valor-prep` and `/valor-weekly` can draw on what happened in meetings. Short
+  recurring standups are skipped.
+- **Plain-text paste-ready prep output**: `/valor-prep` and `/valor-sync-prep`
+  emit plain text with no markdown asterisks, so the output pastes cleanly into
+  docs that render markdown literally.
+- **`/valor-tasks` retired**: the standalone task-finding command was removed and
+  its backlog discovery folded into the briefing's spare-capacity pickups; the
+  installer prunes the orphaned command/skill artifacts on upgrade.
+- state schema v16 → v17 (`prioritization`, `standing_rules`).
+- version bump to 0.11.0
 
 ## Future Considerations
 

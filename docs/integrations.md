@@ -33,11 +33,11 @@ Which integrations each command uses:
 
 | Command | GitHub | Jira | Calendar | News | Evidence (local) |
 |---------|--------|------|----------|------|------------------|
-| Morning Briefing | PRs to review, your open PRs, Monday catch-up | Active tickets, watched tickets | Today's events, RSVP status | AI/ML, tech, world headlines | Competency stats, coaching tone |
+| Morning Briefing | PRs to review, your open PRs, Monday catch-up | Active tickets, watched tickets, spare-capacity backlog pickups (unassigned/stale/High-priority) | Today's events, RSVP status, day-plan scheduling | AI/ML, tech, world headlines | Competency stats, coaching tone |
 | PR Review Coach | **Required** -- fetches PR diff and metadata | -- | -- | -- | Records review evidence |
 | Design Doc Coach | -- | Ticket lookup for context | -- | -- | Records design doc evidence |
 | Weekly Reflection | Merged PRs, reviewed PRs | Tickets completed this week | -- | -- | Competency breakdown, trends |
-| Evening Wrap-up | -- | -- | -- | -- | Today's entries, carry-forward |
+| Evening Wrap-up | Optional: today's activity from your repos | Optional: today's ticket activity | Captures meeting notes from event attachments into evidence | -- | Today's entries, carry-forward |
 | 1:1 Prep | Merged/reviewed PRs (optional) | Completed tickets (optional) | -- | -- | Primary source: evidence + weekly summaries |
 | Project Sync Prep | Project PRs since last sync (optional) | Project tickets since last sync (optional) | Identifies the next project sync | -- | Primary source: project progress since last sync |
 
@@ -79,7 +79,8 @@ use Jira.
 
 **Setup:** Install a Google Calendar plugin in your coding agent.
 
-**Used for:** Today's meetings, RSVP status, prep suggestions.
+**Used for:** Today's meetings, RSVP status, prep suggestions, day-plan
+scheduling, and meeting-notes capture from event attachments at wrap-up.
 
 **Auto-detected:** No -- defaults to `true`. Set to `false` if you don't
 use Google Calendar.
@@ -102,6 +103,8 @@ If all integrations are set to `false`, Valor still works:
 - **Morning Briefing:** Career coaching from evidence store, suggested
   priorities based on recent activity.
 - **Evening Wrap-up:** Git log, evidence entries, carry-forward items.
+  (Meeting-notes capture from calendar attachments requires Calendar and is
+  skipped here.)
 - **Weekly Reflection:** Evidence-based competency breakdown and trends.
 - **Design Doc Coach:** Fully functional -- asks user for context directly.
 - **1:1 Prep:** Fully functional from evidence store and weekly summaries.

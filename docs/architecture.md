@@ -82,6 +82,8 @@ Key fields:
 - `planning` -- day-plan config: `calendar_auto_write`, `workday_start`/`workday_end`, `deep_min_hours`, `post_meeting_break_minutes`, `block_granularity_minutes`, `morning_buffer_minutes`, `pre_meeting_prep_minutes` (v6, v9, v12, v13, v15)
 - `one_on_one` -- 1:1 doc reference + `format_notes` for `/valor-prep` (v7; local only)
 - `project_focus` -- opt-in project rotation: `enabled`, `mode`, `syncs`, `meeting_catalog` (categorized recurring meetings), `auto_sync_prep`, `parked_projects` (v8–v16; local only). Catalog drift-checked daily — no throttle.
+- `prioritization` -- weekly goal ranking: `week_goals` (this week's ordered goals, extracted silently from the 1:1 doc), `week_start`, `goals_source`; used by the briefing to rank todos before the day plan (v17; local only)
+- `standing_rules` -- durable sequencing/priority corrections, kept separate from `prioritization` so the weekly goal-refresh never drops them (v17; local only)
 - `escalate_in_one_on_one` -- chronic items flagged for the next 1:1 (v5)
 - `state_schema_version` -- integer for installer migrations
 - `installed_version`, `installed_at` -- install tracking
@@ -105,7 +107,7 @@ dict maps version numbers to SQL statements.
 
 ## Agent Architecture
 
-Valor has 7 discrete agents (invoked via slash commands) plus an ambient
+Valor has 8 discrete agents (invoked via slash commands) plus an ambient
 coaching layer:
 
 
@@ -115,9 +117,10 @@ coaching layer:
 | PR Review  | `/valor-pr-review`  | GitHub                       | Coached code review              |
 | Design Doc | `/valor-design-doc` | None                         | Design document coaching         |
 | Weekly     | `/valor-weekly`     | GitHub, Jira                 | Weekly reflection                |
-| Wrap-up    | `/valor-wrapup`     | None                         | End-of-day summary               |
+| Wrap-up    | `/valor-wrapup`     | Calendar (optional)          | End-of-day summary               |
 | 1:1 Prep   | `/valor-prep`       | GitHub, Jira (optional)      | Manager 1:1 preparation          |
 | Sync Prep  | `/valor-sync-prep`  | GitHub, Jira (optional)      | Project sync talk points         |
+| Setup      | `/valor-setup`      | None                         | First-run framework + integration config |
 | *Ambient*  | Always-on rule      | None                         | Coaching annotations after tasks |
 
 
@@ -134,6 +137,14 @@ Cross-cutting behaviors run inside the existing agents — no new commands:
   Unverifiable claims are demoted to "confirm or drop?" with their day-counter
   frozen, so a guess never propagates as fact. Verdicts cache in
   `claim_verifications` with per-type TTLs.
+- **Goal-driven prioritization** (briefing): before the day plan, the briefing
+  ranks the day's todos against this week's goals — extracted silently from the
+  1:1 doc into `prioritization.week_goals` (refreshed weekly) — and durable
+  dependency `standing_rules`, ordering dependencies-first then goal-fit then
+  closeness/staleness and showing the "why" per priority. When the day is light
+  it surfaces spare-capacity backlog pickups — the former standalone
+  task-finding capability, now folded in: unassigned/stale/High-priority Jira
+  work and open PRs in your domain, skipping anything already in the PR section.
 - **Day-planning pass** (`plan.py`): after the briefing's Suggested Priorities,
   it fits them to the day's real calendar gaps (deep vs fragmented; focus-time is
   deep-work, out-of-office blocks), sizing each task by an agent-provided
@@ -153,6 +164,12 @@ Cross-cutting behaviors run inside the existing agents — no new commands:
 - **Chronic escalation**: items verified-unresolved past
   `verification.escalation_threshold` surface in `/valor-prep`, which also drafts
   the entry in the user's own 1:1-doc format when `one_on_one.doc` is set.
+- **Meeting-notes capture** (wrap-up): the evening wrap-up detects a notes
+  attachment on the day's calendar events (e.g. a Gemini "Notes by Gemini" Doc —
+  not the event agenda/description), summarizes its decisions/outcomes/action
+  items, and records a `meeting_notes` evidence entry with a link, so
+  `/valor-prep` and `/valor-weekly` can reuse what happened in meetings. Short
+  recurring standups are skipped; gated on `integrations.calendar`.
 
 ## Context Loading Strategy
 
