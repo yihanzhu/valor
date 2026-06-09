@@ -1,5 +1,7 @@
 # Valor Evening Wrap-up
 
+<!-- valor:integrations github=optional jira=optional calendar=optional news=none -->
+
 Generate an end-of-day summary that captures accomplishments, carry-forward
 items, and a brief career reflection. This pairs with the Morning Briefing
 as bookends for the workday.

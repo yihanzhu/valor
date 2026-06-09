@@ -31,6 +31,12 @@ corresponding tool.
 
 Which integrations each command uses:
 
+<!-- This table is verified against each command's valor:integrations declaration
+(a comment near the command's title in commands/) by tests/test_command_docs.py.
+If you change a cell here, update the matching command's declaration too — and
+vice versa — or CI will fail. -->
+
+
 | Command | GitHub | Jira | Calendar | News | Evidence (local) |
 |---------|--------|------|----------|------|------------------|
 | Morning Briefing | PRs to review, your open PRs, Monday catch-up | Active tickets, watched tickets, spare-capacity backlog pickups (unassigned/stale/High-priority) | Today's events, RSVP status, day-plan scheduling | AI/ML, tech, world headlines | Competency stats, coaching tone |

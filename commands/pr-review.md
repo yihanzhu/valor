@@ -1,5 +1,7 @@
 # Valor PR Review Coach
 
+<!-- valor:integrations github=required jira=none calendar=none news=none -->
+
 Helps the user deliver senior-level PR reviews by analyzing changes for architecture, testing, naming, error handling, and cross-team impact. Coaches constructive tone with career-level competency context.
 
 ## Integration Check

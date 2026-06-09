@@ -1,5 +1,7 @@
 # Valor Design Doc Coach
 
+<!-- valor:integrations github=none jira=optional calendar=none news=none -->
+
 Helps the user write technical design documents for complex tickets, with structured
 options, trade-offs, career coaching, and evidence recording.
 
