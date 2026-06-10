@@ -385,3 +385,252 @@ def test_cli_check_record_check(tmp_path):
 
     r = run("check", "--type", "confluence", "--id", "PROJ-42", "--now", now)
     assert r["action"] == "perform_lookup" and r["frozen"] is True
+
+
+# ==========================================================================
+# Claims lifecycle (register -> reconcile -> carry-write) — added after the
+# 2026-06 phantom-send incident: a "not sent" Slack claim carried for 6 days
+# after the message was sent (and answered within 19 minutes).
+# ==========================================================================
+
+# --- Verdict-aware TTLs ---------------------------------------------------
+def test_unresolved_ttl_is_short(verify_db):
+    verify, _, _ = verify_db
+    assert verify.ttl_hours_for("slack", "unresolved") == 12
+    assert verify.ttl_hours_for("slack", "resolved") == 24 * 7
+    assert verify.ttl_hours_for("slack") == 24 * 7  # default = resolved table
+    assert verify.ttl_hours_for("github_pr", "unresolved") == 4
+
+
+def test_int_ttl_override_applies_to_both_verdicts(verify_db):
+    verify, _, state_path = verify_db
+    _write_state(state_path, verification={
+        "enabled": True, "escalation_threshold": 3, "ttl_overrides": {"slack": 2},
+    })
+    assert verify.ttl_hours_for("slack", "resolved") == 2
+    assert verify.ttl_hours_for("slack", "unresolved") == 2
+
+
+def test_six_day_phantom_regression(verify_db):
+    """THE incident shape: an 'unresolved' (= "not sent") slack verdict must
+    NOT be served as a fresh fact days later. Under the old flat 7d TTL this
+    check returned action=trust and the phantom rode the cache all week."""
+    verify, _, _ = verify_db
+    verify.record_result("slack", "#chan: Alex prod-release", "unresolved", now=T0)
+    r = verify.check_artifact("slack", "#chan: Alex prod-release",
+                              now=T0 + timedelta(days=3), auto=False)
+    assert r["action"] == "perform_lookup"  # stale -> must re-look, not trust
+    # A resolved verdict (sent message; immutable) still caches long.
+    verify.record_result("slack", "#chan: Alex prod-release", "resolved", now=T0)
+    r = verify.check_artifact("slack", "#chan: Alex prod-release",
+                              now=T0 + timedelta(days=3), auto=False)
+    assert r["action"] == "trust" and r["verdict"] == "resolved"
+
+
+# --- Canonical identifiers ------------------------------------------------
+def test_github_pr_identifier_variants_share_one_claim(verify_db):
+    verify, _, _ = verify_db
+    assert verify.claim_hash("github_pr", "ExampleOrg/x#1411") == \
+        verify.claim_hash("github_pr", "  exampleorg/X#1411 ")
+    assert verify.claim_hash("github_pr", "1411") == verify.claim_hash("github_pr", "#1411")
+    # bare 'repo#N' adopts github_owner from state (fixture: ExampleOrg)
+    assert verify.canonical_identifier("github_pr", "repo#123") == "ExampleOrg/repo#123"
+    assert verify.claim_hash("github_pr", "repo#123") == \
+        verify.claim_hash("github_pr", "exampleorg/repo#123")
+
+
+def test_jira_identifier_canonicalizes_to_upper_key(verify_db):
+    verify, _, _ = verify_db
+    assert verify.canonical_identifier("jira", "proj-42") == "PROJ-42"
+    assert verify.claim_hash("jira", "proj-42") == verify.claim_hash("jira", "PROJ-42")
+
+
+def test_heal_merges_legacy_fragments(verify_db):
+    """The live-cache fork: github_pr|1411 and github_pr|owner/repo#1411 held
+    separate day-counters for the same PR. reconcile must merge them, keeping
+    the larger counters (the chronic streak is the signal)."""
+    import hashlib
+    import sqlite3
+    verify, _, _ = verify_db
+    conn = sqlite3.connect(verify.DB_PATH)
+    verify.ensure_table(conn)
+    legacy_hash = hashlib.sha1("github_pr|1411".encode()).hexdigest()
+    conn.execute(
+        "INSERT INTO claim_verifications (claim_hash, claim_type, identifier,"
+        " last_verdict, miss_count, day_count, frozen, first_seen, created_at,"
+        " updated_at, metadata) VALUES (?,?,?,?,?,?,?,?,?,?, '{}')",
+        (legacy_hash, "github_pr", "1411", "unresolved", 3, 3, 0,
+         "2026-06-06T09:00:00+00:00", "2026-06-06T09:00:00+00:00",
+         "2026-06-06T09:00:00+00:00"),
+    )
+    conn.commit()
+    conn.close()
+    verify.record_result("github_pr", "ExampleOrg/repo#1411", "unresolved", now=T0)
+    r = verify.reconcile(auto=False, now=T0)
+    assert r["healed"], "legacy fragment should have been merged"
+    merged = verify.get_claim("github_pr", "ExampleOrg/repo#1411")
+    assert merged["day_count"] == 3  # max(legacy 3, fresh 1)
+    assert verify.get_claim("github_pr", "#1411") is None  # fragment row deleted
+
+
+# --- register --------------------------------------------------------------
+def test_register_slack_requires_destination(verify_db):
+    import pytest
+    verify, _, _ = verify_db
+    with pytest.raises(ValueError, match="destination"):
+        verify.register_claim("slack", "Sam: spec follow-up", now=T0)
+
+
+def test_register_slack_confirm_only_is_ask_user(verify_db):
+    verify, _, _ = verify_db
+    out = verify.register_claim("slack", "DS-team notes blurb",
+                                confirm_only=True, now=T0)
+    assert out["action"] == "ask_user"
+    # And check_artifact agrees: a confirm-only claim is askable, never assertable.
+    r = verify.check_artifact("slack", "DS-team notes blurb", now=T0, auto=False)
+    assert r["action"] == "ask_user"
+    assert "confirm or drop" in r["display"]
+
+
+def test_register_rejects_bare_pr_number(verify_db):
+    import pytest
+    verify, _, _ = verify_db
+    with pytest.raises(ValueError, match="owner/repo#N"):
+        verify.register_claim("github_pr", "1411", now=T0)
+
+
+def test_register_builds_scoped_slack_lookup(verify_db):
+    verify, _, _ = verify_db
+    out = verify.register_claim(
+        "slack", "#data-eng: Sam spec follow-up",
+        recipe={"channel": "#data-eng", "keywords": "spec review",
+                "drafted_at": "2026-06-10"},
+        asserted_state="not sent", now=T0)
+    assert out["action"] == "perform_lookup"
+    q = out["lookup"]["query"]
+    assert "in:#data-eng" in q and "from:me" in q
+    assert '"spec review"' in q and "after:2026-06-10" in q
+
+
+# --- reconcile ---------------------------------------------------------------
+def test_reconcile_buckets_by_freshness(verify_db):
+    verify, _, _ = verify_db
+    # never-checked registered claim -> stale (with a lookup to run)
+    verify.register_claim("slack", "#a: one",
+                          recipe={"channel": "#a"}, now=T0)
+    # fresh unresolved (1h old, 12h TTL) -> fresh
+    verify.register_claim("slack", "#b: two", recipe={"channel": "#b"}, now=T0)
+    verify.record_result("slack", "#b: two", "unresolved", now=T0)
+    # stale unresolved (13h old) -> stale
+    verify.register_claim("slack", "#c: three", recipe={"channel": "#c"}, now=T0)
+    verify.record_result("slack", "#c: three", "unresolved",
+                         now=T0 - timedelta(hours=13))
+    r = verify.reconcile(auto=False, now=T0 + timedelta(hours=1))
+    stale_ids = {e["identifier"] for e in r["stale_needs_check"]}
+    fresh_ids = {e["identifier"] for e in r["fresh"]}
+    assert "#a: one" in stale_ids and "#c: three" in stale_ids
+    assert "#b: two" in fresh_ids
+    assert all("lookup" in e for e in r["stale_needs_check"])
+
+
+def test_reconcile_auto_resolves_github(verify_db, monkeypatch):
+    verify, _, _ = verify_db
+    verify.record_result("github_pr", "ExampleOrg/repo#9", "unresolved",
+                         now=T0 - timedelta(days=2))
+    monkeypatch.setattr(verify, "gh_available", lambda: True)
+    monkeypatch.setattr(verify, "_run_gh", lambda args: {
+        "state": "MERGED", "title": "t", "url": "u"})
+    r = verify.reconcile(auto=True, now=T0)
+    assert any(e.get("auto_checked") and e["verdict"] == "resolved"
+               for e in r["fresh"])
+    assert not any(e["claim_type"] == "github_pr" for e in r["stale_needs_check"])
+
+
+def test_confirm_only_parks_after_three_mornings(verify_db):
+    verify, _, _ = verify_db
+    verify.register_claim("slack", "mystery blurb", confirm_only=True, now=T0)
+    for day in range(3):
+        r = verify.reconcile(auto=False, now=T0 + timedelta(days=day))
+        assert r["unverifiable"][0]["parked"] is False
+    r = verify.reconcile(auto=False, now=T0 + timedelta(days=3))
+    e = r["unverifiable"][0]
+    assert e["surfaced_count"] == 4 and e["parked"] is True
+
+
+# --- carry-write --------------------------------------------------------------
+def test_carry_write_stamps_unchecked_claim_as_question(verify_db):
+    """An item whose text asserts 'NOT sent' but whose claim was never checked
+    must be rendered as a question — the file cannot carry the assertion."""
+    verify, valor_home, _ = verify_db
+    verify.register_claim("slack", "#x: alex msg",
+                          recipe={"channel": "#x"}, now=T0)
+    verify.carry_write("2026-06-10", [
+        {"text": "Send the Alex message (drafted, NOT sent)",
+         "claim_type": "slack", "claim_id": "#x: alex msg"},
+    ], now=T0)
+    body = (valor_home / "carry-forward" / "latest.md").read_text()
+    line = next(ln for ln in body.splitlines() if "Alex" in ln)
+    assert "unverified — confirm or drop? (never checked)" in line
+    assert "(claim: slack|#x: alex msg)" in line
+
+
+def test_carry_write_stamps_fresh_and_demotes_stale(verify_db):
+    verify, valor_home, _ = verify_db
+    verify.record_result("slack", "#x: fresh one", "unresolved", now=T0)
+    verify.record_result("slack", "#y: stale one", "unresolved",
+                         now=T0 - timedelta(hours=20))
+    verify.carry_write("2026-06-10", [
+        {"text": "send fresh", "claim_type": "slack", "claim_id": "#x: fresh one"},
+        {"text": "send stale", "claim_type": "slack", "claim_id": "#y: stale one"},
+    ], now=T0 + timedelta(hours=1))
+    body = (valor_home / "carry-forward" / "latest.md").read_text()
+    fresh_line = next(ln for ln in body.splitlines() if "fresh" in ln)
+    stale_line = next(ln for ln in body.splitlines() if "stale one" in ln)
+    assert "unresolved — 1d" in fresh_line
+    assert "stale — re-verify before trusting" in stale_line
+
+
+def test_carry_write_flags_unregistered_suspects_and_writes_both_files(verify_db):
+    verify, valor_home, _ = verify_db
+    rec = verify.carry_write("2026-06-10", [
+        {"text": "Ping John about pymysql (drafted, unsent)"},
+        {"text": "think about the roadmap"},
+    ], narrative="Good day. The 1-pager is still unposted.", now=T0)
+    assert len(rec["unregistered_suspects"]) == 2  # the unsent item + the narrative line
+    assert (valor_home / "carry-forward" / "carry-forward-2026-06-10.md").exists()
+    body = (valor_home / "carry-forward" / "latest.md").read_text()
+    assert "Good day. The 1-pager is still unposted." in body  # narrative verbatim
+    assert "Gate: 0 claims" in body
+
+
+# --- context summary ------------------------------------------------------------
+def test_context_claims_summary_empty(verify_db):
+    verify, _, _ = verify_db
+    assert verify.context_claims_summary(now=T0) == {"open_count": 0}
+
+
+def test_context_claims_summary_worklist_and_tripwire(verify_db):
+    verify, valor_home, _ = verify_db
+    verify.register_claim("slack", "#a: needs check",
+                          recipe={"channel": "#a"}, now=T0)
+    carry = valor_home / "carry-forward"
+    carry.mkdir(parents=True, exist_ok=True)
+    (carry / "latest.md").write_text(
+        "1. Send the thing (drafted, NOT sent)\n"
+        "2. Stamped item — unresolved (claim: slack|#a: needs check)\n")
+    s = verify.context_claims_summary(now=T0)
+    assert s["open_count"] == 1
+    assert s["stale_needs_check"][0]["identifier"] == "#a: needs check"
+    assert "lookup" in s["stale_needs_check"][0]
+    # line 1 is claim-shaped with no (claim:) stamp -> tripwire; line 2 stamped -> not
+    assert len(s["unstamped_assertions"]) == 1
+    assert s["unstamped_assertions"][0]["line"] == 1
+
+
+def test_context_claims_summary_never_mutates_surfacing(verify_db):
+    verify, _, _ = verify_db
+    verify.register_claim("slack", "blurb", confirm_only=True, now=T0)
+    for day in range(10):  # context runs many times a day for many days
+        verify.context_claims_summary(now=T0 + timedelta(days=day))
+    r = verify.reconcile(auto=False, now=T0)
+    assert r["unverifiable"][0]["surfaced_count"] == 1  # only reconcile counts

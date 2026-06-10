@@ -7,6 +7,21 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _isolate_verify_home(tmp_path, monkeypatch):
+    """No test may touch the real ~/.valor through verify.py.
+
+    evidence_cli's `context` now embeds a claims summary that imports verify,
+    so even tests that never mention verify can reach its DB paths. Point them
+    at a per-test tmp home; fixtures like verify_db re-point as needed.
+    """
+    import src.verify as verify_module
+    home = tmp_path / ".valor-isolated"
+    home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(verify_module, "VALOR_HOME", home)
+    monkeypatch.setattr(verify_module, "DB_PATH", home / "evidence.sqlite")
+
+
 @pytest.fixture
 def cli_db(tmp_path, monkeypatch):
     """Monkeypatches DB_PATH, BACKUP_DIR, and VALOR_HOME in evidence_cli to use tmp dirs."""

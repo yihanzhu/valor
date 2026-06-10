@@ -106,7 +106,7 @@ it (e.g., Slack messages sent, Confluence pages updated, follow-ups posted).
 contains the day's planned priorities. If the key is missing (no briefing
 today), skip the reconciliation against priorities.
 
-**Steps:**
+**Steps (verify-first — look before asking):**
 
 1. List today's evidence entries from the evidence store (section 1.3).
 2. Compare against `today_priorities` -- which priorities were addressed?
@@ -118,11 +118,29 @@ today), skip the reconciliation against priorities.
    - Jira tickets updated
    - Cross-team coordination planned
    - Follow-up actions discussed
-4. Ask the user to confirm which drafted/planned activities were executed:
-   "I see you drafted a Slack message and discussed updating a Confluence
-   page. Did you end up doing these? Any other work today not captured
-   in our sessions?"
-5. For each confirmed activity not already in the evidence store, record it:
+4. **Verify sends before asserting or asking.** Session memory says "drafted";
+   only the channel says "sent" — a message pasted by the user two hours before
+   the wrap-up looks identical to one never sent. If a Slack tool is available:
+   - Run **one broad sweep first**: search `from:me` for today. Cross-reference
+     every draft found in step 3 against the results.
+   - For each draft, **register the claim** (if not already registered at draft
+     time) with the destination pinned, then record what the sweep showed:
+     ```bash
+     python3 ~/.valor/verify.py register --type slack \
+       --id "<#channel-or-recipient>: <topic>" \
+       --assert-state "not sent" \
+       --recipe '{"channel": "<#channel>", "keywords": "<distinctive phrase>", "drafted_at": "<YYYY-MM-DD>"}'
+     python3 ~/.valor/verify.py record --type slack --id "<same id>" --result <resolved|unresolved>
+     ```
+     `resolved` = found sent; `unresolved` = searched and genuinely absent.
+     If the destination is unknown and can't be pinned, register `--confirm-only`
+     — that claim can only ever surface as a question, never as "not sent".
+5. Ask the user **with findings in hand**, not open-ended: "Found the Alex
+   message sent 14:59 in #data-eng — marking it sent. The #platform-ops
+   question shows no send — still pending, or did it go somewhere else?"
+   Only unverifiable drafts get an open question.
+6. For each confirmed/verified activity not already in the evidence store,
+   record it:
    ```bash
    python3 ~/.valor/evidence_cli.py add \
      --activity <type> \
@@ -131,6 +149,10 @@ today), skip the reconciliation against priorities.
      --agent valor-evening-wrapup \
      --date $(date +%Y-%m-%d)
    ```
+
+**Vocabulary rule:** never write "not sent" / "unsent" / "unposted" about an
+artifact unless a same-run `record --result unresolved` backs it. The only
+allowed states are the gate's own display strings.
 
 This reconciliation step ensures the evidence store reflects actual work done,
 not just work done inside the current session.
@@ -181,32 +203,34 @@ if `integrations.calendar` is `false`.
 
 The wrap-up is where phantom claims are *born*: an unchecked "PROJ-42 1-pager
 unposted" gets written to carry-forward, and tomorrow's briefing reads it as
-fact. Stop that here. **Before any artifact claim goes into Tomorrow's Pickup or
-the carry-forward file, run it through the verification gate.**
+fact. Stop that here. **The checklist is runtime-enumerated — do not
+hand-enumerate claims from memory** (memory is exactly what missed a sent
+message for six days).
 
-Read the full protocol in `~/.valor/utilities.md` ("Verification Gate"). In
-short, for each carried artifact claim (a PR, Confluence/Drive doc, Slack
-message, or Jira ticket the claim says is or isn't done):
+1. **Register any new artifact claim noticed today** that isn't in the gate yet
+   (`verify.py register` — see §1.6 for slack; for PRs use `owner/repo#N`, for
+   Confluence the page title/key, for Jira the issue key). Registration is what
+   makes tomorrow's gate able to see the claim at all.
+2. **Run the reconcile — its output IS the checklist:**
+   ```bash
+   python3 ~/.valor/verify.py reconcile
+   ```
+   (`reconcile` auto-resolves `github_pr` claims via `gh` and merges any
+   fragmented duplicate claims itself.)
+3. For each entry in `stale_needs_check`, run its embedded `lookup` with the
+   matching tool (Atlassian/Slack/Drive MCP), then
+   `verify.py record ... --result <resolved|unresolved|unverified>`.
+   - **resolved** → it's done: move it to Accomplished and record a completion
+     entry (this is how a chronic zero-streak finally breaks).
+   - **unresolved** → carry it with the real `day_count`.
+   - **unverified** → demoted to "unverified — confirm or drop?", counter frozen.
+4. Entries in `unverifiable` are confirm-only claims: ask the user (skip ones
+   marked `parked` — the weekly owns those).
+5. If `verification.enabled` is `false` in context, skip this section.
 
-```bash
-python3 ~/.valor/verify.py check --type <TYPE> --id "<IDENTIFIER>"
-```
-
-- If `verification.enabled` is `false` in context, skip this step.
-- `action: trust` / `checked` → use the verdict. **resolved** means it's done:
-  move it to Accomplished and record a completion entry (this is how a chronic
-  zero-streak finally breaks); **unresolved** means carry it with the real
-  `day_count`.
-- `action: perform_lookup` → run the suggested lookup (Atlassian/Slack/Drive
-  MCP, or `gh`), then `verify.py record ... --result <resolved|unresolved|unverified>`.
-- Anything you **cannot** confirm → record `unverified`. It is demoted to
-  "unverified — confirm or drop?" with a **frozen** counter. Write it into
-  carry-forward in exactly that demoted form — never as a fact, never with an
-  advanced day count.
-
-This directly covers the kind of items a carry-forward file tends to flag by
-hand under a "verify-before-quoting" note (unposted design docs, unsent Slack
-replies, stale PR states). The gate makes that discipline automatic.
+End the section by printing the gate summary line for the user:
+`Gate: K claims — R resolved · U unresolved · V unverified` (counts from the
+final reconcile output).
 
 Two more rules when writing carry-forward claims:
 
@@ -215,11 +239,13 @@ Two more rules when writing carry-forward claims:
   describes has reached a publishable stage (the ticket is resolved or a finished
   draft exists). Until then it's a coaching nudge, not a claim — carrying it early
   is what breeds a recurring "publish the 1-pager" ghost for work still in flight.
-- **Identify each claim by its stable id** (ticket key, PR number, doc title), not
-  a prose description. "publish the PROJ-42 1-pager" vs "publish the PROJ-42
-  write-up" vs "post the 1-pager" are the *same* claim; phrasing-drift forks them
-  into separate counters that each look new, so nothing ever escalates. Use the
-  stable id (e.g. `PROJ-42`) as the verify.py `--id` so it stays one claim.
+- **Identify each claim by its canonical id** — `owner/repo#N` for PRs (the
+  runtime rejects bare numbers at register and merges legacy fragments), the
+  issue key for Jira, the doc title for Confluence/Drive,
+  `<#channel-or-recipient>: <topic>` for Slack. "publish the PROJ-42 1-pager" vs
+  "post the 1-pager" are the *same* claim; phrasing-drift forks counters that
+  each look new, so nothing ever escalates. Reuse the `canonical_id` that
+  `register` returns.
 
 ## 2. Summarize the Day
 
@@ -261,37 +287,49 @@ Keep this brief — 2-3 sentences max:
 2. [Task] — [current state]
 3. ...
 
+*Gate: [K] claims — [R] resolved · [U] unresolved · [V] unverified*
+
 ### Career Note
 [2-3 sentences: competencies exercised, one suggestion for tomorrow]
 ```
 
+The gate line is mandatory whenever any artifact claim was carried — it makes a
+skipped verification pass visible to the user at a glance.
+
 ## 4. Capture as Memory
 
-After presenting the wrap-up, save carry-forward items as a memory file so
-the next session recalls them automatically.
+After presenting the wrap-up, write the carry-forward via the runtime — **not**
+the Write tool — so every claim-bearing item is stamped with its status from
+the verification cache. A stamped file physically cannot say "not sent" about a
+claim nobody checked; it says "unverified — confirm or drop?" instead, which is
+what tomorrow's briefing should see.
 
-Use the Write tool to create a markdown file at
-`~/.valor/carry-forward/carry-forward-[DATE].md` (where `[DATE]` is today's
-date in `YYYY-MM-DD` format) with the following structure:
-
-```markdown
----
-name: carry-forward-[DATE]
-description: "Evening wrap-up carry-forward items for [TOMORROW_DATE]"
-type: local
-tags: [tomorrow, wrap-up, carry-forward]
----
-
-# Carry-Forward Items — [DATE]
-
-[List each carry-forward item with its current state and any blockers,
-matching the "Tomorrow's Pickup" section from the wrap-up output]
-```
-
-Then overwrite `~/.valor/carry-forward/latest.md` with the same content so the
-next session has a stable path for recall without touching the active repo.
-
-If a carry-forward file already exists for the same date, replace it.
+1. Build the items as JSON. Every item that asserts an artifact state carries
+   its claim ref; narrative-only items don't:
+   ```json
+   [
+     {"text": "Pre-prod validation for the WRITE DAG", "claim_type": "github_pr",
+      "claim_id": "owner/repo#1411", "section": "pickup"},
+     {"text": "Send the #eng-ops NATS question", "claim_type": "slack",
+      "claim_id": "#eng-ops-review: NATS SG ingress", "section": "pickup"},
+     {"text": "Merged PR #1411 — closeout done", "claim_type": "github_pr",
+      "claim_id": "owner/repo#1411", "section": "done"},
+     {"text": "PR #1049 held by design until WRITE is in prod", "section": "held"}
+   ]
+   ```
+2. Put the freeform narrative (day summary, decisions in force, pattern flags
+   for tomorrow — the prose a human actually reads) in a temp file, then:
+   ```bash
+   python3 ~/.valor/verify.py carry-write --date $(date +%Y-%m-%d) \
+     --items-json '<the JSON array>' \
+     --narrative-file /tmp/wrapup-narrative.md
+   ```
+   This writes both `carry-forward-[DATE].md` and `latest.md` atomically,
+   replacing any same-date file.
+3. **Check the receipt.** If `unregistered_suspects` is non-empty, those lines
+   assert artifact states with no registered claim behind them — register the
+   real ones (§1.8 step 1) and re-run, or reword the line if it isn't actually
+   a claim. Surface anything you leave unregistered to the user in one line.
 
 ## 5. Record Evidence
 
@@ -331,4 +369,6 @@ python3 ~/.valor/evidence_cli.py state-set \
 | Evidence store empty | Proceed with conversation context and git log |
 | Memory file unavailable | Skip memory recall; present wrap-up only |
 | Transcript script missing/fails | Skip cross-session scan; use current session + evidence store |
+| No Slack tool for send-verification | Register the claims anyway; record nothing — they surface as stale in tomorrow's context worklist |
+| `carry-write` fails | Fall back to the Write tool with the same sections; mark every artifact claim "unverified — confirm or drop?" by hand |
 | State update fails | Continue; wrap-up is still valid |

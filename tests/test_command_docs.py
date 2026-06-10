@@ -558,3 +558,69 @@ def test_installer_reads_schema_version_from_evidence_cli():
         "install.sh should read STATE_SCHEMA_VERSION from evidence_cli.py"
     assert "schema_version=16" not in install, \
         "install.sh must not hardcode a schema-version literal"
+
+
+# --- Verification-gate lifecycle <-> spec contract --------------------------
+#
+# The phantom-send incident showed prose instructions drift; these tests pin
+# the spec<->runtime vocabulary so a renamed/removed subcommand or a spec that
+# stops referencing the lifecycle fails CI instead of silently regressing.
+
+VERIFY_SPEC_SURFACES = (
+    "commands/wrapup.md",
+    "commands/briefing.md",
+    "src/utilities.md",
+    "src/coaching-ref.md",
+)
+
+
+def test_verify_subcommands_named_in_specs_exist():
+    """Every `verify.py <subcommand>` a spec mentions must exist in verify.py's
+    argparse, and vice-versa for the lifecycle trio the specs depend on."""
+    src_text = Path("src/verify.py").read_text()
+    registered = set(re.findall(r'add_parser\(\s*\n?\s*["\']([a-z-]+)["\']', src_text))
+    assert {"register", "reconcile", "carry-write"} <= registered
+    used = set()
+    # Invocation-shaped mentions only ("verify.py <cmd> --flag", "`verify.py
+    # <cmd>`", or end-of-line) — prose like "verify.py is unavailable" doesn't
+    # name a subcommand. Under-capture is fine: the assert is used ⊆ registered.
+    invocation = re.compile(r"verify\.py\s+([a-z][a-z-]*)(?=\s+--|\s*`|\s*$)", re.MULTILINE)
+    for surface in VERIFY_SPEC_SURFACES:
+        used |= set(invocation.findall(Path(surface).read_text()))
+    unknown = used - registered
+    assert not unknown, f"specs reference verify.py subcommands that don't exist: {sorted(unknown)}"
+    assert {"register", "reconcile"} <= used  # the lifecycle is actually invoked
+
+
+def test_wrapup_runs_the_claims_lifecycle():
+    """Wrap-up must register claims, consume the reconcile worklist, and write
+    the carry-forward via carry-write (cache-stamped statuses) — not raw Write."""
+    text = Path("commands/wrapup.md").read_text()
+    assert "verify.py register" in text
+    assert "verify.py reconcile" in text
+    assert "carry-write" in text
+    assert "from:me" in text          # the broad send-sweep before asking
+    assert "Gate:" in text            # printed gate-summary line
+
+
+def test_briefing_consumes_context_claims_with_default_deny():
+    text = Path("commands/briefing.md").read_text()
+    assert "context.claims" in text
+    assert "stale_needs_check" in text
+    assert "Default-deny" in text
+    assert "parked" in text           # confirm-only expiry honored
+    assert "Gate:" in text
+
+
+def test_ambient_registers_send_claims_at_draft_time():
+    """coaching-ref (on-demand, zero always-loaded cost) must tell the ambient
+    flow to register a send-claim when it records a drafted communication."""
+    text = Path("src/coaching-ref.md").read_text()
+    assert "verify.py register" in text
+    assert "--confirm-only" in text
+
+
+def test_context_embeds_claims_worklist():
+    text = Path("src/evidence_cli.py").read_text()
+    assert "context_claims_summary" in text
+    assert '"claims"' in text

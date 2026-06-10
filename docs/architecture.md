@@ -136,7 +136,17 @@ Cross-cutting behaviors run inside the existing agents — no new commands:
   (GitHub PRs via `gh`; Confluence/Slack/Drive/Jira via the agent's MCP tools).
   Unverifiable claims are demoted to "confirm or drop?" with their day-counter
   frozen, so a guess never propagates as fact. Verdicts cache in
-  `claim_verifications` with per-type TTLs.
+  `claim_verifications` with per-type, **verdict-aware** TTLs (a "not yet done"
+  verdict decays fast; a "done" verdict is immutable and caches long).
+  Verification is a **runtime-enumerated lifecycle**, not agent diligence:
+  claims are `register`ed at draft time with a search recipe (a Slack claim
+  must pin its destination or be confirm-only — askable, never assertable),
+  `reconcile` emits the complete worklist of open claims (healing fragmented
+  identifiers), the carry-forward file is written via `carry-write` with each
+  claim's status **stamped from the cache** (a skipped check renders as
+  "unverified — confirm or drop?", never as fact), and the open worklist +
+  any unstamped claim-shaped lines in `latest.md` are surfaced in the
+  session-start `context` output, where the briefing can't miss them.
 - **Goal-driven prioritization** (briefing): before the day plan, the briefing
   ranks the day's todos against this week's goals — extracted silently from the
   1:1 doc into `prioritization.week_goals` (refreshed weekly) — and durable

@@ -1737,3 +1737,44 @@ def test_framework_validate_no_file(cli_db, capsys):
     result = json.loads(capsys.readouterr().out)
     assert result["valid"] is False
     assert any("not found" in e.lower() for e in result["errors"])
+
+
+# --- context: claims worklist (verification lifecycle) ---------------------
+def test_context_includes_claims_block(cli_db, capsys):
+    """The open-claims worklist rides in `context` — the one channel loaded at
+    every session start — so the briefing receives it without asking."""
+    cli_module.cmd_context(argparse.Namespace())
+    data = json.loads(capsys.readouterr().out)
+    assert "claims" in data
+    assert data["claims"]["open_count"] == 0  # isolated tmp home: nothing open
+
+
+def test_context_claims_surfaces_open_worklist(cli_db, capsys):
+    import src.verify as verify
+    from datetime import datetime, timezone
+    verify.register_claim(
+        "slack", "#a: pending send", recipe={"channel": "#a"},
+        now=datetime(2026, 6, 10, 9, 0, tzinfo=timezone.utc))
+    cli_module.cmd_context(argparse.Namespace())
+    data = json.loads(capsys.readouterr().out)
+    claims = data["claims"]
+    assert claims["open_count"] == 1
+    assert claims["stale_needs_check"][0]["identifier"] == "#a: pending send"
+    assert "lookup" in claims["stale_needs_check"][0]
+
+
+def test_context_survives_broken_verify(cli_db, capsys, monkeypatch):
+    """A broken/missing verify module must never brick session start."""
+    monkeypatch.setattr(cli_module, "_import_verify", lambda: None)
+    cli_module.cmd_context(argparse.Namespace())
+    data = json.loads(capsys.readouterr().out)
+    assert data["claims"] == {"open_count": 0, "unavailable": True}
+
+    class Boom:
+        @staticmethod
+        def context_claims_summary():
+            raise RuntimeError("corrupt db")
+    monkeypatch.setattr(cli_module, "_import_verify", lambda: Boom)
+    cli_module.cmd_context(argparse.Namespace())
+    data = json.loads(capsys.readouterr().out)
+    assert data["claims"] == {"open_count": 0, "unavailable": True}
