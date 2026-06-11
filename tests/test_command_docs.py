@@ -624,3 +624,35 @@ def test_context_embeds_claims_worklist():
     text = Path("src/evidence_cli.py").read_text()
     assert "context_claims_summary" in text
     assert '"claims"' in text
+
+
+# --- Meeting typing + ad-hoc prep (from the 2026-06-11 missed-prep incident) --
+
+def test_two_person_meeting_is_one_on_one_only_for_manager():
+    """'Exactly two attendees -> 1:1' misfired on a colleague design-doc review
+    (typed 1:1 -> no prep). 1:1 is manager-only; any other 2-person meeting is a
+    project discussion (prep-worthy)."""
+    for surface in ("commands/briefing.md", "src/utilities.md"):
+        text = Path(surface).read_text()
+        assert "ONLY" in text and "manager" in text, surface
+        assert "project discussion" in text, surface
+        # a distinct prep-worthy category — NOT project_sync, so a colleague
+        # discussion never triggers auto sync-prep / last-sync bookkeeping /
+        # the new-project alert
+        assert "`discussion`" in text, surface
+        assert "auto sync-prep" in text, surface
+
+
+def test_briefing_preps_adhoc_meetings_and_mines_agenda():
+    text = Path("commands/briefing.md").read_text()
+    assert "ad-hoc" in text                  # one-offs are prep-typed on the spot
+    assert "Mine conversations" in text      # agenda from Slack/evidence, not title
+    assert "Parked ≠ unprepped" in text      # parking never suppresses prep
+
+
+def test_wrapup_sweep_captures_commitments():
+    """The from:me sweep must also net commitments made directly in Slack
+    (booked meetings, read-ahead asks) — agent sessions never see those."""
+    text = Path("commands/wrapup.md").read_text()
+    assert "commitments net" in text
+    assert "carry-forward item" in text

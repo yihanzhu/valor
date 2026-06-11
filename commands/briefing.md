@@ -255,13 +255,20 @@ silent, only genuinely new ones surface — so there's no periodic gate:
 2. **Categorize the `new` meetings (and ALL on a `seed`) from the signals, not the
    name.** Before deciding, use the signals **already in the calendar payload (all
    free — no fetch)**: the **description**, the **attendees** (same recurring small
-   group → standup; exactly two → 1:1; broad invite → social), the **cadence +
+   group → standup; **exactly two → `1:1` ONLY if the other attendee is the
+   user's manager** (`state.manager` / the configured 1:1 sync; if neither is
+   configured, type a recurring manager-style 1:1 by its title and confirm
+   once) — any other 2-person meeting is a **project discussion**: categorize
+   it **`discussion`** (prep-worthy, but NOT a `project_sync` — it must never
+   trigger auto sync-prep, last-sync bookkeeping, or the new-project alert;
+   a clearly-casual 2-person chat — coffee, donut — stays `social`); broad
+   invite → social), the **cadence +
    duration** (short + frequent → standup; monthly → demo/huddle), and the
    **attachment titles** ("…Project Plan" → project_sync; "…Agenda/Notes" → a
    working meeting). Also honor known **team names** from memory — a team's sync is
-   a `standup`, not a `project_sync`. Categories: `1:1` / `focus` / `personal` /
-   `standup` / `project_sync` / `team_planning` / `social` / `demo_huddle` /
-   `external` / `other`. **Only if the free signals still don't resolve it** (or you
+   a `standup`, not a `project_sync`. Categories: `1:1` / `discussion` / `focus` /
+   `personal` / `standup` / `project_sync` / `team_planning` / `social` /
+   `demo_huddle` / `external` / `other`. **Only if the free signals still don't resolve it** (or you
    can't tell team-vs-project) spend a content fetch: open an attached doc →
    Confluence (the project/topic) → Slack (recent context, e.g. a project you were
    just onboarded to). For a `project_sync`, record which **project**. On a `seed`,
@@ -526,10 +533,22 @@ Write"). In short:
    **`is_meeting: true`** for collaborative meetings (or pass **`attendees`** and
    plan.py treats > 1 as a meeting). Lunch / personal holds / OOO are not meetings
    and get no break. **Flag prep-worthy meetings** — those categorized
-   `project_sync` or `external` in the catalog — with **`prep: true`** plus their
-   **`summary`**; plan.py reserves a prep block (default 30 min) immediately before
-   each. You only *attend* standups / demos / planning, so those get no prep. If
-   the calendar tool exposes the user's working hours, pass
+   `project_sync`, `discussion`, or `external` in the catalog, **plus ad-hoc
+   ones**: a one-off meeting isn't in the catalog, so type it on the spot with
+   the same rules (2-person non-manager → project discussion → `discussion` →
+   prep-worthy) — with **`prep: true`** plus their **`summary`**; plan.py reserves a prep block (default 30
+   min) immediately before each. You only *attend* standups / demos / planning,
+   so those get no prep. Two rules learned from a real miss:
+   - **Mine conversations for the agenda, not just calendar fields.** An ad-hoc
+     meeting often has an empty description; its agenda lives in recent Slack
+     DMs with the attendee (e.g. "here's the design doc … can we go over it
+     tomorrow?") and the evidence store. One Slack search on the attendee's
+     name beats guessing from the title — and a doc handed over with a
+     read-ahead ask makes the prep block non-optional.
+   - **Parked ≠ unprepped.** A parked project hides its *work items* from
+     priorities, but a meeting the user accepted still gets prep — parking
+     never suppresses the prep block or its agenda mining.
+   If the calendar tool exposes the user's working hours, pass
    `--workday-start/--workday-end`; otherwise plan.py uses `state.planning`.
 2. Build the **post-gate** priorities as `{"text", "est_minutes"}` objects. A
    task built on an artifact claim enters this list **only if the §6 gate gave

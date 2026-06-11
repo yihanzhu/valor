@@ -123,6 +123,13 @@ today), skip the reconciliation against priorities.
    the wrap-up looks identical to one never sent. If a Slack tool is available:
    - Run **one broad sweep first**: search `from:me` for today. Cross-reference
      every draft found in step 3 against the results.
+   - **The sweep is also a commitments net, not just send-verification.** Scan
+     the same results for commitments the user made directly in Slack — a
+     meeting booked ("can we find time tomorrow to go over this?"), a doc
+     handed over with a read-ahead ask, a promised review or follow-up. Each
+     becomes a carry-forward item (with the doc link), so tomorrow's briefing
+     can prep the meeting instead of discovering it cold. Agent sessions never
+     see these — the Slack sweep is the only net that catches them.
    - For each draft, **register the claim** (if not already registered at draft
      time) with the destination pinned, then record what the sweep showed:
      ```bash
