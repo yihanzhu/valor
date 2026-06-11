@@ -234,12 +234,16 @@ ticket→project classification is the agent's job (read the ticket).
    a daily drift-check — known meetings stay silent; only genuinely new ones
    surface — so there's no periodic throttle. **Categorize** the `new` ones (and ALL on a `seed`) **from the signals
    already in the calendar payload — free, no fetch:** the **description**,
-   **attendees** (same recurring small group → standup; exactly two → 1:1; broad
+   **attendees** (same recurring small group → standup; exactly two → `1:1` ONLY
+   if the other attendee is the user's manager — any other 2-person meeting is a
+   project discussion, categorize `discussion`: prep-worthy but NOT a
+   `project_sync`, so it never triggers auto sync-prep, last-sync bookkeeping,
+   or the new-project alert; broad
    invite → social), **cadence + duration** (short+frequent → standup; monthly →
    demo/huddle), and **attachment titles** ("…Project Plan" → project_sync;
-   "…Agenda/Notes" → a working meeting) — into `1:1` / `focus` / `standup` /
-   `project_sync` / `team_planning` / `social` / `demo_huddle` / `external` /
-   `other`, honoring known **team names** from memory (a team's sync is a standup,
+   "…Agenda/Notes" → a working meeting) — into `1:1` / `discussion` / `focus` /
+   `standup` / `project_sync` / `team_planning` / `social` / `demo_huddle` /
+   `external` / `other`, honoring known **team names** from memory (a team's sync is a standup,
    not a project). **Only when those free signals don't resolve it** (or you can't
    tell team-vs-project) spend a content fetch — attached doc → Confluence →
    Slack. On a `seed`, list the categorization and flag low-confidence ones for a
