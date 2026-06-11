@@ -73,5 +73,20 @@ similar action for execution outside the IDE, record it immediately. The act
 of composing the communication is real work. Use a statement that reflects the
 content, not just "drafted a message."
 
+When you record a drafted communication, **also register its send-claim** so
+the wrap-up and briefing can verify the send later — draft time is the only
+moment the destination is reliably known:
+
+```bash
+python3 ~/.valor/verify.py register --type slack \
+  --id "<#channel-or-recipient>: <topic>" \
+  --assert-state "not sent" \
+  --recipe '{"channel": "<#channel>", "keywords": "<distinctive phrase from the draft>", "drafted_at": "<YYYY-MM-DD>"}'
+```
+
+(Use `--recipe '{"recipient": "<name>"}'` for a DM. If the destination is
+genuinely unknown, pass `--confirm-only` instead of a recipe.) Skip silently if
+verify.py is unavailable.
+
 The CLI dedup skips entries with the same activity + agent + date + statement.
 If the CLI fails, log a note but do not block the response.

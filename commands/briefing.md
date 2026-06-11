@@ -292,31 +292,41 @@ silent, only genuinely new ones surface — so there's no periodic gate:
 
 Yesterday's `today_priorities` (from state) and the carry-forward file are
 **claims, not facts**. The phantom-propagation bug is the briefing re-asserting
-"PROJ-42 1-pager unposted (week 14)" every morning while the day counter climbs
-on a guess nobody ever checked. Before you surface any carried artifact claim in
-Work Context, Career Focus, or Suggested Priorities, verify it.
+"PROJ-42 1-pager unposted (week 14)" — or planning a calendar block around a
+message that was sent yesterday — on a guess nobody ever checked.
 
-Read the full protocol in `~/.valor/utilities.md` ("Verification Gate"). For each
-artifact claim (PR, Confluence/Drive doc, Slack message, Jira ticket):
+**Your worklist already arrived: `context.claims`** (loaded at session start).
+Do not re-derive claims from carry-forward prose — the runtime enumerated every
+open claim for you. Process it:
 
-```bash
-python3 ~/.valor/verify.py check --type <TYPE> --id "<IDENTIFIER>"
-```
+1. `context.claims.stale_needs_check` — run each entry's embedded `lookup` with
+   the matching tool (Atlassian/Slack/Drive MCP; `github_pr` entries are usually
+   auto-resolved already), then
+   `verify.py record --type <T> --id "<ID>" --result <resolved|unresolved|unverified>`.
+   **resolved** → done: drop it from priorities and, if it closes a streak,
+   record the completion. **unresolved** → surface with the real `day_count`.
+2. `context.claims.unverifiable` — confirm-only claims: ask the user
+   ("confirm or drop?"). **Skip entries marked `parked`** — they've gone
+   unanswered 3+ mornings; the weekly owns them now.
+3. `context.claims.unstamped_assertions` — claim-shaped lines in the
+   carry-forward with no registered claim behind them (a bypassed or hand-edited
+   wrap-up). Tell the user in one line, register the real ones
+   (`verify.py register`), and treat their assertions as unverified until checked.
+
+**Default-deny:** an artifact claim may appear in Work Context, Career Focus, or
+Suggested Priorities **only with a fresh verdict from this run's gate**
+(`fresh`, or just recorded). Anything else — unverified, never-checked,
+confirm-only, unstamped — goes under "Needs Confirmation" as
+"unverified — confirm or drop?", never as a numbered priority, never with an
+advanced "week N / Nd" figure. Doing nothing must be the safe path.
+
+After processing, print the gate summary line under Suggested Priorities:
+`Gate: K claims — R resolved · U unresolved · V unverified`.
 
 - If `context.verification.enabled` is `false`, skip this step.
-- `action: trust` / `checked` → **resolved** means done: drop it from priorities
-  and, if it closes a streak, record the completion; **unresolved** → surface it
-  with the real `day_count`.
-- `action: perform_lookup` → run the named lookup (Atlassian/Slack/Drive MCP, or
-  `gh` for PRs — often auto-resolved), then
-  `verify.py record ... --result <resolved|unresolved|unverified>`.
-- Cannot confirm → record `unverified`. Surface it as
-  "unverified — confirm or drop?" with a **frozen** counter. **Never** promote a
-  frozen claim into a numbered priority as if it were fact, and never print an
-  advanced "week N / Nd" figure for it.
-
-Most `github_pr` claims resolve automatically (verify.py shells out to `gh`), so
-the bulk of this is cheap. Reserve agent lookups for Confluence/Slack/Drive/Jira.
+- If `context.claims` is missing (older runtime), fall back to the per-claim
+  protocol in `~/.valor/utilities.md` ("Verification Gate"):
+  `verify.py check --type <TYPE> --id "<ID>"` for each carried artifact claim.
 
 **Don't manufacture downstream tasks.** A "publish / write up / document X" item
 is a real priority only once the upstream work it describes has actually reached
@@ -478,6 +488,10 @@ resolved items are dropped (or shown as just-completed); unconfirmable ones are
 listed under a short "Needs Confirmation" note as "unverified — confirm or
 drop?", never as numbered priorities with a day count.]
 
+*Gate: [K] claims — [R] resolved · [U] unresolved · [V] unverified*
+[Mandatory whenever any artifact claim was processed — it makes a skipped
+gate visible at a glance.]
+
 ### Day Plan
 [Time-blocked schedule from the §7 day-planning pass. Omit if calendar is off.]
 - [HH:MM]–[HH:MM] — [priority] *(deep)*
@@ -517,8 +531,11 @@ Write"). In short:
    each. You only *attend* standups / demos / planning, so those get no prep. If
    the calendar tool exposes the user's working hours, pass
    `--workday-start/--workday-end`; otherwise plan.py uses `state.planning`.
-2. Build the **post-gate** priorities (exclude any the §6 gate demoted to
-   "unverified") as `{"text", "est_minutes"}` objects: **estimate each task's
+2. Build the **post-gate** priorities as `{"text", "est_minutes"}` objects. A
+   task built on an artifact claim enters this list **only if the §6 gate gave
+   that claim a fresh `unresolved` verdict this run** — never one demoted to
+   "unverified", never one whose claim went unchecked (that's how a calendar
+   block got planned around an already-sent message). **Estimate each task's
    duration from its nature** — a publish/post is ~15 min, a PR review ~30–45, a
    pipeline/implementation change is a multi-hour deep block, not 45 min. Lean
    **generous** (better to finish early than overflow). Then fit to the day's gaps:

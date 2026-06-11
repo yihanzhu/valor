@@ -244,8 +244,11 @@ These are not committed but worth exploring:
   the current narrow guard can't (e.g. some events passed but an accepted one
   dropped). The empty-calendar tripwire was chosen as the high-precision 80%;
   this is the rest.
-- **Verification-gate completeness** — the gate fact-checks each carried claim it
-  is *handed*, but can't catch one the agent never submits (a skipped check → a
-  stale reminder repeats). The command protocol requires verifying before
-  surfacing; a mechanical backstop — reconcile the carried claims in state against
-  those actually checked this run — is deferred (real plumbing for a modest gain).
+- ~~**Verification-gate completeness**~~ — **shipped** (claims lifecycle): the
+  deferred mechanical backstop became `verify.py register / reconcile /
+  carry-write` plus the session-start `context.claims` worklist, after a real
+  incident proved the gap (a "not sent" Slack claim carried 6 days after the
+  message was sent — the gate never saw a slack-type claim because nothing
+  forced submission). What remains genuinely future: verifying a claim the
+  agent never *notices* as a claim (the carry-write suspect regex and the
+  context tripwire net the claim-shaped ones).

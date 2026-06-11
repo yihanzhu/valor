@@ -772,6 +772,37 @@ def cmd_state_migrate(args: argparse.Namespace) -> None:
     }))
 
 
+def _import_verify():
+    """Locate the co-located verify module in either layout.
+
+    Installed: both files sit flat in ~/.valor (script dir on sys.path).
+    Repo/tests: importable as src.verify (shares the test's module object so
+    monkeypatched paths apply).
+    """
+    try:
+        import verify
+        return verify
+    except ImportError:
+        pass
+    try:
+        import src.verify as verify
+        return verify
+    except ImportError:
+        return None
+
+
+def _claims_summary_for_context() -> dict:
+    """Open-claims worklist for session start. Read-only and failure-isolated:
+    a broken/missing verify module must never brick `context`."""
+    try:
+        verify = _import_verify()
+        if verify is None:
+            return {"open_count": 0, "unavailable": True}
+        return verify.context_claims_summary()
+    except Exception:
+        return {"open_count": 0, "unavailable": True}
+
+
 def cmd_context(args: argparse.Namespace) -> None:
     state = _read_state()
     now = datetime.now().astimezone()
@@ -923,6 +954,11 @@ def cmd_context(args: argparse.Namespace) -> None:
         # Durable sequencing/priority corrections (separate top-level key so the
         # goal-refresh can't clobber them). Surfaced for the briefing to apply.
         "standing_rules": state.get("standing_rules", []) or [],
+        # Open verification claims (verify.py). Delivered here — the one channel
+        # loaded at EVERY session start — so the briefing receives its
+        # verification worklist instead of having to remember to derive one.
+        # {"open_count": 0} in the common empty case.
+        "claims": _claims_summary_for_context(),
         "state_schema_version": state.get("state_schema_version", STATE_SCHEMA_VERSION),
     }
     print(json.dumps(result, indent=2))

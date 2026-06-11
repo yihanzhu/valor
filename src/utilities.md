@@ -81,8 +81,11 @@ When an integration is enabled (`true`), discover the specific tool to use:
 |------------|---------|
 | `check --type T --id ID [--expect-state S] [--no-auto]` | Cache-first check; auto-resolves GitHub via `gh`; returns an `action` to follow |
 | `record --type T --id ID --result resolved\|unresolved\|unverified` | Record a verdict from an agent lookup; advances/freezes counters |
+| `register --type T --id ID [--recipe JSON] [--assert-state S] [--confirm-only]` | Register a claim at draft/carry time with its search recipe; validates the id and destination |
+| `reconcile [--no-auto]` | Enumerate ALL open claims into a worklist (`fresh` / `stale_needs_check` / `unverifiable`); auto-resolves PRs; heals fragmented ids |
+| `carry-write --date D --items-json J [--narrative-file P]` | Write the carry-forward file with claim statuses stamped from the cache |
 | `get --type T --id ID` | Show a claim's cached verification state |
-| `list [--frozen] [--status S] [--type T]` | List cached claims (used by the carry-forward audit) |
+| `list [--frozen] [--status S] [--type T]` | List cached claims (for audits) |
 | `types` | Print supported claim types, TTLs, and config |
 
 ## Verification Gate (anti-phantom)
@@ -117,6 +120,25 @@ work still in flight.
 **Kill switch:** if `context.verification.enabled` is `false`, skip the gate
 entirely and behave as before.
 
+**Claims lifecycle** (who runs what — the runtime enumerates, the agent looks up):
+
+| Moment | Action |
+|--------|--------|
+| Draft time (ambient / any session) | `register` the claim with its recipe — the destination is only reliably known now |
+| Wrap-up | `reconcile` → run each `stale_needs_check` lookup → `record` → `carry-write` the file (statuses stamped from the cache) |
+| Session start | `evidence_cli.py context` embeds `claims` — the open worklist + any unstamped claim-shaped lines in `latest.md` |
+| Briefing | Process `context.claims` (see the briefing spec §6); default-deny anything without a fresh verdict |
+
+**Verdict-aware TTLs:** a `resolved` verdict describes an immutable event and
+caches long (slack 7d); an `unresolved` ("not yet done") verdict describes a
+mutable absence and decays fast (slack **12h**, PR/Jira 4h, Confluence/Drive
+24h) — so a "not sent" can never coast for days on a stale cache.
+
+**Confirm-only claims** (registered with `--confirm-only` because no
+destination/recipe could be pinned) can never be asserted as fact: their only
+action is `ask_user`. After surfacing unanswered for 3+ mornings they are
+marked `parked` — the daily briefing skips them; the weekly owns them.
+
 **Protocol** -- for each artifact claim before you assert it:
 
 1. Check the cache (cheap, no network):
@@ -149,16 +171,19 @@ entirely and behave as before.
      drop?" and its counter is **frozen**. Surface it exactly that way; never
      re-assert a frozen claim as fact and never advance its day count.
 
-**Identifier conventions** (keep them stable so one claim keeps one counter):
+**Identifier conventions** — ONE canonical form per type (offering alternates is
+what forked `1411` and `owner/repo#1411` into separate counters):
 
-- `github_pr`: `owner/repo#123`, `repo#123` (owner from `github_owner`), or `#123`
-- `jira`: the issue key, e.g. `PROJ-42`
+- `github_pr`: `owner/repo#123` — always repo-qualified. `register` rejects bare
+  numbers; the runtime canonicalizes case and merges legacy fragments.
+- `jira`: the issue key, e.g. `PROJ-42` (case-folded by the runtime)
 - `confluence`: the Jira key or page title, e.g. `PROJ-42`
-- `slack`: a short stable description, e.g. `Sam spec-review follow-up`
+- `slack`: `<#channel-or-recipient>: <topic>`, e.g. `#data-eng: Sam spec follow-up`.
+  If the destination is unknown, the claim must be registered `--confirm-only`.
 - `drive`: the doc name
 
-The gate normalizes case/whitespace, but different wording forks a new counter.
-Reuse the same identifier every run for the same claim.
+Reuse the `canonical_id` that `register` returns; different wording forks a new
+counter for everything the canonicalizer can't see through.
 
 ## Project Focus (optional customization)
 
