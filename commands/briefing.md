@@ -330,6 +330,17 @@ advanced "week N / Nd" figure. Doing nothing must be the safe path.
 After processing, print the gate summary line under Suggested Priorities:
 `Gate: K claims — R resolved · U unresolved · V unverified`.
 
+**Overnight replies (conversational items):** a verified send isn't the end of
+the loop. For each carried conversational item — a sent message awaiting a
+reply, a review you're chasing, a "loop in X" follow-up — run one quick Slack
+check of that thread/DM for activity since `state.last_wrapup_timestamp`
+(if unset, since yesterday morning) — yesterday's wrap-up cannot have seen
+anything that arrived after it ran. This check runs whenever Slack is
+available, independent of the verification kill switch below. A
+reply flips the task: "chase X" / "draft follow-up to X" becomes "read X's
+reply and respond" — never plan a loop-in to someone whose answer is already
+sitting in the channel.
+
 - If `context.verification.enabled` is `false`, skip this step.
 - If `context.claims` is missing (older runtime), fall back to the per-claim
   protocol in `~/.valor/utilities.md` ("Verification Gate"):
@@ -563,7 +574,10 @@ Write"). In short:
    ```
    Render `blocks` **exactly as plan.py returns them** — its times, in order;
    don't re-time, merge, or improvise the schedule — and never invent a block for
-   a task plan.py left `unassigned`. plan.py won't start tasks before
+   a task plan.py left `unassigned`. A block with **`partial: true`** is a
+   deliberate *start* on a deep task too big for any single window — render it
+   as "start: [task] (Nm now, ~Mm remains for the next deep block)"; the
+   remainder is what carries, not the whole task. plan.py won't start tasks before
    `workday_start + morning_buffer_minutes` (your AM ritual) and **prefers
    focus-time blocks for deep work** (that's what they're for); a short task that
    only fits a small window now lands there instead of being pushed. Surface

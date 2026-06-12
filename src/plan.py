@@ -39,10 +39,15 @@ Model:
   * No task starts before workday_start + morning_buffer_minutes (an AM-ritual
     buffer), and block starts/ends snap to block_granularity_minutes (clean clock
     boundaries).
-  * A task is returned as `unassigned` only when no window is long enough for it
-    (the agent surfaces it as "push to your next deep block"). Free time left over
-    after assignment (>= 15 min, incl. a partly-used gap's leftover) is returned
-    as `open_windows` so short gaps aren't invisible.
+  * A deep task that fits no window whole still STARTS today when a meaningful
+    deep window (>= PARTIAL_MIN_MINUTES) is free: it gets a `partial: true`
+    block filling that window, with `remaining_minutes` pushed to the next deep
+    block. Leaving a 105-minute focus window empty while a 150-minute task
+    waits for "a real gap someday" wastes the scarcest resource on the
+    calendar. A task is returned as `unassigned` only when not even a partial
+    start fits. Free time left over after assignment (>= 15 min, incl. a
+    partly-used gap's leftover) is returned as `open_windows` so short gaps
+    aren't invisible.
 
 CLI:
     plan.py fit --events <json|-> --priorities <json|-> [--now ISO]
@@ -84,6 +89,11 @@ DEFAULTS = {
     # doesn't. Estimate generously — the user would rather finish early.
     "est_minutes": {"fragmented_ok": 30, "deep_only": 90, "either": 45},
 }
+
+# A deep task that fits nowhere whole still starts today if a deep-preferred
+# window of at least this many minutes is free (partial block; remainder is
+# pushed). Below this, a "start" isn't worth the context-switch.
+PARTIAL_MIN_MINUTES = 60
 
 # Task-shape keyword rules. Order matters: deep_only wins ties (a "design review"
 # is deep work, not a quick review).
@@ -368,6 +378,32 @@ def assign(priorities, gaps, est_minutes, granularity=0):
                 g["_cursor"] = blk_end
                 placed = True
                 break
+        if not placed and shape == "deep_only":
+            # Partial start: fill the largest remaining window (candidate
+            # order breaks ties toward deep/focus) instead of leaving the
+            # day's biggest block empty while the task waits whole.
+            best, best_start, best_min = None, None, 0
+            for g in _candidate_order(shape, gaps):
+                blk_start = _ceil_to(g["_cursor"], granularity)
+                remaining = _minutes(blk_start, _parse_iso(g["end"]))
+                if granularity:
+                    remaining -= remaining % granularity
+                if remaining > best_min:
+                    best, best_start, best_min = g, blk_start, remaining
+            if best is not None and best_min >= PARTIAL_MIN_MINUTES:
+                blk_end = best_start + timedelta(minutes=best_min)
+                blocks.append({
+                    "start": best_start.isoformat(),
+                    "end": blk_end.isoformat(),
+                    "minutes": best_min,
+                    "priority": p["text"],
+                    "shape": shape,
+                    "gap_type": best["type"],
+                    "partial": True,
+                    "remaining_minutes": need - best_min,
+                })
+                best["_cursor"] = blk_end
+                placed = True
         if not placed:
             unassigned.append({
                 "priority": p["text"],

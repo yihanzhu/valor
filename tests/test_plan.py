@@ -150,15 +150,21 @@ def test_untyped_event_still_blocks():
 
 
 # --- assignment ---
-def test_long_deep_task_unassigned_when_no_window_fits():
-    # Meetings chop the day so no gap is long enough for a 150-min deep task.
+def test_long_deep_task_gets_partial_start_when_no_window_fits_whole():
+    # Meetings chop the day so no gap fits a 150-min deep task whole. The task
+    # must still START in a largest-size window (partial block, remainder
+    # pushed) rather than waiting whole for a deep block that never comes.
+    # Several gaps tie at 90m; strict > keeps the first in candidate order.
     events = [_ev("10:30", "11:00"), _ev("12:30", "13:30"),
               _ev("14:30", "15:00"), _ev("16:00", "16:30")]
     r = plan.fit(events, [{"text": "Design the system", "est_minutes": 150}], now=T("09:00"),
                  workday_start="09:00", workday_end="18:00", deep_min_hours=2)
     assert r["deep_gap_count"] == 0
-    assert not r["blocks"]
-    assert r["unassigned"][0]["reason"] == "no block long enough today"
+    assert r["unassigned"] == []
+    blk = r["blocks"][0]
+    assert blk["partial"] is True
+    assert blk["minutes"] == 90
+    assert blk["remaining_minutes"] == 60
 
 
 def test_short_deep_task_falls_back_to_fitting_fragment_window():
@@ -599,3 +605,48 @@ def test_junk_priority_entries_are_skipped():
     )
     # The None and 42 produced no blocks and no crash; the str + dict survived.
     assert {b["priority"] for b in r["blocks"]} == {"Design X", "Merge PR #1"}
+
+
+# --- Partial deep-work starts (don't leave focus time empty) ---------------
+
+def test_deep_task_too_big_gets_partial_start_in_focus_window():
+    """A 150m deep task whose only real window is the focus block must START
+    there (partial block, remainder pushed) — not leave it empty (the
+    2026-06-12 incident: a focus window sat open while the task waited)."""
+    events = [
+        _mtg("09:00", "10:00"),
+        {**_ev("10:00", "12:00", "Focus time"), "type": "focusTime"},
+        _ev("12:00", "17:30", "busy"),
+    ]
+    r = plan.fit(events, [{"text": "Pre-prod pipeline test implementation",
+                           "est_minutes": 150}],
+                 now=T("08:30"), workday_start="09:00", workday_end="18:00",
+                 deep_min_hours=2, granularity=15)
+    assert r["unassigned"] == []
+    blk = next(b for b in r["blocks"] if "Pre-prod" in b["priority"])
+    assert blk["partial"] is True
+    assert blk["minutes"] >= plan.PARTIAL_MIN_MINUTES
+    assert blk["remaining_minutes"] == 150 - blk["minutes"]
+
+
+def test_deep_task_stays_unassigned_below_partial_minimum():
+    """No window >= PARTIAL_MIN_MINUTES -> unassigned as before (a sub-hour
+    'start' isn't worth the context switch)."""
+    events = [_ev("09:00", "16:45", "busy")]  # leaves only 17:00-18:00? no: 45m + tail
+    r = plan.fit(events, [{"text": "Pre-prod pipeline test implementation",
+                           "est_minutes": 150}],
+                 now=T("08:30"), workday_start="09:00", workday_end="17:30",
+                 deep_min_hours=2, granularity=15)
+    assert [u["priority"] for u in r["unassigned"]] == ["Pre-prod pipeline test implementation"]
+    assert all(not b.get("partial") for b in r["blocks"])
+
+
+def test_whole_fit_still_preferred_over_partial():
+    """A task that fits a window whole is placed whole — partial is a fallback."""
+    events = [_mtg("13:00", "14:00")]
+    r = plan.fit(events, [{"text": "Design the migration", "est_minutes": 120}],
+                 now=T("08:30"), workday_start="09:00", workday_end="18:00",
+                 deep_min_hours=2, granularity=15)
+    blk = next(b for b in r["blocks"] if "Design" in b["priority"])
+    assert not blk.get("partial")
+    assert blk["minutes"] == 120

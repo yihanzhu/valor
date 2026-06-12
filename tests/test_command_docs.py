@@ -656,3 +656,26 @@ def test_wrapup_sweep_captures_commitments():
     text = Path("commands/wrapup.md").read_text()
     assert "commitments net" in text
     assert "carry-forward item" in text
+
+
+# --- Day-plan follow-through (from the 2026-06-12 briefing flags) -----------
+
+def test_briefing_renders_partial_deep_blocks():
+    text = Path("commands/briefing.md").read_text()
+    assert "partial: true" in text and "remains for the next deep block" in text
+
+
+def test_wrapup_audits_planned_vs_done():
+    """Planned ≠ done: wrap-up must verify each day-plan item instead of letting
+    tomorrow's briefing assume yesterday's plan executed itself."""
+    text = Path("commands/wrapup.md").read_text()
+    assert "planned ≠ done" in text
+    assert "today_priorities" in text
+
+
+def test_briefing_checks_overnight_replies():
+    """A reply that lands between wrap-up and briefing must flip 'chase X' into
+    'read and respond' — the wrap-up cannot have seen it."""
+    text = Path("commands/briefing.md").read_text()
+    assert "Overnight replies" in text
+    assert "last_wrapup_timestamp" in text
