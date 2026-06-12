@@ -679,3 +679,13 @@ def test_briefing_checks_overnight_replies():
     text = Path("commands/briefing.md").read_text()
     assert "Overnight replies" in text
     assert "last_wrapup_timestamp" in text
+
+
+def test_briefing_retires_completed_week_goals():
+    """A finished week goal must stop generating tasks (the pre-prod test was
+    re-planned twice after the pipeline was already deployed and exercised) —
+    the briefing checks the week's evidence before ranking against a goal."""
+    text = Path("commands/briefing.md").read_text()
+    assert "Retire completed goals" in text
+    assert "non-retired" in text
+    assert "--limit 0" in text  # unbounded scan — default limit drops early-week entries
