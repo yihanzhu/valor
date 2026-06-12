@@ -386,12 +386,26 @@ This writes only the goals block; `standing_rules` live in their own key and are
 untouched here. No doc/reader available → keep the cached goals (or none) and rank
 without goal weighting. Never block, never ask to confirm.
 
+**Retire completed goals before ranking against them.** A week goal is a static
+Monday snapshot; the work moves all week. Before using `week_goals` as ranking
+weight, scan this week's evidence (`evidence_cli.py list --from <week_start>
+--limit 0` — unbounded; the default limit drops early-week entries late in
+the week) for proof a goal is already substantially done — a completion
+entry, a deploy-and-exercised record, an explicit correction saying so.
+**Ambiguous progress evidence keeps the goal open** — retiring needs proof,
+the same default-deny ethos as the §6 gate. A goal with completion evidence is **retired**: shown as
+"✓ done (per <date> evidence)" in the briefing, and it stops generating tasks —
+the failure mode is a finished goal re-spawning a deep block every morning
+("test in pre-prod" planned twice after the pipeline was already deployed and
+exercised). A genuine residual (e.g. "re-validate after the fix-PR merges") is
+gated on its blocker — a Held item, not a revival of the goal.
+
 **Rank the candidate todos**, in this order:
 1. **Dependencies first (hard rule, not a tie-breaker).** Apply `standing_rules`: a
    todo blocked behind unfinished upstream is **held** — listed under "Held
    (blocked)", *never* as a numbered priority — until its blocker is done.
-2. **Goal alignment.** A todo that advances or unblocks a `week_goal` outranks one
-   that doesn't.
+2. **Goal alignment.** A todo that advances or unblocks an **open** (non-retired)
+   `week_goal` outranks one that doesn't.
 3. **Closeness-to-done / unblocks-others**, then **staleness** (the existing
    tie-breakers).
 
@@ -423,7 +437,7 @@ backlog, gated on the integration:
   **skip any PR already listed under PR Situation (§2)** so a review-requested PR
   appears once, not twice (say "review PR repo#N" to start a coached review).
 
-Rank them by the **same lens** as priorities: advances a `week_goal`, fills a
+Rank them by the **same lens** as priorities: advances an **open** `week_goal`, fills a
 competency **gap** (from §5's stats — e.g. a low `industry_knowledge` or `leadership`
 count), or is a cross-team / design task (stronger career signal), plus Jira
 urgency/staleness. Surface under "Spare capacity" with a one-line *why*. If the user
@@ -494,8 +508,11 @@ nothing.]
 2. [action] -- [why]
 3. ...
 
-[**Held (blocked):** [item] — behind [unfinished upstream], per a standing rule;
-not surfaced as actionable until its blocker is done. Only if something is held.]
+[**Held (blocked):** [item] — behind [unfinished upstream], per a standing rule
+or a retired goal's gated residual; not surfaced as actionable until its
+blocker is done. Only if something is held.]
+[**Goals done:** ✓ [goal] (per [date] evidence) — retired, no longer generating
+tasks. Only if a goal was retired this run.]
 [**Heads-up:** this looks like more than a week's work — consider deferring
 [item(s)]. Only when clearly over-committed; no estimation math, just a nudge.]
 [**Spare capacity (only if the day is light):** 1–2 backlog pickups — [KEY/PR] [why:
