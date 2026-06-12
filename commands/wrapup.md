@@ -109,8 +109,15 @@ today), skip the reconciliation against priorities.
 **Steps (verify-first — look before asking):**
 
 1. List today's evidence entries from the evidence store (section 1.3).
-2. Compare against `today_priorities` -- which priorities were addressed?
-   Which were not? Note unaddressed ones as carry-forward candidates.
+2. **Audit the day plan item by item — planned ≠ done.** Walk EVERY entry in
+   `today_priorities` (and every Valor day-plan block on today's calendar) and
+   classify it explicitly: **done** (proof exists — a gate verdict per §1.8, an
+   evidence entry, or transcript evidence), **partial** (started, not finished
+   — e.g. a `partial: true` plan block only covered part of the task), or
+   **not done**. No proof → it is NOT done; ask with findings in hand if
+   unclear. Everything not verifiably done is carried forward with its real
+   state, so tomorrow's briefing plans from reality — never from the
+   assumption that yesterday's plan executed itself.
 3. Review the merged transcript summaries (current session + other sessions)
    for work not yet in the evidence store:
    - Messages drafted for Slack, email, or other channels

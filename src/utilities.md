@@ -324,7 +324,7 @@ blocks back as events. Skipped entirely if `integrations.calendar` is `false`.
    reserved for) but a short deep task **falls back to any fragment window it
    fits** rather than being pushed; `fragmented_ok`/`either` fill ordinary
    fragment windows first and **avoid focus-time gaps** so deep blocks stay free
-   for deep work. A task is unassigned only when no window is long enough. No tasks start
+   for deep work. A deep task that fits no window whole gets a `partial: true` block in the largest window (>= 60 min) with `remaining_minutes` pushed; a task is unassigned only when not even that fits. No tasks start
    before `workday_start + morning_buffer_minutes` (the AM ritual). Block
    starts/ends snap to `block_granularity_minutes` (default 15) so they land on
    clean clock boundaries (:00/:15/:30/:45) like meetings, not odd times like 2:09.
