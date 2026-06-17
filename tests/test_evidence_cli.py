@@ -1294,7 +1294,9 @@ def test_migrate_state_in_memory_preserves_project_focus():
 
 def test_migrate_state_in_memory_adds_v17_prioritization_fields():
     migrated = _migrate_state_in_memory({"current_level": "L3"})
-    assert migrated["prioritization"] == {"week_goals": [], "week_start": "", "goals_source": ""}
+    assert migrated["prioritization"] == {
+        "week_goals": [], "week_start": "", "goals_source": "", "completed_goals": [],  # v18
+    }
     assert migrated["standing_rules"] == []  # separate top-level key (clobber-safe)
     assert migrated["state_schema_version"] == STATE_SCHEMA_VERSION
 
@@ -1308,12 +1310,16 @@ def test_migrate_state_in_memory_preserves_prioritization():
     assert migrated["prioritization"]["week_goals"] == ["ship the write pipeline to prod"]
     assert migrated["prioritization"]["week_start"] == "2026-06-08"
     assert migrated["prioritization"]["goals_source"] == ""  # missing sub-key filled
+    assert migrated["prioritization"]["completed_goals"] == []  # v18 missing sub-key filled
     assert migrated["standing_rules"] == ["READ pipeline waits until WRITE is in prod"]
 
 
 def test_migrate_state_in_memory_repairs_non_list_prioritization():
-    migrated = _migrate_state_in_memory({"prioritization": {"week_goals": "oops"}, "standing_rules": "oops"})
+    migrated = _migrate_state_in_memory(
+        {"prioritization": {"week_goals": "oops", "completed_goals": "oops"}, "standing_rules": "oops"}
+    )
     assert migrated["prioritization"]["week_goals"] == []
+    assert migrated["prioritization"]["completed_goals"] == []  # v18 list-guard
     assert migrated["standing_rules"] == []
 
 
@@ -1559,6 +1565,7 @@ def test_context_includes_prioritization_block(cli_db, capsys, monkeypatch):
     result = json.loads(capsys.readouterr().out)
     assert result["prioritization"]["week_goals"] == ["ship the write pipeline to prod"]
     assert result["prioritization"]["goals_source"] == "one_on_one_doc"
+    assert result["prioritization"]["completed_goals"] == []  # v18: surfaced for the briefing to read
     assert result["prioritization"]["week_start_current"] == "2026-06-08"  # authoritative Monday
     assert result["prioritization"]["week_goals_stale"] is False  # week_start == this Monday
     assert result["standing_rules"] == ["READ pipeline waits until WRITE is in prod"]  # separate key

@@ -67,7 +67,7 @@ version control. Upgrades overwrite the installer-managed runtime files
 
 The `installed_version` and `installed_at` fields track when the last install
 happened. The `state_schema_version` field enables forward-only migrations
-when the installer adds new fields (currently at version 17). Migrations
+when the installer adds new fields (currently at version 18). Migrations
 add missing keys with safe defaults and prune keys removed in later schema
 versions (e.g. the v16 sync-rescan throttle), never overwriting existing user
 values; they run in `_migrate_state_in_memory` (src/evidence_cli.py). The

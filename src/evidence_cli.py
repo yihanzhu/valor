@@ -40,7 +40,7 @@ from pathlib import Path
 DB_PATH = Path.home() / ".valor" / "evidence.sqlite"
 BACKUP_DIR = Path.home() / ".valor" / "backups"
 
-STATE_SCHEMA_VERSION = 17
+STATE_SCHEMA_VERSION = 18
 
 ROUTINE_SLOTS = ("briefing", "wrapup", "weekly", "prep")
 
@@ -686,13 +686,29 @@ def _migrate_state_in_memory(state: dict) -> dict:
     # stale -> the briefing re-reads the doc); `goals_source` records where they
     # came from.
     if "prioritization" not in state or not isinstance(state.get("prioritization"), dict):
-        state["prioritization"] = {"week_goals": [], "week_start": "", "goals_source": ""}
+        state["prioritization"] = {
+            "week_goals": [],
+            "week_start": "",
+            "goals_source": "",
+            "completed_goals": [],
+        }
     else:
         pr = state["prioritization"]
         if not isinstance(pr.get("week_goals"), list):
             pr["week_goals"] = []
         pr.setdefault("week_start", "")
         pr.setdefault("goals_source", "")
+        # v18: `completed_goals` is the subset of this week's `week_goals` the
+        # user has already finished. The wrap-up appends a goal here the moment
+        # it confirms that goal done (a meeting decision, a demo — completions
+        # with no PR/ticket artifact for the claim gate to catch). The briefing
+        # then retires it by reading status, instead of re-inferring completion
+        # from free-text evidence every morning — a manual scan that silently
+        # under-fired and re-planned finished goals. Lives INSIDE prioritization
+        # (unlike standing_rules) so the weekly goal-refresh resets it for the
+        # new week along with the goals it tracks.
+        if not isinstance(pr.get("completed_goals"), list):
+            pr["completed_goals"] = []
     # `standing_rules` are durable sequencing/priority corrections the user made
     # (e.g. "READ after WRITE in prod") that future briefings honor so they're
     # never re-corrected. Kept as a SEPARATE top-level key — NOT inside
@@ -939,6 +955,10 @@ def cmd_context(args: argparse.Namespace) -> None:
             "week_goals": (state.get("prioritization") or {}).get("week_goals", []) or [],
             "week_start": (state.get("prioritization") or {}).get("week_start", "") or "",
             "goals_source": (state.get("prioritization") or {}).get("goals_source", "") or "",
+            # v18: week_goals the wrap-up has confirmed done. The briefing retires
+            # these by reading status (shown "✓ done", generating no tasks) — so a
+            # goal finished in a meeting/demo stops re-spawning deep blocks.
+            "completed_goals": (state.get("prioritization") or {}).get("completed_goals", []) or [],
             # The authoritative current ISO-Monday. Writers must copy this into
             # `week_start` VERBATIM (not hand-compute it) so the stale check below
             # always matches — otherwise a mis-computed Monday keeps goals "stale"
