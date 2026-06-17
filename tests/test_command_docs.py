@@ -658,6 +658,16 @@ def test_wrapup_sweep_captures_commitments():
     assert "carry-forward item" in text
 
 
+def test_wrapup_sweep_captures_incoming_asks():
+    """`from:me` is blind to asks directed AT the user (review requests, "can you
+    take a look?"). A `to:me` / mentions pass nets those as owed carry-forward
+    items, deduped against asks already answered from:me."""
+    text = Path("commands/wrapup.md").read_text()
+    assert "to:me" in text
+    assert "no reply from you" in text   # an unanswered incoming ask is owed
+    assert "double-carry" in text        # dedup against an already-answered ask
+
+
 # --- Day-plan follow-through (from the 2026-06-12 briefing flags) -----------
 
 def test_briefing_renders_partial_deep_blocks():
