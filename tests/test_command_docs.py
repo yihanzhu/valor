@@ -673,6 +673,28 @@ def test_wrapup_audits_planned_vs_done():
     assert "today_priorities" in text
 
 
+# --- Finished-goal retention (from the 2026-06-17 re-planned-done-goals flag) --
+#
+# Goals finished in a meeting/demo leave no PR/ticket for the §6 claim gate to
+# catch. The wrap-up marks them into prioritization.completed_goals at capture
+# time; the briefing retires by READING status instead of re-inferring
+# completion from free-text evidence every morning (the scan silently
+# under-fired and re-planned two finished goals two mornings running).
+
+def test_wrapup_marks_completed_week_goals():
+    text = Path("commands/wrapup.md").read_text()
+    assert "completed_goals" in text
+    assert "state-set prioritization" in text   # read-modify-write; week_goals untouched
+    assert "partial or ambiguous progress leaves it open" in text  # default-deny
+
+
+def test_briefing_retires_goals_by_status_then_backstop():
+    text = Path("commands/briefing.md").read_text()
+    assert "completed_goals" in text
+    assert "retired by status" in text   # primary pass: read status, no inference
+    assert "Backstop scan" in text       # the evidence scan is now only secondary
+
+
 def test_briefing_checks_overnight_replies():
     """A reply that lands between wrap-up and briefing must flip 'chase X' into
     'read and respond' — the wrap-up cannot have seen it."""

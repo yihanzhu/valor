@@ -118,6 +118,26 @@ today), skip the reconciliation against priorities.
    unclear. Everything not verifiably done is carried forward with its real
    state, so tomorrow's briefing plans from reality — never from the
    assumption that yesterday's plan executed itself.
+
+   **Mark finished week goals so the briefing stops re-planning them.** A
+   priority you classify **done** that, by meaning, *completes* one of
+   `context.prioritization.week_goals` (not merely advances it) is recorded
+   into that block's `completed_goals`. The next briefing retires it by
+   **reading status** — instead of re-deriving completion from free-text
+   evidence every morning, the manual scan that silently under-fires. This is
+   the only net for a goal finished in a meeting or a demo: it leaves no
+   PR/ticket for the §6 claim gate to catch, so without this mark it re-spawns
+   a deep block every morning. Carry `week_goals` / `week_start` /
+   `goals_source` over **verbatim** (a wrong `week_start` makes the goals look
+   stale and re-reads the doc); only append to `completed_goals`:
+   ```bash
+   python3 ~/.valor/evidence_cli.py state-set prioritization \
+     '{"week_goals": [<unchanged>], "week_start": "<unchanged>", "goals_source": "<unchanged>", "completed_goals": ["<finished goal, copied verbatim from week_goals>"]}'
+   ```
+   **Default-deny, same ethos as the §6 gate:** only a genuinely finished goal
+   goes in — partial or ambiguous progress leaves it open. A goal whose only
+   residual is gated on a blocker ("re-validate after the fix-PR merges") stays
+   open with that residual; it is not marked done.
 3. Review the merged transcript summaries (current session + other sessions)
    for work not yet in the evidence store:
    - Messages drafted for Slack, email, or other channels

@@ -387,18 +387,29 @@ untouched here. No doc/reader available → keep the cached goals (or none) and 
 without goal weighting. Never block, never ask to confirm.
 
 **Retire completed goals before ranking against them.** A week goal is a static
-Monday snapshot; the work moves all week. Before using `week_goals` as ranking
-weight, scan this week's evidence (`evidence_cli.py list --from <week_start>
---limit 0` — unbounded; the default limit drops early-week entries late in
-the week) for proof a goal is already substantially done — a completion
-entry, a deploy-and-exercised record, an explicit correction saying so.
-**Ambiguous progress evidence keeps the goal open** — retiring needs proof,
-the same default-deny ethos as the §6 gate. A goal with completion evidence is **retired**: shown as
-"✓ done (per <date> evidence)" in the briefing, and it stops generating tasks —
-the failure mode is a finished goal re-spawning a deep block every morning
-("test in pre-prod" planned twice after the pipeline was already deployed and
-exercised). A genuine residual (e.g. "re-validate after the fix-PR merges") is
-gated on its blocker — a Held item, not a revival of the goal.
+Monday snapshot; the work moves all week. Retire in two passes — the durable
+signal first, the scan only as a backstop:
+
+1. **Read `context.prioritization.completed_goals`** — week goals the wrap-up
+   already confirmed done (typically a meeting decision or a demo: completions
+   with no PR/ticket for the §6 gate to catch). Such a goal is
+   **retired by status** — no scan, no inference. Trust it; this is what stops
+   the daily re-derivation that re-planned finished goals.
+2. **Backstop scan** for any goal *not* already in `completed_goals`: scan this
+   week's evidence (`evidence_cli.py list --from <week_start> --limit 0` —
+   unbounded; the default limit drops early-week entries late in the week) for
+   proof it is substantially done — a completion entry, a deploy-and-exercised
+   record, an explicit correction saying so. **Ambiguous progress evidence
+   keeps the goal open** — retiring needs proof, the same default-deny ethos as
+   the §6 gate. (A goal you retire here that the wrap-up never marked is the
+   capture gap surfacing, not a duplicate — the next wrap-up owns marking it.)
+
+A goal retired by **either** pass is shown "✓ done (per wrap-up / <date>
+evidence)" and **stops generating tasks** — the failure mode is a finished goal
+re-spawning a deep block every morning ("test in pre-prod" planned twice after
+the pipeline was already deployed and exercised). A genuine residual (e.g.
+"re-validate after the fix-PR merges") is gated on its blocker — a Held item,
+not a revival of the goal.
 
 **Rank the candidate todos**, in this order:
 1. **Dependencies first (hard rule, not a tie-breaker).** Apply `standing_rules`: a
@@ -511,7 +522,7 @@ nothing.]
 [**Held (blocked):** [item] — behind [unfinished upstream], per a standing rule
 or a retired goal's gated residual; not surfaced as actionable until its
 blocker is done. Only if something is held.]
-[**Goals done:** ✓ [goal] (per [date] evidence) — retired, no longer generating
+[**Goals done:** ✓ [goal] (per wrap-up / [date] evidence) — retired, no longer generating
 tasks. Only if a goal was retired this run.]
 [**Heads-up:** this looks like more than a week's work — consider deferring
 [item(s)]. Only when clearly over-committed; no estimation math, just a nudge.]
