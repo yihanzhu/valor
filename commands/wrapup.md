@@ -137,6 +137,17 @@ today), skip the reconciliation against priorities.
      becomes a carry-forward item (with the doc link), so tomorrow's briefing
      can prep the meeting instead of discovering it cold. Agent sessions never
      see these — the Slack sweep is the only net that catches them.
+   - **Sweep the incoming axis too — `from:me` is blind to it.** A `from:me`
+     search only returns what *you* said, so an ask aimed *at* you ("can you
+     review the design doc?", "could you take a look when you get a chance?")
+     never appears in it — and agent sessions never saw it either. Run a second
+     narrow pass: search `to:me` (and @-mentions) since the last wrap-up. An
+     incoming ask with **no reply from you** is an owed item → carry it forward
+     with the link, so tomorrow's briefing surfaces it instead of it vanishing.
+     **Dedup:** an ask you already answered (a `from:me` reply in that thread)
+     is handled — the commitments net above or the briefing's overnight-reply
+     check owns it; don't double-carry. A request made verbally in a meeting is
+     §1.7's net (its captured notes), not this sweep.
    - For each draft, **register the claim** (if not already registered at draft
      time) with the destination pinned, then record what the sweep showed:
      ```bash
