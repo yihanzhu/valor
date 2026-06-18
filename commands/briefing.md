@@ -127,6 +127,10 @@ query to the user's work areas:
 - `"AI ML research news [window] [date]"` -- general AI/ML
 - `"tech industry news [window] [date]"` -- general tech
 - `"world news headlines [window] [date]"` -- general world
+- `"stock market today S&P 500 Nasdaq Dow futures [date]"`,
+  `"TSX Canada stock market today [date]"`, and
+  `"10-year Treasury yield oil WTI USD/CAD today [date]"` -- markets
+  (US + Canada): indices, pre-market/futures, and macro levers
 
 **Work area relevance annotations:** After collecting headlines, check if
 any naturally overlap with the user's `user_work_areas` from state.json.
@@ -140,8 +144,58 @@ the coverage window. Discard anything published before
 clear publication date, use WebFetch to check the article page. If still
 unclear, skip it.
 
+This filter governs the AI/ML, Tech, and World article slots. The **Markets**
+slot is exempt for its *reference data* -- the prior session's close, macro
+levels, and the week/month trend are retrospective by design and should be
+reported regardless of the window. Any *driver story* the Markets slot cites
+should still come from within the coverage window.
+
 Select 2-3 headlines per category. For AI/ML news, add a brief note on
 relevance to the user's work if applicable.
+
+**Markets (US + Canada):** A market pulse, not a list of standalone headlines,
+and not just a day's up/down number -- a single session says little on its own.
+Aim for ~6 lines plus one sourced driver story.
+
+**First, fix the market state.** US and Canadian markets (S&P 500, Nasdaq, Dow,
+S&P/TSX Composite) all trade 9:30 AM - 4:00 PM Eastern. Convert the current time
+to ET, compare against that window, and frame the slot accordingly:
+
+- **Pre-open** (before 9:30 ET -- the usual case for a ~9 AM ET briefing): write
+  a morning note. Recap the *prior* session's close and why, then today's
+  pre-market/futures direction and the day's scheduled catalysts. Do not report
+  a "today" index level -- nothing has traded yet.
+- **Open** (9:30-16:00 ET): report live intraday levels, marked "as of [time] ET".
+- **Closed / weekend / holiday**: report the most recent close and say which
+  session it was. US and Canadian holidays differ -- if one market is open and
+  the other closed, report each on its own footing.
+
+**Cover, at full depth:**
+
+1. **US.** S&P 500, Nasdaq, Dow -- direction and magnitude (or futures, if
+   pre-open). Name the sector leadership (e.g. tech/AI led, industrials lagged)
+   and any notable **divergence** between the indices -- the contrast is usually
+   the real signal.
+2. **Canada (TSX).** S&P/TSX Composite, with its own drivers -- it is
+   energy/financials/materials heavy, so it often moves on oil and rates rather
+   than with US tech.
+3. **Macro levers.** The cross-asset drivers behind the moves: US 10-year
+   Treasury yield, WTI crude oil, USD/CAD, and gold. These explain the *why*, and
+   the oil/CAD lines matter for a Canadian reader.
+4. **Why.** Tie the moves together in 1-2 sentences -- rates/Fed, an inflation or
+   jobs print, major earnings, commodities. Cite one specific story.
+5. **Trend.** Put the day in context with the recent trajectory pulled from
+   current reporting: past-week and past-month direction and magnitude, notable
+   streaks ("4th straight down session"), and distance from a reference point
+   ("near a record high," "~8% off its peak"). Read this from sources each
+   morning -- do not store or compute it from prior briefings.
+6. **What to watch.** The next scheduled catalyst -- a Fed meeting, CPI or jobs
+   print, or a major earnings report -- especially anything landing today.
+
+Index/level moves need no URL; any specific story you cite still follows the
+**Source URLs** rule below (specific article, never a "markets today" hub/roundup
+page). No work-area relevance annotation -- this slot is general-interest. Skip
+the slot if no reliable market data is available.
 
 **Source URLs:** Every news headline must be plain text, with the source URL on
 an indented line below. The link must point to the **specific article** — never a
@@ -503,6 +557,15 @@ nothing.]
 
 **World**
 - headline
+  url
+
+**Markets** *[market state -- e.g. pre-open, US/Canada open 9:30 ET]*
+- US: S&P 500 [±x% or futures], Nasdaq [±x%], Dow [±x%] -- [sector leadership; note any divergence]
+- Canada: S&P/TSX Composite [±x%] -- [driver, e.g. energy/financials]
+- Macro: US 10-yr [yield, ±bp], WTI [$, ±%], USD/CAD [rate], gold [$] -- [what it implies]
+- Trend: [past week & month direction; streak or distance from recent high/low]
+- Watch: [next catalyst -- Fed / CPI / jobs / earnings, with date or time]
+- [driver story headline]
   url
 
 ### Career Focus

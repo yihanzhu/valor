@@ -39,7 +39,7 @@ vice versa — or CI will fail. -->
 
 | Command | GitHub | Jira | Calendar | News | Evidence (local) |
 |---------|--------|------|----------|------|------------------|
-| Morning Briefing | PRs to review, your open PRs, Monday catch-up | Active tickets, watched tickets, spare-capacity backlog pickups (unassigned/stale/High-priority) | Today's events, RSVP status, day-plan scheduling | AI/ML, tech, world headlines | Competency stats, coaching tone |
+| Morning Briefing | PRs to review, your open PRs, Monday catch-up | Active tickets, watched tickets, spare-capacity backlog pickups (unassigned/stale/High-priority) | Today's events, RSVP status, day-plan scheduling | AI/ML, tech, world headlines, markets (US + Canada) pulse | Competency stats, coaching tone |
 | PR Review Coach | **Required** -- fetches PR diff and metadata | -- | -- | -- | Records review evidence |
 | Design Doc Coach | -- | Ticket lookup for context | -- | -- | Records design doc evidence |
 | Weekly Reflection | Merged PRs, reviewed PRs | Tickets completed this week | -- | -- | Competency breakdown, trends |
@@ -97,7 +97,8 @@ use Google Calendar.
 
 **Setup:** No setup required if your coding agent supports web search.
 
-**Used for:** Morning briefing news section (AI/ML, tech, world headlines).
+**Used for:** Morning briefing news section (AI/ML, tech, world headlines,
+plus a US + Canada markets pulse).
 
 **Auto-detected:** No -- defaults to `true`. Set to `false` if you don't
 want news in briefings or your agent doesn't support web search.
