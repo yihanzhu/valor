@@ -194,8 +194,11 @@ to ET, compare against that window, and frame the slot accordingly:
 
 Index/level moves need no URL; any specific story you cite still follows the
 **Source URLs** rule below (specific article, never a "markets today" hub/roundup
-page). No work-area relevance annotation -- this slot is general-interest. Skip
-the slot if no reliable market data is available.
+page). No work-area relevance annotation -- this slot is general-interest. If a
+macro level, the driver story's specific-article URL, or the trend is missing
+from the first round of results, run one targeted follow-up search before
+dropping it -- never fabricate a figure. Skip the slot only if no reliable
+market data is available.
 
 **Source URLs:** Every news headline must be plain text, with the source URL on
 an indented line below. The link must point to the **specific article** — never a
