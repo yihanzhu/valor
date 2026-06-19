@@ -215,13 +215,17 @@ def catalog_diff(catalog, current_titles) -> dict:
     }
 
 
-def catalog_sync(entries) -> int:
-    """Set project_focus.meeting_catalog to the given categorized entries
-    ({"title","category","project"} plus an optional "source" — "signals" if the
-    agent categorized it from the free calendar payload, "fetch" if it had to open
-    a doc/Confluence/Slack; surfaces where the name/signal heuristic is weak),
-    deduped by normalized title. Best-effort write preserving the rest of state.
-    Returns the count, or -1 on failure."""
+def catalog_sync(entries, *, replace=False, remove=None) -> int:
+    """Upsert categorized entries into project_focus.meeting_catalog, keyed by
+    normalized title. By DEFAULT this MERGES with the existing catalog (adds new
+    entries, updates changed ones) so a caller can pass only the entries that
+    changed without wiping the rest — the daily drift-check passes just the
+    `new` meetings. Pass replace=True to set the catalog to exactly `entries`
+    (full reset); pass remove=[titles] to drop entries (e.g. `gone` meetings).
+    Each entry is {"title","category","project"} plus an optional "source" —
+    "signals" if the agent categorized it from the free calendar payload,
+    "fetch" if it had to open a doc/page/chat. Best-effort write preserving the
+    rest of state. Returns the catalog count, or -1 on failure."""
     state_path = VALOR_HOME / "state.json"
     try:
         state = json.loads(state_path.read_text())
@@ -231,21 +235,27 @@ def catalog_sync(entries) -> int:
     if not isinstance(pf, dict):
         pf = {}
         state["project_focus"] = pf
-    out, seen = [], set()
-    for e in (entries or []):
-        if not isinstance(e, dict):
-            continue
-        title = _norm(e.get("title"))
-        if not title or title in seen:
-            continue
-        seen.add(title)
-        entry = {"title": title,
-                 "category": e.get("category") or "unknown",
-                 "project": e.get("project")}
+
+    def _entry(e):
+        out = {"title": _norm(e.get("title")),
+               "category": e.get("category") or "unknown",
+               "project": e.get("project")}
         if e.get("source") in ("signals", "fetch"):
-            entry["source"] = e["source"]
-        out.append(entry)
-    out.sort(key=lambda x: x["title"])
+            out["source"] = e["source"]
+        return out
+
+    by_title = {}
+    if not replace:
+        for e in (pf.get("meeting_catalog") or []):
+            if isinstance(e, dict) and _norm(e.get("title")):
+                by_title[_norm(e["title"])] = _entry(e)
+    for e in (entries or []):
+        if isinstance(e, dict) and _norm(e.get("title")):
+            by_title[_norm(e["title"])] = _entry(e)
+    for t in (remove or []):
+        by_title.pop(_norm(t), None)
+
+    out = sorted(by_title.values(), key=lambda x: x["title"])
     pf["meeting_catalog"] = out
     try:
         state_path.write_text(json.dumps(state, indent=2))
@@ -322,7 +332,9 @@ def cmd_catalog_diff(args: argparse.Namespace) -> None:
 
 def cmd_catalog_sync(args: argparse.Namespace) -> None:
     entries = _load_json_arg(args.entries) if args.entries else []
-    print(json.dumps({"catalog_size": catalog_sync(entries)}))
+    remove = _load_json_arg(args.remove) if args.remove else []
+    print(json.dumps({"catalog_size": catalog_sync(
+        entries, replace=args.replace, remove=remove)}))
 
 
 def main() -> None:
@@ -346,9 +358,13 @@ def main() -> None:
     p_cdiff.add_argument("--current", default="[]",
                          help='Current recurring-meeting titles JSON: ["title", ...] (or @file or -)')
 
-    p_csync = sub.add_parser("catalog-sync", help="Set the meeting catalog to categorized entries")
+    p_csync = sub.add_parser("catalog-sync", help="Merge categorized entries into the meeting catalog (upsert by title)")
     p_csync.add_argument("--entries", default="[]",
                          help='Entries JSON: [{"title","category","project"}, ...] (or @file or -)')
+    p_csync.add_argument("--remove", default="[]",
+                         help='Titles to drop JSON: ["title", ...] (e.g. gone meetings) (or @file or -)')
+    p_csync.add_argument("--replace", action="store_true",
+                         help="Replace the whole catalog with --entries (full reset) instead of merging")
 
     args = ap.parse_args()
     {"resolve": cmd_resolve, "config": cmd_config, "diff": cmd_diff,

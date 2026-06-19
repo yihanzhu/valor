@@ -226,6 +226,59 @@ def test_catalog_sync_preserves_valid_source_only(tmp_path, monkeypatch):
     assert "source" not in by["bad mtg"]     # invalid value dropped, not stored
 
 
+def test_catalog_sync_merges_with_existing_by_default(tmp_path, monkeypatch):
+    # Regression: passing only the changed entries must NOT wipe the rest of the
+    # catalog. The daily drift-check passes just the `new` meetings, so the
+    # default has to be an upsert, not a full overwrite.
+    home = tmp_path / ".valor"
+    home.mkdir()
+    (home / "state.json").write_text(json.dumps({"project_focus": {"meeting_catalog": [
+        {"title": "alpha standup", "category": "standup", "project": None},
+        {"title": "beta sync", "category": "project_sync", "project": "beta"},
+    ]}}))
+    monkeypatch.setattr(focus, "VALOR_HOME", home)
+    # Add one new entry and update an existing one's category.
+    n = focus.catalog_sync([
+        {"title": "Gamma 1-1", "category": "1:1"},
+        {"title": "Beta Sync", "category": "team_planning", "project": "beta"},
+    ])
+    assert n == 3  # alpha kept, beta updated, gamma added
+    cat = json.loads((home / "state.json").read_text())["project_focus"]["meeting_catalog"]
+    by = {e["title"]: e for e in cat}
+    assert set(by) == {"alpha standup", "beta sync", "gamma 1-1"}
+    assert by["beta sync"]["category"] == "team_planning"  # upsert overwrote
+    assert by["alpha standup"]["category"] == "standup"    # untouched, not wiped
+
+
+def test_catalog_sync_replace_resets_whole_catalog(tmp_path, monkeypatch):
+    home = tmp_path / ".valor"
+    home.mkdir()
+    (home / "state.json").write_text(json.dumps({"project_focus": {"meeting_catalog": [
+        {"title": "alpha standup", "category": "standup", "project": None},
+        {"title": "beta sync", "category": "project_sync", "project": "beta"},
+    ]}}))
+    monkeypatch.setattr(focus, "VALOR_HOME", home)
+    n = focus.catalog_sync([{"title": "Only Mtg", "category": "other"}], replace=True)
+    assert n == 1
+    cat = json.loads((home / "state.json").read_text())["project_focus"]["meeting_catalog"]
+    assert [e["title"] for e in cat] == ["only mtg"]
+
+
+def test_catalog_sync_remove_drops_entries(tmp_path, monkeypatch):
+    home = tmp_path / ".valor"
+    home.mkdir()
+    (home / "state.json").write_text(json.dumps({"project_focus": {"meeting_catalog": [
+        {"title": "alpha standup", "category": "standup", "project": None},
+        {"title": "beta sync", "category": "project_sync", "project": "beta"},
+    ]}}))
+    monkeypatch.setattr(focus, "VALOR_HOME", home)
+    # `remove` matches on normalized title; a miss is a harmless no-op.
+    n = focus.catalog_sync([], remove=["Beta Sync", "never existed"])
+    assert n == 1
+    cat = json.loads((home / "state.json").read_text())["project_focus"]["meeting_catalog"]
+    assert [e["title"] for e in cat] == ["alpha standup"]
+
+
 # --- empty-input tripwires (guard the dropped-data failure class) ---
 def test_empty_current_warning_fires_when_catalog_nonempty_but_no_current():
     catalog = [{"title": "alpha sync", "category": "project_sync", "project": "alpha"}]
