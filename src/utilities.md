@@ -345,11 +345,23 @@ target by capability, in this order:
    Tasks / task-capable connector), create one **time-blocked task** per block.
    Tasks are private by nature and show on the calendar grid at their scheduled
    time. *(As of now no such connector is typically present — fall through.)*
-2. **Private calendar event (fallback).** Create the event with
-   `visibility: private` **and** `transparency: transparent` (shows free) so the
-   title is hidden from anyone viewing the calendar and it doesn't mark the user
-   busy. This keeps the time block when Tasks aren't available.
-3. **No writer** → skip write; present the markdown plan only and note it once.
+2. **Private calendar event (fallback).** Use the **Google Calendar MCP
+   `create_event` tool** (discover it via ToolSearch `calendar create_event` —
+   the server id is a per-session UUID, so match by tool name, not a fixed id).
+   It supports `visibility: private` **and** `availability: AVAILABILITY_FREE`
+   (shows free) — set both so the title is hidden from anyone viewing the
+   calendar and it doesn't mark the user busy. This is the path prior briefings
+   have used.
+   - **Do NOT fall back to a plain calendar-create CLI helper that only accepts
+     `title/start/end/attendees`** for these to-do writes — if it can't set
+     `visibility`/`availability` it would write a public, busy-marking event. A
+     tool lacking a privacy flag is **not** "no writer available" — the MCP
+     writer is the writer. (A real miss: a flagless CLI was checked, found
+     unable to set privacy, and the whole step was wrongly skipped as "no
+     suitable writer" while the MCP tool sat unused.)
+3. **No writer** → skip write only if the Calendar MCP `create_event` tool is
+   genuinely absent from this session (not merely because a CLI lacks privacy
+   flags); then present the markdown plan only and note it once.
 
 Common rules (both targets):
 
