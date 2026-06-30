@@ -1,6 +1,6 @@
 # Valor 1:1 Prep
 
-<!-- valor:integrations github=optional jira=optional calendar=none news=none -->
+<!-- valor:integrations github=optional jira=optional calendar=optional news=none -->
 
 Generate a structured document for your next 1:1 with your manager, grounded
 in evidence from the last 1--2 weeks plus any saved weekly reflections.
@@ -19,6 +19,7 @@ Use `context.integrations` from the session-start context (already loaded).
 |-------------|----------|
 | `github` | Recent PRs merged/reviewed (context for talking points) |
 | `jira` | Tickets completed/in-progress (context for talking points) |
+| `calendar` | This week's working-day capacity (off-days/holidays) to frame the goals section (§2.7) |
 
 If an integration is `false`, skip its section silently. Evidence and weekly
 summaries are always available.
@@ -125,6 +126,25 @@ touched here. If no goals are stated yet, leave it untouched. The briefing also
 refreshes this on its own when stale, so this is just the natural place to catch
 them at the 1:1.
 
+### 2.7 This week's capacity (frames the goals)
+
+Goals for the week should be set against the week's **real capacity**, not a
+nominal five days — a week with two days off can't carry a full week's load. If
+`integrations.calendar` is `true` and a calendar reader is available, size the
+week before you draft the goals section:
+
+1. Read this ISO week's events — Mon–Fri of
+   `context.prioritization.week_start_current`.
+2. Compute **working days available**: 5 weekdays, minus any full-day
+   `outOfOffice` / company holiday on the calendar, minus any dates in
+   `context.ooo.dates` that fall in this week.
+3. Note the count and which days are off — e.g. *"3 working days this week (off
+   Thu/Fri)"*.
+
+If no calendar reader is available, skip this silently. Carry the result into
+§4.1: scope the goals to the capacity you found and add the one-line framing, so
+the goals are read against the real runway.
+
 ## 3. Analyze
 
 ### 3.1 Competency Map
@@ -177,6 +197,10 @@ must reformat afterward.
   last week" section; **chronic escalation candidates (§2.5)** → the "roadblocks
   / need help" section; in-progress work → the "project overview" section;
   next-period priorities → the "goals" section.
+- **Scope goals to the week's capacity (§2.7):** when days off shorten the week,
+  trim or sequence the goals to fit the working days available and add a brief
+  "short week — N working days (off [days])" framing, so next-period goals are
+  read against the real runway rather than a nominal five days.
 - **Concrete and honest:** reference specific PRs/tickets; keep the user's voice
   and length. The user reviews before pasting — do not fabricate; if a section
   has nothing real, leave it light/empty as their doc does.

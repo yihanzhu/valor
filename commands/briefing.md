@@ -6,6 +6,13 @@
 Generate a comprehensive morning briefing that cross-references the user's work
 items, surfaces opportunities for career growth, and provides relevant news.
 
+**OOO check (do this first).** If `context.ooo.today` is `true`, you're out of
+office today — **don't generate a briefing.** Reply with one line — *"You're OOO
+today — skipping the briefing. I'll run a catch-up when you're back."* — and
+stop. (Your return is handled by Monday/Return-from-Absence Mode, which already
+catches up on anything that moved while you were away.) This applies equally when
+a scheduled routine fires the briefing on an OOO day.
+
 ## Integration Check
 
 Use `context.integrations` from the session-start context (already loaded).
@@ -95,6 +102,20 @@ details for each event (including attendee response statuses). For each event:
    prepping for meetings that won't happen.
 4. **Distinguish today vs. next-week preview.** Only today's accepted/tentative
    events affect priority suggestions. Next-week events are informational.
+
+**Record out-of-office days.** While you have the calendar open, collect every
+**full-day `outOfOffice`** event in the window you scanned (today through the
+look-ahead) and persist their dates, so the auto-suggest stops offering the
+briefing/wrap-up/weekly on days you're off — `cmd_context` is offline and can't
+read the calendar itself, so this is its only OOO signal:
+```bash
+python3 ~/.valor/evidence_cli.py state-set ooo_dates '["YYYY-MM-DD", ...]'
+```
+Pass **today + future** OOO dates only (drop past ones — `state-set` replaces the
+whole list; reconcile against `context.ooo.dates`). If you discover here that
+**today** is a full-day OOO that wasn't already recorded, write the list and then
+honor the OOO check above — stop with the one-line skip rather than finishing the
+briefing.
 
 ### 4. News
 
@@ -480,7 +501,12 @@ not a revival of the goal.
 Show the **why** on each priority line ("advances week goal: <goal>"; "unblocks
 <goal>") so a wrong call is obvious at a glance and the user can correct it in one
 line. If the in-progress load clearly exceeds a week, add the one-line over-commit
-heads-up (a nudge, not estimation math).
+heads-up (a nudge, not estimation math). **Weigh that against the week's real
+capacity:** count the working days left this week (remaining weekdays minus any in
+`context.ooo.dates` that fall in this ISO week), and when days off have shrunk the
+week — e.g. *"3 working days this week (off [days]) against [N] open goals"* —
+flag it so the user can defer or descope rather than silently carrying a full
+week's goals into a short one.
 
 **Make corrections stick.** When the user corrects the order ("READ should wait for
 WRITE in prod"; "X is this week's focus, not Y"), append it to the `standing_rules`

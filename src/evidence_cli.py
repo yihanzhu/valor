@@ -40,7 +40,7 @@ from pathlib import Path
 DB_PATH = Path.home() / ".valor" / "evidence.sqlite"
 BACKUP_DIR = Path.home() / ".valor" / "backups"
 
-STATE_SCHEMA_VERSION = 18
+STATE_SCHEMA_VERSION = 19
 
 ROUTINE_SLOTS = ("briefing", "wrapup", "weekly", "prep")
 
@@ -717,6 +717,16 @@ def _migrate_state_in_memory(state: dict) -> dict:
     # writes here; refreshing goals writes there.
     if not isinstance(state.get("standing_rules"), list):
         state["standing_rules"] = []
+    # v19: out-of-office dates ("YYYY-MM-DD"). The morning briefing records the
+    # full-day outOfOffice events it sees on the calendar (today + the look-ahead
+    # window it already scans) here; cmd_context then suppresses the
+    # briefing/wrapup/weekly auto-suggestion on those days, and the briefing/wrapup
+    # short-circuit when today is one. cmd_context is offline by design (stdlib, no
+    # network), so it can't read the calendar itself — this list is how OOO
+    # awareness reaches the suggest-gate. The briefing prunes past dates when it
+    # rewrites the list, so it stays small.
+    if not isinstance(state.get("ooo_dates"), list):
+        state["ooo_dates"] = []
     state["state_schema_version"] = STATE_SCHEMA_VERSION
     return state
 
@@ -834,21 +844,30 @@ def cmd_context(args: argparse.Namespace) -> None:
         "ceiling": state.get("ceiling_level", ""),
     }
 
+    # --- Out-of-office suppression ---
+    # The briefing records the full-day OOO dates it sees on the calendar (this
+    # command is offline, so it can't read the calendar itself). On a recorded OOO
+    # day we don't offer the briefing/wrapup/weekly at all, and the briefing/wrapup
+    # short-circuit. Weekends are already excluded via is_weekday.
+    ooo_dates = sorted({d for d in (state.get("ooo_dates") or []) if isinstance(d, str)})
+    ooo_today = today_str in ooo_dates
+    available_today = is_weekday and not ooo_today
+
     # --- Briefing auto-trigger ---
     suggest_before = state.get("briefing_suggest_before", 11)
     last_briefing = state.get("last_briefing_date", "") or ""
-    suggest_briefing = is_weekday and hour < suggest_before and last_briefing != today_str
+    suggest_briefing = available_today and hour < suggest_before and last_briefing != today_str
 
     # --- Wrapup auto-trigger ---
     suggest_after = state.get("wrapup_suggest_after", 16)
     last_wrapup = state.get("last_wrapup_date", "") or ""
-    suggest_wrapup = is_weekday and hour >= suggest_after and last_wrapup != today_str
+    suggest_wrapup = available_today and hour >= suggest_after and last_wrapup != today_str
 
     # --- Weekly auto-trigger ---
     iso_year, iso_week_num, _ = now.date().isocalendar()
     current_iso_week = f"{iso_year}-W{iso_week_num:02d}"
     last_reflection_week = state.get("last_reflection_week", "") or ""
-    suggest_weekly = weekday == 4 and last_reflection_week != current_iso_week
+    suggest_weekly = weekday == 4 and not ooo_today and last_reflection_week != current_iso_week
 
     # --- Update check ---
     update_interval = state.get("update_check_interval_hours", 24)
@@ -908,6 +927,13 @@ def cmd_context(args: argparse.Namespace) -> None:
             "briefing": suggest_briefing,
             "wrapup": suggest_wrapup,
             "weekly": suggest_weekly,
+        },
+        # OOO awareness for the suggest-gate. `today` true -> the briefing/wrapup
+        # short-circuit and nothing is auto-suggested. `dates` is the recorded
+        # today+future OOO days (the briefing maintains it from the calendar).
+        "ooo": {
+            "today": ooo_today,
+            "dates": [d for d in ooo_dates if d >= today_str],
         },
         "update_check_due": update_check_due,
         "integrations": state.get("integrations", {}),

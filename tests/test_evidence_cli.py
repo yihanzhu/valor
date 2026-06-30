@@ -878,6 +878,76 @@ def test_context_suggest_wrapup_after_17(cli_db, capsys, monkeypatch):
     assert result["suggest"]["wrapup"] is True
 
 
+def _mock_now(monkeypatch, mock_now):
+    monkeypatch.setattr("src.evidence_cli.datetime", type("MockDT", (datetime,), {
+        "now": staticmethod(lambda *a, **kw: mock_now),
+        "fromisoformat": datetime.fromisoformat,
+        "strptime": datetime.strptime,
+    }))
+
+
+def test_context_ooo_today_suppresses_briefing_and_weekly(cli_db, capsys, monkeypatch):
+    """A recorded full-day OOO suppresses the briefing + weekly auto-suggest even
+    on an otherwise-eligible weekday, and surfaces context.ooo.today."""
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    _mock_now(monkeypatch, datetime(2026, 4, 17, 9, 0, 0))  # Friday 9am
+
+    # Baseline: with no OOO, Friday-9am offers the briefing and the weekly.
+    (valor_home / "state.json").write_text(json.dumps({"last_briefing_date": "2020-01-01"}))
+    cmd_context(argparse.Namespace())
+    base = json.loads(capsys.readouterr().out)
+    assert base["suggest"]["briefing"] is True
+    assert base["suggest"]["weekly"] is True
+    assert base["ooo"]["today"] is False
+
+    # With today recorded as OOO, both are suppressed.
+    (valor_home / "state.json").write_text(json.dumps({
+        "last_briefing_date": "2020-01-01",
+        "ooo_dates": ["2026-04-17"],
+    }))
+    cmd_context(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["suggest"]["briefing"] is False
+    assert result["suggest"]["weekly"] is False
+    assert result["ooo"]["today"] is True
+    assert "2026-04-17" in result["ooo"]["dates"]
+
+
+def test_context_ooo_today_suppresses_wrapup(cli_db, capsys, monkeypatch):
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    _mock_now(monkeypatch, datetime(2026, 4, 17, 18, 0, 0))  # Friday 6pm
+
+    (valor_home / "state.json").write_text(json.dumps({"last_wrapup_date": "2020-01-01"}))
+    cmd_context(argparse.Namespace())
+    assert json.loads(capsys.readouterr().out)["suggest"]["wrapup"] is True
+
+    (valor_home / "state.json").write_text(json.dumps({
+        "last_wrapup_date": "2020-01-01",
+        "ooo_dates": ["2026-04-17"],
+    }))
+    cmd_context(argparse.Namespace())
+    assert json.loads(capsys.readouterr().out)["suggest"]["wrapup"] is False
+
+
+def test_context_ooo_dates_prunes_past(cli_db, capsys, monkeypatch):
+    """context.ooo.dates surfaces today+future only; a stale past OOO date neither
+    suppresses today nor shows up."""
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    _mock_now(monkeypatch, datetime(2026, 4, 17, 9, 0, 0))  # Friday
+    (valor_home / "state.json").write_text(json.dumps({
+        "last_briefing_date": "2020-01-01",
+        "ooo_dates": ["2026-04-10", "2026-04-20"],  # past + future, not today
+    }))
+    cmd_context(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["ooo"]["today"] is False
+    assert result["suggest"]["briefing"] is True       # today isn't OOO
+    assert result["ooo"]["dates"] == ["2026-04-20"]     # past pruned from output
+
+
 def test_context_tone_tiers(cli_db, capsys):
     db_path, _ = cli_db
     valor_home = db_path.parent / ".valor"
@@ -1321,6 +1391,22 @@ def test_migrate_state_in_memory_repairs_non_list_prioritization():
     assert migrated["prioritization"]["week_goals"] == []
     assert migrated["prioritization"]["completed_goals"] == []  # v18 list-guard
     assert migrated["standing_rules"] == []
+
+
+def test_migrate_state_in_memory_adds_v19_ooo_dates():
+    migrated = _migrate_state_in_memory({"current_level": "L3"})
+    assert migrated["ooo_dates"] == []
+    assert migrated["state_schema_version"] == STATE_SCHEMA_VERSION
+
+
+def test_migrate_state_in_memory_repairs_non_list_ooo_dates():
+    migrated = _migrate_state_in_memory({"ooo_dates": "oops"})
+    assert migrated["ooo_dates"] == []
+
+
+def test_migrate_state_in_memory_preserves_ooo_dates():
+    migrated = _migrate_state_in_memory({"ooo_dates": ["2026-04-17"]})
+    assert migrated["ooo_dates"] == ["2026-04-17"]
 
 
 def test_migrate_state_in_memory_drops_legacy_meeting_baseline():
