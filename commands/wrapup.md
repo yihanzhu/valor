@@ -12,6 +12,12 @@ as bookends for the workday.
   "evening wrap-up", or signals they are done for the day
 - Auto-suggested after 4pm on weekdays (see valor-agent.md trigger)
 
+**OOO check (do this first).** If `context.ooo.today` is `true`, you're out of
+office today — **don't generate a wrap-up** (and `cmd_context` won't auto-suggest
+one). If the user explicitly asks anyway, confirm once ("You're marked OOO today —
+still want a wrap-up?") before proceeding. This also no-ops a scheduled wrap-up
+routine that fires on an OOO day.
+
 ## Integration Check
 
 Use `context.integrations` from the session-start context (already loaded).

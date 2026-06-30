@@ -668,6 +668,37 @@ def test_wrapup_sweep_captures_incoming_asks():
     assert "double-carry" in text        # dedup against an already-answered ask
 
 
+# --- OOO awareness (from the 2026-06-30 "runs on every weekday" flag) -------
+#
+# cmd_context is offline, so OOO awareness reaches the suggest-gate only via the
+# ooo_dates state list the briefing records from the calendar. These pin the
+# briefing/wrapup behavior so a refactor can't quietly drop it.
+
+def test_briefing_records_ooo_dates_and_skips_on_ooo():
+    text = Path("commands/briefing.md").read_text()
+    assert "ooo_dates" in text                 # records full-day OOO from the calendar
+    assert "context.ooo.today" in text         # short-circuits when today is OOO
+    assert "outOfOffice" in text
+
+
+def test_wrapup_skips_on_ooo():
+    text = Path("commands/wrapup.md").read_text()
+    assert "context.ooo.today" in text
+
+
+def test_prep_frames_goals_against_weekly_capacity():
+    text = Path("commands/prep.md").read_text()
+    assert "working days" in text              # computes the week's real capacity
+    assert "context.ooo.dates" in text         # subtracts recorded OOO days
+    assert "integrations.calendar" in text     # gated on the calendar integration
+
+
+def test_briefing_overcommit_is_capacity_aware():
+    text = Path("commands/briefing.md").read_text()
+    assert "working days left this week" in text
+    assert "context.ooo.dates" in text
+
+
 # --- Day-plan follow-through (from the 2026-06-12 briefing flags) -----------
 
 def test_briefing_renders_partial_deep_blocks():

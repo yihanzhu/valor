@@ -39,12 +39,12 @@ vice versa — or CI will fail. -->
 
 | Command | GitHub | Jira | Calendar | News | Evidence (local) |
 |---------|--------|------|----------|------|------------------|
-| Morning Briefing | PRs to review, your open PRs, Monday catch-up | Active tickets, watched tickets, spare-capacity backlog pickups (unassigned/stale/High-priority) | Today's events, RSVP status, day-plan scheduling | AI/ML, tech, world headlines, markets (US + Canada) pulse | Competency stats, coaching tone |
+| Morning Briefing | PRs to review, your open PRs, Monday catch-up | Active tickets, watched tickets, spare-capacity backlog pickups (unassigned/stale/High-priority) | Today's events, RSVP status, day-plan scheduling, OOO-aware suggest (records off-days, skips on OOO) | AI/ML, tech, world headlines, markets (US + Canada) pulse | Competency stats, coaching tone |
 | PR Review Coach | **Required** -- fetches PR diff and metadata | -- | -- | -- | Records review evidence |
 | Design Doc Coach | -- | Ticket lookup for context | -- | -- | Records design doc evidence |
 | Weekly Reflection | Merged PRs, reviewed PRs | Tickets completed this week | -- | -- | Competency breakdown, trends |
 | Evening Wrap-up | Optional: today's activity from your repos | Optional: today's ticket activity | Captures meeting notes from event attachments into evidence | -- | Today's entries, carry-forward |
-| 1:1 Prep | Merged/reviewed PRs (optional) | Completed tickets (optional) | -- | -- | Primary source: evidence + weekly summaries |
+| 1:1 Prep | Merged/reviewed PRs (optional) | Completed tickets (optional) | This week's working-day capacity (off-days/holidays) to frame goals | -- | Primary source: evidence + weekly summaries |
 | Project Sync Prep | Project PRs since last sync (optional) | Project tickets since last sync (optional) | Identifies the next project sync | -- | Primary source: project progress since last sync |
 
 **Legend:** "Required" means the command cannot function without it. "--"
