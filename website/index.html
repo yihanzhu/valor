@@ -186,7 +186,7 @@
           <header class="band-head">
             <p class="eyebrow">Features</p>
             <h2 id="features-h">Just talk to your agent. Valor knows what you mean.</h2>
-            <p class="band-lede">Eight on-demand workflows plus ambient coaching, triggered by natural language. It fits your day to your real calendar gaps, verifies carried-forward work before re-raising it, and — if you rotate projects — focuses on the one whose sync is next. All against a local evidence store. No dashboards, no telemetry.</p>
+            <p class="band-lede">Ten on-demand workflows plus ambient coaching, triggered by natural language. It fits your day to your real calendar gaps, verifies carried-forward work before re-raising it, focuses on the project whose sync is next, and at review time assembles a self-reflection from your evidence — flagging what to confirm instead of overclaiming. All against a local evidence store. No dashboards, no telemetry.</p>
           </header>
 
           <div class="feature-row">
@@ -334,6 +334,54 @@
                     <p>Strong execution day. Light on the <span class="accent-text">cross-team alignment</span> axis — flag for Friday's weekly.</p>
 
                     <p class="footnote"><span class="ok">✓</span> Saved to <code>~/.valor/carry-forward/carry-forward-2026-05-16.md</code></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="feature-row">
+            <div class="feature-copy">
+              <p class="feature-tag">Review time</p>
+              <h3>Turn a half-year of evidence into a review draft you can defend.</h3>
+              <p>
+                Say <em>"half-year reflection"</em> and Valor pulls the cycle's
+                evidence, cross-checks git and past sessions for work you forgot
+                to log, and clusters it into impact themes mapped to your
+                competencies and company values. It phrases every claim from the
+                recorded status and role — nothing reads as "shipped" unless it
+                was — and hands you a <em>confirm-before-you-submit</em> list
+                instead of overclaiming. Say <em>"feedback about my manager"</em>
+                for the upward-feedback half, grounded in your 1:1 and meeting notes.
+              </p>
+              <a class="link-arrow" href="https://github.com/yihanzhu/valor/blob/main/commands/reflection.md" rel="noreferrer">Reflection spec <span aria-hidden="true">→</span></a>
+            </div>
+            <div class="chat">
+              <div class="chat-head">
+                <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+                <span class="chat-title"><span class="dot"></span>claude code · valor</span>
+              </div>
+              <div class="chat-body">
+                <div class="chat-user">
+                  <span class="chat-role">You</span>
+                  <span class="chat-msg">half-year reflection</span>
+                </div>
+                <div class="chat-agent">
+                  <span class="chat-role chat-role-agent">Valor</span>
+                  <div class="chat-out">
+                    <h4>Impact themes</h4>
+                    <ul>
+                      <li>Auth reliability — retry + session-cache fixes. <span style="color:var(--text-dim)">subject_matter · Ownership</span></li>
+                      <li>Dependency migration — drove the httpx cutover. <span style="color:var(--text-dim)">collaboration · led</span></li>
+                    </ul>
+
+                    <h4>Confirm before you submit</h4>
+                    <ul>
+                      <li><span class="warn">?</span> Is the retry fix live, or still rolling out? <span style="color:var(--text-dim)">(status: merged)</span></li>
+                      <li><span class="warn">?</span> Did you lead the migration or co-build it? <span style="color:var(--text-dim)">(role: unset)</span></li>
+                    </ul>
+
+                    <p class="footnote"><span class="ok">✓</span> Built from your evidence log · plain-text, paste-ready</p>
                   </div>
                 </div>
               </div>
