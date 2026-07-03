@@ -108,4 +108,6 @@ career coaching loop.
 - Say "sync prep" or use `/valor-sync-prep` ~30 min before a project sync
 - Say "half-year reflection" or use `/valor-reflection` at review time for a
   self-reflection draft built from your evidence
+- Say "feedback about my manager" or use `/valor-upward-feedback` at review time
+  for a manager upward-feedback draft grounded in your meeting notes + 1:1 evidence
 - Say "valor quiet" to suppress coaching for a conversation

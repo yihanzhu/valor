@@ -49,6 +49,7 @@ hardcoding one.
 | **1:1 Prep**          | `/valor-prep` or "prep for 1:1"                | Evidence-grounded prep, drafted in your own 1:1-doc format, with chronic blockers surfaced — plain-text, paste-ready |
 | **Project Sync Prep** | `/valor-sync-prep` or "sync prep"              | Team-facing talk points for an upcoming project sync — progress, decisions, open questions — plain-text, paste-ready |
 | **Performance Reflection** | `/valor-reflection` or "half-year reflection"  | Review-ready self-reflection draft from the cycle's evidence — impact themes mapped to competency and value (plus an AI-tier if your framework defines one), with a confirm-before-submit list — plain-text, paste-ready |
+| **Upward Feedback**   | `/valor-upward-feedback` or "feedback about my manager" | Draft feedback about your manager, grounded in observed behaviors from meeting notes + 1:1 evidence — plain-text, paste-ready |
 | **Setup**             | `/valor-setup` or "set up valor"               | Guided career framework, level, and integration configuration                  |
 
 
@@ -238,6 +239,7 @@ Commands:
 - `/valor-prep`
 - `/valor-sync-prep`
 - `/valor-reflection`
+- `/valor-upward-feedback`
 - `/valor-setup`
 
 Natural language also works:

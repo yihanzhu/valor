@@ -71,6 +71,18 @@ def test_reflection_command_is_evidence_driven_and_flags_uncertainty():
     assert "do NOT auto-write" in text or "Generate-only" in text  # generate-only
 
 
+def test_upward_feedback_command_is_evidence_driven_and_no_fabrication():
+    """Upward feedback assembles manager behaviors from meeting_notes + 1:1 evidence,
+    is generate-only, and never fabricates a manager behaviour when evidence is thin."""
+    text = Path("commands/upward-feedback.md").read_text()
+    assert "meeting_notes" in text                       # the mined signal
+    assert "evidence_cli.py export" in text              # reads the evidence log
+    assert "manager" in text.lower()                     # feedback is about the manager
+    assert "do NOT auto-write" in text or "Generate-only" in text  # generate-only
+    assert "fabricate" in text.lower() or "invent" in text.lower()  # anti-fabrication
+    assert "/valor-prep" in text  # explicitly distinguished from the 1:1-prep command
+
+
 def test_reflection_has_coverage_check_for_uncaptured_work():
     """Before drafting, the command cross-checks the window against local signals
     (git history + agent transcripts) to surface uncaptured work, without inventing
@@ -198,7 +210,7 @@ def test_prep_uses_captured_meeting_notes():
     assert "meeting_notes" in text
 
 
-@pytest.mark.parametrize("cmd", ["prep", "sync-prep", "reflection"])
+@pytest.mark.parametrize("cmd", ["prep", "sync-prep", "reflection", "upward-feedback"])
 def test_paste_ready_output_is_plain_text(cmd):
     """Paste-ready deliverables must be plain text -- markdown asterisks paste
     literally into the user's doc and break their formatting."""
@@ -386,6 +398,7 @@ MATRIX_NAME_TO_CMD = {
     "1:1 Prep": "prep",
     "Project Sync Prep": "sync-prep",
     "Performance Reflection": "reflection",
+    "Upward Feedback": "upward-feedback",
 }
 NON_WORKFLOW_COMMANDS = {"setup"}
 
