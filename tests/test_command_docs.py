@@ -71,6 +71,18 @@ def test_reflection_command_is_evidence_driven_and_flags_uncertainty():
     assert "do NOT auto-write" in text or "Generate-only" in text  # generate-only
 
 
+def test_reflection_has_coverage_check_for_uncaptured_work():
+    """Before drafting, the command cross-checks the window against local signals
+    (git history + agent transcripts) to surface uncaptured work, without inventing
+    any. Integrations are optional enrichment only."""
+    text = Path("commands/reflection.md").read_text()
+    assert "Coverage check" in text
+    assert "git log" in text                       # local git signal
+    assert "collect_transcripts.py" in text        # local transcript signal
+    assert "uncaptured" in text.lower()
+    assert "invent work" in text  # anti-fabrication guard ("do not invent work")
+
+
 def test_wrapup_integrations_are_optional():
     """Wrap-up reads integrations but treats them as optional."""
     text = Path("commands/wrapup.md").read_text()
