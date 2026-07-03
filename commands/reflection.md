@@ -61,11 +61,15 @@ review wants, not a flat activity list. Keep, per theme, the entries that suppor
 
 ## 5. Map each theme to the framework
 
-For each theme, using the framework slice:
+For each theme, **prefer the stored tags on the entries** and only infer from the
+framework slice when a tag is blank (older entries won't have them):
 
 - **Competency** — from the entries' `competency` tags (name the strongest one or two).
-- **Company value** — which value the work best evidences.
-- **AI-adoption tier** — where the work places you, if the framework defines tiers.
+- **Company value** — use the entry's `value` tag when set; otherwise infer which
+  value the work best evidences from the framework.
+- **AI-adoption tier** — use the entry's `ai_tier` tag when set; otherwise, only if
+  the framework defines tiers, place the work. If neither the tag nor the framework
+  supplies a tier, omit this dimension — never invent one.
 
 Write for a **skip-level reader**: expand project-internal jargon/acronyms so the
 draft stands on its own.

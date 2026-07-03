@@ -75,7 +75,7 @@ def test_ensure_schema_sets_latest_version(cli_db):
     version = conn.execute(
         "SELECT MAX(version) as v FROM schema_version"
     ).fetchone()["v"]
-    assert version == 4
+    assert version == 5
     conn.close()
 
 
@@ -87,7 +87,7 @@ def test_ensure_schema_is_idempotent(cli_db):
     version = conn.execute(
         "SELECT MAX(version) as v FROM schema_version"
     ).fetchone()["v"]
-    assert version == 4
+    assert version == 5
 
 
 def test_ensure_schema_adds_status_role_columns(cli_db):
@@ -102,13 +102,26 @@ def test_ensure_schema_adds_status_role_columns(cli_db):
     conn.close()
 
 
-def test_migration_v3_to_v4_adds_columns_and_preserves_rows(cli_db):
-    """A pre-v4 DB (evidence has no status/role) migrates forward: the columns are
-    added, the version advances to 4, and an existing row backfills to ''."""
+def test_ensure_schema_adds_value_aitier_columns(cli_db):
+    """v5 adds optional value + ai_tier columns to the evidence table."""
     db_path, _ = cli_db
     conn = _make_conn(db_path)
-    # Build a DB stopped at v3: the SCHEMA_V1 evidence table has 8 columns and no
-    # status/role. Stamp versions 1-3 so ensure_schema runs ONLY the v4 migration.
+    ensure_schema(conn)
+    cols = {row[1] for row in conn.execute(
+        "PRAGMA table_info(evidence)"
+    ).fetchall()}
+    assert {"value", "ai_tier"} <= cols
+    conn.close()
+
+
+def test_migration_from_v3_adds_all_columns_and_preserves_rows(cli_db):
+    """A pre-v4 DB (evidence has none of the new columns) migrates forward to the
+    latest schema: status/role (v4) and value/ai_tier (v5) are added, the version
+    advances to 5, and an existing row backfills every new column to ''."""
+    db_path, _ = cli_db
+    conn = _make_conn(db_path)
+    # Build a DB stopped at v3: the SCHEMA_V1 evidence table has 8 columns and none
+    # of the v4/v5 additions. Stamp versions 1-3 so ensure_schema runs v4 then v5.
     conn.executescript(cli_module.SCHEMA_V1)
     now = datetime.now(timezone.utc).isoformat()
     for v in (1, 2, 3):
@@ -120,21 +133,61 @@ def test_migration_v3_to_v4_adds_columns_and_preserves_rows(cli_db):
     )
     conn.commit()
     cols_before = {r[1] for r in conn.execute("PRAGMA table_info(evidence)").fetchall()}
-    assert "status" not in cols_before and "role" not in cols_before
+    assert not ({"status", "role", "value", "ai_tier"} & cols_before)
 
     ensure_schema(conn)
 
     cols_after = {r[1] for r in conn.execute("PRAGMA table_info(evidence)").fetchall()}
-    assert {"status", "role"} <= cols_after
+    assert {"status", "role", "value", "ai_tier"} <= cols_after
     version = conn.execute(
         "SELECT MAX(version) as v FROM schema_version"
     ).fetchone()["v"]
-    assert version == 4
+    assert version == 5
     row = conn.execute(
-        "SELECT status, role FROM evidence WHERE id = 'legacy-1'"
+        "SELECT status, role, value, ai_tier FROM evidence WHERE id = 'legacy-1'"
     ).fetchone()
-    assert row["status"] == ""
-    assert row["role"] == ""
+    assert row["status"] == "" and row["role"] == ""
+    assert row["value"] == "" and row["ai_tier"] == ""
+    conn.close()
+
+
+def test_migration_v4_to_v5_adds_value_aitier_and_preserves_status_role(cli_db):
+    """A DB stopped at v4 (has status/role, no value/ai_tier) migrates to v5: the
+    new columns are added and the existing status/role values are preserved."""
+    db_path, _ = cli_db
+    conn = _make_conn(db_path)
+    # Reconstruct a v4 DB: SCHEMA_V1 + the v4 ALTERs, stamped through v4.
+    conn.executescript(cli_module.SCHEMA_V1)
+    conn.execute("ALTER TABLE evidence ADD COLUMN status TEXT NOT NULL DEFAULT ''")
+    conn.execute("ALTER TABLE evidence ADD COLUMN role TEXT NOT NULL DEFAULT ''")
+    now = datetime.now(timezone.utc).isoformat()
+    for v in (1, 2, 3, 4):
+        conn.execute("INSERT INTO schema_version VALUES (?, ?)", (v, now))
+    conn.execute(
+        "INSERT INTO evidence "
+        "(id, date, activity, competency, evidence_statement, source_agent, "
+        "created_at, metadata, status, role) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?)",
+        ("v4-1", "2026-02-01", "feature_shipped", "subject_matter",
+         "v4 row", "test-agent", now, "{}", "live", "led"),
+    )
+    conn.commit()
+    cols_before = {r[1] for r in conn.execute("PRAGMA table_info(evidence)").fetchall()}
+    assert "value" not in cols_before and "ai_tier" not in cols_before
+
+    ensure_schema(conn)
+
+    cols_after = {r[1] for r in conn.execute("PRAGMA table_info(evidence)").fetchall()}
+    assert {"value", "ai_tier"} <= cols_after
+    version = conn.execute(
+        "SELECT MAX(version) as v FROM schema_version"
+    ).fetchone()["v"]
+    assert version == 5
+    row = conn.execute(
+        "SELECT status, role, value, ai_tier FROM evidence WHERE id = 'v4-1'"
+    ).fetchone()
+    assert row["status"] == "live" and row["role"] == "led"   # preserved
+    assert row["value"] == "" and row["ai_tier"] == ""        # backfilled
     conn.close()
 
 
@@ -352,6 +405,101 @@ def test_main_add_rejects_invalid_status(monkeypatch):
     ])
     with pytest.raises(SystemExit):
         cli_module.main()
+
+
+# --- cmd_add / list / export: value + ai_tier (v5) ---
+
+def test_cmd_add_with_value_and_ai_tier(cli_db, capsys):
+    db_path, _ = cli_db
+    cmd_add(argparse.Namespace(
+        activity="feature_shipped", competency="leadership",
+        statement="Tagged with value and tier", agent="test-agent", metadata=None,
+        date=None, status=None, role=None, value="Customer Obsession", ai_tier="Tier 2",
+    ))
+    assert json.loads(capsys.readouterr().out)["status"] == "ok"
+    conn = _make_conn(db_path)
+    row = conn.execute(
+        "SELECT value, ai_tier FROM evidence WHERE evidence_statement = ?",
+        ("Tagged with value and tier",),
+    ).fetchone()
+    conn.close()
+    assert row["value"] == "Customer Obsession"
+    assert row["ai_tier"] == "Tier 2"
+
+
+def test_cmd_add_defaults_value_ai_tier_to_empty(cli_db, capsys):
+    """A Namespace without value/ai_tier (older callers) stores '' via getattr."""
+    db_path, _ = cli_db
+    _add_entry("code_written", "subject_matter", "No value or tier")
+    conn = _make_conn(db_path)
+    row = conn.execute(
+        "SELECT value, ai_tier FROM evidence WHERE evidence_statement = ?",
+        ("No value or tier",),
+    ).fetchone()
+    conn.close()
+    assert row["value"] == ""
+    assert row["ai_tier"] == ""
+
+
+def test_cmd_add_value_ai_tier_are_free_text(cli_db, capsys):
+    """value/ai_tier are framework-specific free text — any string is accepted
+    (no enum validation, unlike status/role)."""
+    cmd_add(argparse.Namespace(
+        activity="design_decision_made", competency="autonomy_scope",
+        statement="Free-text tags", agent="test-agent", metadata=None,
+        date=None, status=None, role=None,
+        value="Some Bespoke Company Value", ai_tier="experimental-adopter",
+    ))
+    assert json.loads(capsys.readouterr().out)["status"] == "ok"
+
+
+def test_cmd_list_includes_value_and_ai_tier(cli_db, capsys):
+    cmd_add(argparse.Namespace(
+        activity="feature_shipped", competency="subject_matter",
+        statement="Listed with v5 fields", agent="test-agent", metadata=None,
+        date=None, status=None, role=None, value="Ownership", ai_tier="Tier 1",
+    ))
+    capsys.readouterr()
+    cmd_list(argparse.Namespace(
+        days=None, from_date=None, to_date=None,
+        competency=None, activity=None, limit=50,
+    ))
+    entries = json.loads(capsys.readouterr().out)
+    entry = next(e for e in entries if e["evidence_statement"] == "Listed with v5 fields")
+    assert entry["value"] == "Ownership"
+    assert entry["ai_tier"] == "Tier 1"
+
+
+def test_cmd_export_json_includes_value_and_ai_tier(cli_db, capsys):
+    cmd_add(argparse.Namespace(
+        activity="feature_shipped", competency="subject_matter",
+        statement="Exported with v5 fields", agent="test-agent", metadata=None,
+        date=None, status=None, role=None, value="Bias for Action", ai_tier="Tier 3",
+    ))
+    capsys.readouterr()
+    cmd_export(argparse.Namespace(
+        format="json", days=None, from_date=None, to_date=None, competency=None,
+    ))
+    entries = json.loads(capsys.readouterr().out)
+    entry = next(e for e in entries if e["evidence_statement"] == "Exported with v5 fields")
+    assert entry["value"] == "Bias for Action"
+    assert entry["ai_tier"] == "Tier 3"
+
+
+def test_cmd_export_markdown_shows_value_and_ai_tier_when_present(cli_db, capsys):
+    cmd_add(argparse.Namespace(
+        activity="feature_shipped", competency="subject_matter",
+        statement="Markdown with v5 fields", agent="test-agent", metadata=None,
+        date=None, status="live", role="led", value="Craftsmanship", ai_tier="Tier 2",
+    ))
+    capsys.readouterr()
+    cmd_export(argparse.Namespace(
+        format="markdown", days=None, from_date=None, to_date=None, competency=None,
+    ))
+    output = capsys.readouterr().out
+    assert "Markdown with v5 fields" in output
+    assert "value: Craftsmanship" in output
+    assert "ai_tier: Tier 2" in output
 
 
 # --- cmd_list ---

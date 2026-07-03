@@ -175,6 +175,16 @@ CREATE INDEX IF NOT EXISTS idx_claim_verif_verdict ON claim_verifications(last_v
 ALTER TABLE evidence ADD COLUMN status TEXT NOT NULL DEFAULT '';
 ALTER TABLE evidence ADD COLUMN role TEXT NOT NULL DEFAULT '';
 """,
+    # v5: optional company-value + AI-adoption-tier tags on evidence entries, so a
+    # review draft maps evidence -> value / tier from a stored signal instead of
+    # re-inferring it every time. Unlike status/role these are NOT a fixed enum —
+    # company values and AI tiers are defined in the user's own career_framework.md
+    # and vary per user, so they're stored as free text. Additive, forward-only;
+    # existing rows backfill to ''.
+    5: """
+ALTER TABLE evidence ADD COLUMN value TEXT NOT NULL DEFAULT '';
+ALTER TABLE evidence ADD COLUMN ai_tier TEXT NOT NULL DEFAULT '';
+""",
 }
 
 
@@ -282,14 +292,15 @@ def cmd_add(args: argparse.Namespace) -> None:
         return
 
     entry_id = str(uuid.uuid4())
-    # Explicit column list (not positional VALUES) so the v4 status/role columns
-    # append cleanly. getattr(...) or "" keeps existing callers that never set the
-    # fields (older Namespaces) working, storing '' to match the column default.
+    # Explicit column list (not positional VALUES) so the v4 status/role and v5
+    # value/ai_tier columns append cleanly. getattr(...) or "" keeps existing
+    # callers that never set the fields (older Namespaces) working, storing '' to
+    # match the column default.
     conn.execute(
         "INSERT INTO evidence "
         "(id, date, activity, competency, evidence_statement, source_agent, "
-        "created_at, metadata, status, role) "
-        "VALUES (?,?,?,?,?,?,?,?,?,?)",
+        "created_at, metadata, status, role, value, ai_tier) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
         (
             entry_id,
             target_date,
@@ -301,6 +312,8 @@ def cmd_add(args: argparse.Namespace) -> None:
             json.dumps(args.metadata or {}),
             getattr(args, "status", None) or "",
             getattr(args, "role", None) or "",
+            getattr(args, "value", None) or "",
+            getattr(args, "ai_tier", None) or "",
         ),
     )
     conn.commit()
@@ -472,13 +485,17 @@ def cmd_export(args: argparse.Namespace) -> None:
             print(f"## {day}\n")
             for e in group:
                 line = f"- **{e['competency']}** ({e['activity']}): {e['evidence_statement']}"
-                # v4: show attribution/end-state inline, only when set, so old
-                # entries (blank status/role) render exactly as before.
+                # v4/v5: show attribution/end-state and value/AI-tier inline, only
+                # when set, so old entries (blank fields) render exactly as before.
                 tags = []
                 if e.get("role"):
                     tags.append(f"role: {e['role']}")
                 if e.get("status"):
                     tags.append(f"status: {e['status']}")
+                if e.get("value"):
+                    tags.append(f"value: {e['value']}")
+                if e.get("ai_tier"):
+                    tags.append(f"ai_tier: {e['ai_tier']}")
                 if tags:
                     line += " — " + " · ".join(tags)
                 print(line)
@@ -1371,6 +1388,12 @@ def main() -> None:
                        help="Optional deliverable end-state")
     p_add.add_argument("--role", default=None, choices=VALID_ROLES,
                        help="Optional attribution (your role in the work)")
+    p_add.add_argument("--value", default=None,
+                       help="Optional company value this evidences (free text; "
+                            "from your career_framework.md)")
+    p_add.add_argument("--ai-tier", dest="ai_tier", default=None,
+                       help="Optional AI-adoption tier signal (free text; "
+                            "from your career_framework.md, if it defines tiers)")
 
     p_list = sub.add_parser("list", help="List evidence entries")
     p_list.add_argument("--days", type=int, default=None,
