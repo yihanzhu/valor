@@ -75,7 +75,7 @@ def test_ensure_schema_sets_latest_version(cli_db):
     version = conn.execute(
         "SELECT MAX(version) as v FROM schema_version"
     ).fetchone()["v"]
-    assert version == 3
+    assert version == 4
     conn.close()
 
 
@@ -87,7 +87,55 @@ def test_ensure_schema_is_idempotent(cli_db):
     version = conn.execute(
         "SELECT MAX(version) as v FROM schema_version"
     ).fetchone()["v"]
-    assert version == 3
+    assert version == 4
+
+
+def test_ensure_schema_adds_status_role_columns(cli_db):
+    """v4 adds optional status + role columns to the evidence table."""
+    db_path, _ = cli_db
+    conn = _make_conn(db_path)
+    ensure_schema(conn)
+    cols = {row[1] for row in conn.execute(
+        "PRAGMA table_info(evidence)"
+    ).fetchall()}
+    assert {"status", "role"} <= cols
+    conn.close()
+
+
+def test_migration_v3_to_v4_adds_columns_and_preserves_rows(cli_db):
+    """A pre-v4 DB (evidence has no status/role) migrates forward: the columns are
+    added, the version advances to 4, and an existing row backfills to ''."""
+    db_path, _ = cli_db
+    conn = _make_conn(db_path)
+    # Build a DB stopped at v3: the SCHEMA_V1 evidence table has 8 columns and no
+    # status/role. Stamp versions 1-3 so ensure_schema runs ONLY the v4 migration.
+    conn.executescript(cli_module.SCHEMA_V1)
+    now = datetime.now(timezone.utc).isoformat()
+    for v in (1, 2, 3):
+        conn.execute("INSERT INTO schema_version VALUES (?, ?)", (v, now))
+    conn.execute(
+        "INSERT INTO evidence VALUES (?,?,?,?,?,?,?,?)",
+        ("legacy-1", "2026-01-01", "code_written", "subject_matter",
+         "Legacy row", "test-agent", now, "{}"),
+    )
+    conn.commit()
+    cols_before = {r[1] for r in conn.execute("PRAGMA table_info(evidence)").fetchall()}
+    assert "status" not in cols_before and "role" not in cols_before
+
+    ensure_schema(conn)
+
+    cols_after = {r[1] for r in conn.execute("PRAGMA table_info(evidence)").fetchall()}
+    assert {"status", "role"} <= cols_after
+    version = conn.execute(
+        "SELECT MAX(version) as v FROM schema_version"
+    ).fetchone()["v"]
+    assert version == 4
+    row = conn.execute(
+        "SELECT status, role FROM evidence WHERE id = 'legacy-1'"
+    ).fetchone()
+    assert row["status"] == ""
+    assert row["role"] == ""
+    conn.close()
 
 
 def test_claim_verifications_columns(cli_db):
@@ -226,6 +274,86 @@ def test_cmd_add_default_date_uses_local_day_not_utc(cli_db, capsys, monkeypatch
         time.tzset()
 
 
+# --- cmd_add: status + role (v4) ---
+
+def test_cmd_add_with_status_and_role(cli_db, capsys):
+    db_path, _ = cli_db
+    cmd_add(argparse.Namespace(
+        activity="feature_shipped", competency="subject_matter",
+        statement="Shipped the widget", agent="test-agent", metadata=None,
+        date=None, status="live", role="led",
+    ))
+    assert json.loads(capsys.readouterr().out)["status"] == "ok"
+    conn = _make_conn(db_path)
+    row = conn.execute(
+        "SELECT status, role FROM evidence WHERE evidence_statement = ?",
+        ("Shipped the widget",),
+    ).fetchone()
+    conn.close()
+    assert row["status"] == "live"
+    assert row["role"] == "led"
+
+
+def test_cmd_add_defaults_status_role_to_empty(cli_db, capsys):
+    """A Namespace without status/role (older callers) stores '' via the getattr
+    fallback, matching the column default."""
+    db_path, _ = cli_db
+    _add_entry("code_written", "subject_matter", "No status or role")
+    conn = _make_conn(db_path)
+    row = conn.execute(
+        "SELECT status, role FROM evidence WHERE evidence_statement = ?",
+        ("No status or role",),
+    ).fetchone()
+    conn.close()
+    assert row["status"] == ""
+    assert row["role"] == ""
+
+
+def test_cmd_add_accepts_all_status_and_role_values(cli_db, capsys):
+    for i, status in enumerate(cli_module.VALID_STATUSES):
+        cmd_add(argparse.Namespace(
+            activity="feature_shipped", competency="subject_matter",
+            statement=f"status entry {i}", agent="test-agent", metadata=None,
+            date=None, status=status, role=None,
+        ))
+        assert json.loads(capsys.readouterr().out)["status"] == "ok"
+    for i, role in enumerate(cli_module.VALID_ROLES):
+        cmd_add(argparse.Namespace(
+            activity="feature_shipped", competency="collaboration",
+            statement=f"role entry {i}", agent="test-agent", metadata=None,
+            date=None, status=None, role=role,
+        ))
+        assert json.loads(capsys.readouterr().out)["status"] == "ok"
+
+
+def test_cmd_add_invalid_status_raises(cli_db):
+    with pytest.raises(ValueError):
+        cmd_add(argparse.Namespace(
+            activity="feature_shipped", competency="subject_matter",
+            statement="bad status", agent="test-agent", metadata=None,
+            date=None, status="in_production", role=None,
+        ))
+
+
+def test_cmd_add_invalid_role_raises(cli_db):
+    with pytest.raises(ValueError):
+        cmd_add(argparse.Namespace(
+            activity="feature_shipped", competency="subject_matter",
+            statement="bad role", agent="test-agent", metadata=None,
+            date=None, status=None, role="owner",
+        ))
+
+
+def test_main_add_rejects_invalid_status(monkeypatch):
+    """argparse `choices` rejects a bad --status at the CLI boundary."""
+    monkeypatch.setattr(sys, "argv", [
+        "evidence_cli", "add", "--activity", "feature_shipped",
+        "--competency", "subject_matter", "--statement", "x", "--status", "nope",
+    ])
+    with pytest.raises(SystemExit):
+        cli_module.main()
+
+
 # --- cmd_list ---
 
 def test_cmd_list_returns_all_entries(cli_db, capsys):
@@ -338,6 +466,24 @@ def test_cmd_list_empty_db(cli_db, capsys):
     ))
     entries = json.loads(capsys.readouterr().out)
     assert entries == []
+
+
+def test_cmd_list_includes_status_and_role(cli_db, capsys):
+    """list output (SELECT *) surfaces the v4 status/role fields."""
+    cmd_add(argparse.Namespace(
+        activity="feature_shipped", competency="subject_matter",
+        statement="Listed with fields", agent="test-agent", metadata=None,
+        date=None, status="merged", role="built",
+    ))
+    capsys.readouterr()
+    cmd_list(argparse.Namespace(
+        days=None, from_date=None, to_date=None,
+        competency=None, activity=None, limit=50,
+    ))
+    entries = json.loads(capsys.readouterr().out)
+    entry = next(e for e in entries if e["evidence_statement"] == "Listed with fields")
+    assert entry["status"] == "merged"
+    assert entry["role"] == "built"
 
 
 # --- cmd_search ---
@@ -502,6 +648,51 @@ def test_cmd_export_days_cutoff_uses_local_day_not_utc(cli_db, capsys, monkeypat
         assert stmts == {"On cutoff"}
     finally:
         time.tzset()
+
+
+def test_cmd_export_json_includes_status_and_role(cli_db, capsys):
+    cmd_add(argparse.Namespace(
+        activity="feature_shipped", competency="subject_matter",
+        statement="Exported with fields", agent="test-agent", metadata=None,
+        date=None, status="deployed", role="co-built",
+    ))
+    capsys.readouterr()
+    cmd_export(argparse.Namespace(
+        format="json", days=None, from_date=None, to_date=None, competency=None,
+    ))
+    entries = json.loads(capsys.readouterr().out)
+    entry = next(e for e in entries if e["evidence_statement"] == "Exported with fields")
+    assert entry["status"] == "deployed"
+    assert entry["role"] == "co-built"
+
+
+def test_cmd_export_markdown_shows_status_and_role_when_present(cli_db, capsys):
+    cmd_add(argparse.Namespace(
+        activity="feature_shipped", competency="subject_matter",
+        statement="Markdown with fields", agent="test-agent", metadata=None,
+        date=None, status="validated", role="advised",
+    ))
+    capsys.readouterr()
+    cmd_export(argparse.Namespace(
+        format="markdown", days=None, from_date=None, to_date=None, competency=None,
+    ))
+    output = capsys.readouterr().out
+    assert "Markdown with fields" in output
+    assert "role: advised" in output
+    assert "status: validated" in output
+
+
+def test_cmd_export_markdown_omits_tags_when_empty(cli_db, capsys):
+    """An entry with no status/role renders exactly as before (no trailing tags)."""
+    _add_entry("code_written", "subject_matter", "Markdown no fields")
+    capsys.readouterr()
+    cmd_export(argparse.Namespace(
+        format="markdown", days=None, from_date=None, to_date=None, competency=None,
+    ))
+    output = capsys.readouterr().out
+    assert "Markdown no fields" in output
+    assert "role:" not in output
+    assert "status:" not in output
 
 
 # --- cmd_stats ---

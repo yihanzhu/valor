@@ -52,6 +52,30 @@ VALID_COMPETENCIES = (
     "leadership",
 )
 
+# Optional end-state for a deliverable evidence entry. Kept small on purpose:
+# treating anything below live/validated as not-yet-shipped keeps optimistic
+# wrap-up/briefing prose from being read as "in production" when evidence is
+# later assembled into a review.
+VALID_STATUSES = (
+    "in_progress",
+    "merged",
+    "deployed",
+    "live",
+    "validated",
+)
+
+# Optional attribution: the author's role in the work, so a review draft can phrase
+# ownership precisely instead of crediting the author with others' work or vice
+# versa.
+VALID_ROLES = (
+    "led",
+    "built",
+    "co-built",
+    "contributed",
+    "advised",
+    "decided-by-other",
+)
+
 SCHEMA_V1 = """
 CREATE TABLE IF NOT EXISTS schema_version (
     version INTEGER PRIMARY KEY,
@@ -142,6 +166,15 @@ CREATE INDEX IF NOT EXISTS idx_claim_verif_type ON claim_verifications(claim_typ
 CREATE INDEX IF NOT EXISTS idx_claim_verif_frozen ON claim_verifications(frozen);
 CREATE INDEX IF NOT EXISTS idx_claim_verif_verdict ON claim_verifications(last_verdict);
 """,
+    # v4: optional status + role on evidence entries. status curbs end-state
+    # overclaim; role curbs misattribution when evidence is assembled into a review.
+    # Additive and forward-only — a fresh DB reaches these by applying v1->v4 in
+    # order, so (like claim_verifications in v3) the columns arrive via migration,
+    # not SCHEMA_V1. Existing rows backfill to ''.
+    4: """
+ALTER TABLE evidence ADD COLUMN status TEXT NOT NULL DEFAULT '';
+ALTER TABLE evidence ADD COLUMN role TEXT NOT NULL DEFAULT '';
+""",
 }
 
 
@@ -206,6 +239,18 @@ def validate_add_args(args: argparse.Namespace) -> None:
         raise ValueError(f"invalid competency '{args.competency}' (choose from: {valid})")
     if args.date is not None:
         parse_ymd_date(args.date)
+    # status/role are optional (None/'' allowed). Validate only when supplied, and
+    # do it here too — not just via argparse `choices` — so direct
+    # cmd_add(Namespace(...)) callers (agents, tests) are checked, mirroring how
+    # competency is validated in both places.
+    status = getattr(args, "status", None)
+    if status not in (None, "") and status not in VALID_STATUSES:
+        valid = ", ".join(VALID_STATUSES)
+        raise ValueError(f"invalid status '{status}' (choose from: {valid})")
+    role = getattr(args, "role", None)
+    if role not in (None, "") and role not in VALID_ROLES:
+        valid = ", ".join(VALID_ROLES)
+        raise ValueError(f"invalid role '{role}' (choose from: {valid})")
 
 
 def cmd_add(args: argparse.Namespace) -> None:
@@ -237,8 +282,14 @@ def cmd_add(args: argparse.Namespace) -> None:
         return
 
     entry_id = str(uuid.uuid4())
+    # Explicit column list (not positional VALUES) so the v4 status/role columns
+    # append cleanly. getattr(...) or "" keeps existing callers that never set the
+    # fields (older Namespaces) working, storing '' to match the column default.
     conn.execute(
-        "INSERT INTO evidence VALUES (?,?,?,?,?,?,?,?)",
+        "INSERT INTO evidence "
+        "(id, date, activity, competency, evidence_statement, source_agent, "
+        "created_at, metadata, status, role) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?)",
         (
             entry_id,
             target_date,
@@ -248,6 +299,8 @@ def cmd_add(args: argparse.Namespace) -> None:
             args.agent,
             now.isoformat(),
             json.dumps(args.metadata or {}),
+            getattr(args, "status", None) or "",
+            getattr(args, "role", None) or "",
         ),
     )
     conn.commit()
@@ -418,7 +471,17 @@ def cmd_export(args: argparse.Namespace) -> None:
         for day, group in by_date.items():
             print(f"## {day}\n")
             for e in group:
-                print(f"- **{e['competency']}** ({e['activity']}): {e['evidence_statement']}")
+                line = f"- **{e['competency']}** ({e['activity']}): {e['evidence_statement']}"
+                # v4: show attribution/end-state inline, only when set, so old
+                # entries (blank status/role) render exactly as before.
+                tags = []
+                if e.get("role"):
+                    tags.append(f"role: {e['role']}")
+                if e.get("status"):
+                    tags.append(f"status: {e['status']}")
+                if tags:
+                    line += " — " + " · ".join(tags)
+                print(line)
             print()
 
 
@@ -1304,6 +1367,10 @@ def main() -> None:
     p_add.add_argument("--date", default=None, type=parse_ymd_date,
                        help="Override date (YYYY-MM-DD) for backdating entries")
     p_add.add_argument("--metadata", type=json.loads, default=None)
+    p_add.add_argument("--status", default=None, choices=VALID_STATUSES,
+                       help="Optional deliverable end-state")
+    p_add.add_argument("--role", default=None, choices=VALID_ROLES,
+                       help="Optional attribution (your role in the work)")
 
     p_list = sub.add_parser("list", help="List evidence entries")
     p_list.add_argument("--days", type=int, default=None,
