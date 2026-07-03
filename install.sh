@@ -62,6 +62,7 @@ COMMAND_MAP=(
     "wrapup:valor-wrapup:valor-evening-wrapup:Valor evening wrap-up: summarizes the day's work, captures carry-forward items for tomorrow, and reflects on competencies exercised"
     "prep:valor-prep:valor-prep:Valor 1:1 prep: generates a structured document for manager 1:1s grounded in evidence, weekly summaries, and career framework alignment"
     "sync-prep:valor-sync-prep:valor-sync-prep:Valor project sync prep: generates team-facing talk points for an upcoming project sync (progress since last sync, decisions to land, open questions) for the user to review and share"
+    "reflection:valor-reflection:valor-performance-reflection:Valor performance reflection: turns the cycle's evidence log into a review-ready self-reflection draft (impact themes mapped to competency, value, and AI-adoption tier) plus a confirm-before-submit list of status/role uncertainties"
     "setup:valor-setup:valor-setup:Valor setup: guided configuration of career framework, levels, and integrations"
 )
 

@@ -106,4 +106,6 @@ career coaching loop.
 - Try `/valor-weekly` at the end of the week for a weekly reflection
 - Say "prep for 1:1" or use `/valor-prep` before your manager sync
 - Say "sync prep" or use `/valor-sync-prep` ~30 min before a project sync
+- Say "half-year reflection" or use `/valor-reflection` at review time for a
+  self-reflection draft built from your evidence
 - Say "valor quiet" to suppress coaching for a conversation
