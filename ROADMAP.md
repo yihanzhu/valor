@@ -244,14 +244,14 @@ What shipped:
   review's framework dimensions from a stored signal rather than by inference.
 - **Auto-tagging**: ambient coaching now records deliverables with those tags
   (status/role/value/ai_tier), so forward evidence is review-accurate.
-- **`/valor-reflection`** (9th command): assembles a chosen cycle's evidence into
+- **`/valor-reflection`**: assembles a chosen cycle's evidence into
   a review-ready self-reflection draft — impact themes mapped to competency +
   company value (+ AI-adoption tier when the framework or an entry supplies one)
   — with a pre-draft **coverage check** (local git history + agent transcripts,
   plus optional GitHub/Jira/calendar) for uncaptured work, and a
   "confirm before you submit" flag list instead of overclaiming. Generate-only,
   plain-text/paste-ready.
-- **`/valor-upward-feedback`** (10th command): drafts feedback about the manager,
+- **`/valor-upward-feedback`**: drafts feedback about the manager,
   grounded in manager behaviors mined from `meeting_notes` + 1:1 evidence; flags
   thin evidence rather than fabricating.
 - evidence DB schema v3 → v5.
