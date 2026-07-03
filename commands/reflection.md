@@ -1,11 +1,11 @@
 # Valor Performance Reflection
 
-<!-- valor:integrations github=none jira=none calendar=none news=none -->
+<!-- valor:integrations github=optional jira=optional calendar=optional news=none -->
 
 Turn the accumulated evidence log into an accurate, review-ready **self-reflection
 draft** for a performance cycle (e.g. mid-year / end-year): impact themes mapped to
 competencies and company values (and an AI-adoption tier **only when an entry
-carries one or your career framework defines them** — see §5) — plus a list of
+carries one or your career framework defines them** — see §6) — plus a list of
 **uncertainties to confirm before you submit**. Generate-only: you review, correct,
 and paste it into your review tool yourself.
 
@@ -37,7 +37,7 @@ python3 ~/.valor/evidence_cli.py export --from <cycle_start> --to <cycle_end> --
 ```
 
 Each entry carries `status` (end-state) and `role` (your attribution) when they were
-recorded — §6 and §7 depend on them. Also load the career framework
+recorded — §7 and §8 depend on them. Also load the career framework
 (`~/.valor/career_framework.md`) for the competency ladder, the company values, and
 any AI-adoption tiers:
 
@@ -45,7 +45,36 @@ any AI-adoption tiers:
 python3 ~/.valor/evidence_cli.py framework-slice
 ```
 
-## 3. Separate signal from noise
+## 3. Coverage check — find uncaptured work
+
+The log is only as complete as daily capture, and real work is often missing. Before
+drafting, cross-check the window against other signals and list likely-**uncaptured**
+work for the user to pull in — "what did I do this cycle that isn't in the log?" — so
+the draft isn't silently thin.
+
+Always available (local, no integration needed):
+
+- **Git history** — `git log --author="<you>" --since=<cycle_start> --until=<cycle_end>`
+  across the repos you work in; surface merged features/fixes with no matching evidence
+  entry.
+- **Agent transcripts** —
+  `python3 ~/.valor/collect_transcripts.py --days <cycle_length_days> --json` for
+  substantial sessions (investigations, designs) that were never recorded.
+
+When the integration is enabled (check `context.integrations`), also cross-check:
+
+- **GitHub** (`integrations.github`) — merged PRs in the window with no evidence entry.
+- **Jira** (`integrations.jira`) — tickets you completed in the window that aren't in
+  the log.
+- **Calendar** (`integrations.calendar`) — decisions/outcomes from meetings not already
+  captured as `meeting_notes` evidence.
+
+Present the gaps as a short **"Likely missing — add before drafting?"** list. For each,
+offer to record it (with `--status` / `--role` / `--value` per the coaching rules) so
+it joins the draft. Do **not** invent work — list only concrete signals (a real
+commit / PR / ticket / meeting); if a signal is ambiguous, ask rather than assume.
+
+## 4. Separate signal from noise
 
 The log is dominated by process entries. **Drop** routine activities that aren't
 deliverables — `morning_briefing_completed`, `wrapup_completed`,
@@ -53,13 +82,13 @@ deliverables — `morning_briefing_completed`, `wrapup_completed`,
 work (features, investigations, designs, cross-team alignment, production fixes,
 drafted communications).
 
-## 4. Cluster into impact themes
+## 5. Cluster into impact themes
 
 Group the surviving entries into **2–3 impact themes** — the headline stories a
 review wants, not a flat activity list. Keep, per theme, the entries that support it
-(you'll need their `status`/`role` in §6–§7).
+(you'll need their `status`/`role` in §7–§8).
 
-## 5. Map each theme to the framework
+## 6. Map each theme to the framework
 
 For each theme, **prefer the stored tags on the entries** and only infer from the
 framework slice when a tag is blank (older entries won't have them):
@@ -74,10 +103,10 @@ framework slice when a tag is blank (older entries won't have them):
 Write for a **skip-level reader**: expand project-internal jargon/acronyms so the
 draft stands on its own.
 
-## 6. Draft precisely — honor status and role
+## 7. Draft precisely — honor status and role
 
 Write the draft (impact examples, growth areas, a value-by-value pass, and — **only
-when §5 supplies a tier** (a stored `ai_tier` tag or the framework) — an AI-adoption
+when §6 supplies a tier** (a stored `ai_tier` tag or the framework) — an AI-adoption
 self-placement; otherwise omit that dimension entirely, never infer one). Two hard
 rules, taken from the fields on each entry:
 
@@ -89,7 +118,7 @@ rules, taken from the fields on each entry:
   Don't claim you *built* what you only `advised` on — and don't hand your own
   `led`/`built` work to someone else.
 
-## 7. Surface uncertainties to confirm (the headline)
+## 8. Surface uncertainties to confirm (the headline)
 
 This is what saves you from an overclaim in front of a skip-level reader. For every
 deliverable in the draft, auto-generate the exact question a careful reviewer would
@@ -105,20 +134,20 @@ ask, and collect them into a **"Confirm before you submit"** list instead of gue
 Blank `status`/`role` is expected on older entries — flag it, don't assume. (Entries
 recorded from here on can carry `--status`/`--role`, so future cycles need fewer flags.)
 
-## 8. Output for review (do NOT auto-write)
+## 9. Output for review (do NOT auto-write)
 
 Print two blocks for the user to read, correct, and paste into their review tool:
 
 1. **The draft** — impact themes, values, growth areas (and an AI-adoption
-   placement only when §5 supplies a tier).
-2. **Confirm before you submit** — the flags from §7, each phrased as a question.
+   placement only when §6 supplies a tier).
+2. **Confirm before you submit** — the flags from §8, each phrased as a question.
 
 Because it's pasted into tools that render markdown literally, emit the draft as
 **plain text — no `*`, `**`, `_`, or `#`** (a plain leading `- ` for a list item is
 fine, `*` is not). Close with a one-line offer to revise once the user answers the
 flags.
 
-## 9. Record evidence (optional)
+## 10. Record evidence (optional)
 
 If the reflection produced a genuine synthesis worth keeping (per the ambient
 coaching rules), record one entry — otherwise skip:
@@ -137,6 +166,7 @@ python3 ~/.valor/evidence_cli.py add \
   and pastes.
 - **Accuracy over optimism.** When `status`/`role` are unknown, the correct output is
   a flag, not a confident claim.
-- **Coverage is a future step.** This version reflects only what's in the evidence
-  log. Cross-checking git / calendar / chat for *uncaptured* work is a planned
-  follow-up; for now, if you recall work that isn't in the draft, add it yourself.
+- **Coverage is a nudge, not a rewrite.** The draft is still built from the evidence
+  log (§2); §3 only surfaces likely-missing work for you to add first. Integrations
+  are optional enrichment — with none enabled, coverage still runs on local git
+  history and agent transcripts.

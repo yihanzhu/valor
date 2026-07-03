@@ -46,7 +46,7 @@ vice versa — or CI will fail. -->
 | Evening Wrap-up | Optional: today's activity from your repos | Optional: today's ticket activity | Captures meeting notes from event attachments into evidence | -- | Today's entries, carry-forward |
 | 1:1 Prep | Merged/reviewed PRs (optional) | Completed tickets (optional) | This week's working-day capacity (off-days/holidays) to frame goals | -- | Primary source: evidence + weekly summaries |
 | Project Sync Prep | Project PRs since last sync (optional) | Project tickets since last sync (optional) | Identifies the next project sync | -- | Primary source: project progress since last sync |
-| Performance Reflection | -- | -- | -- | -- | Primary source: the cycle's evidence mapped to competency + value (+ AI-tier when an entry or the framework supplies one) |
+| Performance Reflection | Coverage: merged PRs not in the log (optional) | Coverage: completed tickets not in the log (optional) | Coverage: meeting decisions not captured (optional) | -- | Primary source: the cycle's evidence mapped to competency + value (+ AI-tier when an entry or the framework supplies one); git + transcripts cross-checked for uncaptured work |
 
 **Legend:** "Required" means the command cannot function without it. "--"
 means the command does not use that integration. All other entries are
@@ -117,7 +117,7 @@ If all integrations are set to `false`, Valor still works:
 - **Design Doc Coach:** Fully functional -- asks user for context directly.
 - **1:1 Prep:** Fully functional from evidence store and weekly summaries.
 - **Project Sync Prep:** Functional from the evidence store -- project progress since the last sync from recorded evidence.
-- **Performance Reflection:** Fully functional -- built entirely from the evidence store and career framework (no integrations used).
+- **Performance Reflection:** Fully functional -- the draft is built from the evidence store and career framework, and the coverage check still runs on local git history and agent transcripts. Enabled integrations only add optional coverage cross-checks (uncaptured PRs/tickets/meetings).
 - **PR Review Coach:** Requires GitHub (cannot function without it).
 
 This is a valid workflow for users who want career coaching without
