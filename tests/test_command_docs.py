@@ -59,6 +59,18 @@ def test_prep_command_exists_and_references_evidence():
     assert "one_on_one_prep" in text
 
 
+def test_reflection_command_is_evidence_driven_and_flags_uncertainty():
+    """The performance-reflection command builds from the evidence store + career
+    framework, honors the v4 status/role fields, and emits a confirm-before-submit
+    flag list rather than asserting unknowns."""
+    text = Path("commands/reflection.md").read_text()
+    assert "evidence_cli.py export" in text                 # pulls the cycle's evidence
+    assert "career_framework.md" in text or "framework-slice" in text
+    assert "status" in text and "role" in text              # honors the v4 fields
+    assert "Confirm before you submit" in text              # the flag list (headline)
+    assert "do NOT auto-write" in text or "Generate-only" in text  # generate-only
+
+
 def test_wrapup_integrations_are_optional():
     """Wrap-up reads integrations but treats them as optional."""
     text = Path("commands/wrapup.md").read_text()
@@ -174,7 +186,7 @@ def test_prep_uses_captured_meeting_notes():
     assert "meeting_notes" in text
 
 
-@pytest.mark.parametrize("cmd", ["prep", "sync-prep"])
+@pytest.mark.parametrize("cmd", ["prep", "sync-prep", "reflection"])
 def test_paste_ready_output_is_plain_text(cmd):
     """Paste-ready deliverables must be plain text -- markdown asterisks paste
     literally into the user's doc and break their formatting."""
@@ -361,6 +373,7 @@ MATRIX_NAME_TO_CMD = {
     "Evening Wrap-up": "wrapup",
     "1:1 Prep": "prep",
     "Project Sync Prep": "sync-prep",
+    "Performance Reflection": "reflection",
 }
 NON_WORKFLOW_COMMANDS = {"setup"}
 
