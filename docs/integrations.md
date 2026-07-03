@@ -46,7 +46,7 @@ vice versa — or CI will fail. -->
 | Evening Wrap-up | Optional: today's activity from your repos | Optional: today's ticket activity | Captures meeting notes from event attachments into evidence | -- | Today's entries, carry-forward |
 | 1:1 Prep | Merged/reviewed PRs (optional) | Completed tickets (optional) | This week's working-day capacity (off-days/holidays) to frame goals | -- | Primary source: evidence + weekly summaries |
 | Project Sync Prep | Project PRs since last sync (optional) | Project tickets since last sync (optional) | Identifies the next project sync | -- | Primary source: project progress since last sync |
-| Performance Reflection | -- | -- | -- | -- | Primary source: the cycle's evidence mapped to competency + value + AI-tier |
+| Performance Reflection | -- | -- | -- | -- | Primary source: the cycle's evidence mapped to competency + value (+ AI-tier if the framework defines one) |
 
 **Legend:** "Required" means the command cannot function without it. "--"
 means the command does not use that integration. All other entries are

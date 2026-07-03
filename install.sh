@@ -62,7 +62,7 @@ COMMAND_MAP=(
     "wrapup:valor-wrapup:valor-evening-wrapup:Valor evening wrap-up: summarizes the day's work, captures carry-forward items for tomorrow, and reflects on competencies exercised"
     "prep:valor-prep:valor-prep:Valor 1:1 prep: generates a structured document for manager 1:1s grounded in evidence, weekly summaries, and career framework alignment"
     "sync-prep:valor-sync-prep:valor-sync-prep:Valor project sync prep: generates team-facing talk points for an upcoming project sync (progress since last sync, decisions to land, open questions) for the user to review and share"
-    "reflection:valor-reflection:valor-performance-reflection:Valor performance reflection: turns the cycle's evidence log into a review-ready self-reflection draft (impact themes mapped to competency, value, and AI-adoption tier) plus a confirm-before-submit list of status/role uncertainties"
+    "reflection:valor-reflection:valor-performance-reflection:Valor performance reflection: turns the cycle's evidence log into a review-ready self-reflection draft (impact themes mapped to competency and company value) plus a confirm-before-submit list of status/role uncertainties"
     "setup:valor-setup:valor-setup:Valor setup: guided configuration of career framework, levels, and integrations"
 )
 
@@ -206,6 +206,7 @@ apply_shared_transforms() {
         -e 's|/valor-weekly|valor-weekly-reflection skill|g' \
         -e 's|/valor-wrapup|valor-evening-wrapup skill|g' \
         -e 's|/valor-sync-prep|valor-sync-prep skill|g' \
+        -e 's|/valor-reflection|valor-performance-reflection skill|g' \
         -e 's|/valor-prep|valor-prep skill|g' \
         -e 's|/valor-setup|valor-setup skill|g' \
         -e 's|Bash tool|Shell tool|g'
@@ -222,6 +223,7 @@ apply_rule_transforms() {
         -e "s|\`/valor-weekly\` command|\`~/$target_dir/skills/valor-weekly-reflection/SKILL.md\`|g" \
         -e "s|\`/valor-wrapup\` command|\`~/$target_dir/skills/valor-evening-wrapup/SKILL.md\`|g" \
         -e "s|\`/valor-sync-prep\` command|\`~/$target_dir/skills/valor-sync-prep/SKILL.md\`|g" \
+        -e "s|\`/valor-reflection\` command|\`~/$target_dir/skills/valor-performance-reflection/SKILL.md\`|g" \
         -e "s|\`/valor-prep\` command|\`~/$target_dir/skills/valor-prep/SKILL.md\`|g" \
         -e "s|\`/valor-setup\` command|\`~/$target_dir/skills/valor-setup/SKILL.md\`|g"
 }
@@ -744,8 +746,9 @@ print_summary_all() {
     echo "  5. Evening Wrap-up   -- auto-suggests after 4pm"
     echo "  6. 1:1 Prep          -- 'prep for 1:1'"
     echo "  7. Project Sync Prep -- 'sync prep' before a project sync"
-    echo "  8. Setup             -- /valor-setup or 'set up valor'"
-    echo "  9. Ambient Coaching  -- always on ('valor quiet' to suppress)"
+    echo "  8. Performance Reflection -- 'half-year reflection' at review time"
+    echo "  9. Setup             -- /valor-setup or 'set up valor'"
+    echo "  10. Ambient Coaching -- always on ('valor quiet' to suppress)"
     echo ""
     echo "Next step: run /valor-setup (or say 'set up valor') in your agent"
     echo ""

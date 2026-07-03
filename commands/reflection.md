@@ -4,9 +4,10 @@
 
 Turn the accumulated evidence log into an accurate, review-ready **self-reflection
 draft** for a performance cycle (e.g. mid-year / end-year): impact themes mapped to
-competencies, company values, and an AI-adoption tier — plus a list of
-**uncertainties to confirm before you submit**. Generate-only: you review, correct,
-and paste it into your review tool yourself.
+competencies and company values (and an AI-adoption tier **only if your career
+framework defines one**) — plus a list of **uncertainties to confirm before you
+submit**. Generate-only: you review, correct, and paste it into your review tool
+yourself.
 
 The point is accuracy, not cheerleading. Daily briefing/wrap-up prose is written in
 an optimistic, forward-looking register ("shipped", "go-live", "prod-ready"); read
@@ -71,8 +72,10 @@ draft stands on its own.
 
 ## 6. Draft precisely — honor status and role
 
-Write the draft (impact examples, growth areas, a value-by-value pass, and an
-AI-adoption self-placement). Two hard rules, taken from the fields on each entry:
+Write the draft (impact examples, growth areas, a value-by-value pass, and — **only
+if the framework defines AI-adoption tiers** (§5) — an AI-adoption self-placement;
+otherwise omit that dimension entirely, never infer one). Two hard rules, taken from
+the fields on each entry:
 
 - **`status` governs end-state claims.** Never describe something as "in production",
   "live", or "shipped" unless its `status` is `live` or `validated`. `in_progress` /
@@ -102,7 +105,8 @@ recorded from here on can carry `--status`/`--role`, so future cycles need fewer
 
 Print two blocks for the user to read, correct, and paste into their review tool:
 
-1. **The draft** — impact themes, values, AI-adoption placement, growth areas.
+1. **The draft** — impact themes, values, growth areas (and an AI-adoption
+   placement only if the framework defines tiers).
 2. **Confirm before you submit** — the flags from §7, each phrased as a question.
 
 Because it's pasted into tools that render markdown literally, emit the draft as
