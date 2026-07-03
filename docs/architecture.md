@@ -91,12 +91,13 @@ Key fields:
 
 ### evidence.sqlite schema
 
-Current schema version: **4**
+Current schema version: **5**
 
 Tables:
 
 - `evidence` -- career evidence entries (activity, competency, statement, plus
-  optional `status` end-state + `role` attribution — v4)
+  optional `status` end-state + `role` attribution — v4; optional `value` +
+  `ai_tier` free-text tags — v5)
 - `feedback` -- agent feedback tracking
 - `weekly_summary` -- weekly reflection summaries
 - `claim_verifications` -- artifact-verification cache backing `verify.py`
