@@ -90,3 +90,34 @@ verify.py is unavailable.
 
 The CLI dedup skips entries with the same activity + agent + date + statement.
 If the CLI fails, log a note but do not block the response.
+
+## Tagging deliverables (status, role, value, ai_tier)
+
+When the activity is a real **deliverable** (a feature, fix, design,
+investigation, or a cross-team decision — not a routine edit or a process entry),
+also tag it as you record it, so a later performance review reads accurately
+instead of inheriting optimistic prose. Record what is TRUE now:
+
+- `--status` — current end-state, one of
+  `in_progress | merged | deployed | live | validated`. A merged PR that hasn't
+  rolled out is `merged`, not `live`; use `live`/`validated` only once it really
+  is running in production.
+- `--role` — the user's actual role: `led | built | co-built | contributed |
+  advised | decided-by-other`. Never record `built` for work the user only
+  advised on, or vice versa.
+- `--value` — the company value it best evidences (from `framework-slice`), when
+  one clearly fits. Free text; omit if unclear.
+- `--ai-tier` — an AI-adoption tier, **only** if the user's framework defines
+  tiers and one clearly applies. Omit otherwise; never invent one.
+
+Omit any flag you are unsure about — a blank is honest, and `/valor-reflection`
+surfaces it as a "confirm before you submit" flag rather than guessing. Process
+entries (briefing/wrap-up/weekly completions) take none of these.
+
+```bash
+python3 ~/.valor/evidence_cli.py add \
+  --activity production_issue_resolved --competency autonomy_scope \
+  --statement "Fixed unbounded groupBy causing OOM in the ingest pipeline; partitioned the aggregation" \
+  --status merged --role led --value "Ownership" \
+  --agent valor-ambient
+```

@@ -633,6 +633,19 @@ def test_ambient_registers_send_claims_at_draft_time():
     assert "--confirm-only" in text
 
 
+def test_coaching_ref_documents_deliverable_tagging():
+    """Ambient coaching must tell the flow to tag a deliverable's evidence with
+    status/role/value/ai_tier as it records it, so forward evidence is
+    review-accurate — and to omit (never invent) a tag it's unsure of."""
+    text = Path("src/coaching-ref.md").read_text()
+    assert "--status" in text
+    assert "--role" in text
+    assert "--value" in text
+    assert "--ai-tier" in text
+    assert "never invent one" in text   # the AI-tier safety guarantee
+    assert "blank is honest" in text    # omit-when-unsure guidance
+
+
 def test_context_embeds_claims_worklist():
     text = Path("src/evidence_cli.py").read_text()
     assert "context_claims_summary" in text
