@@ -107,16 +107,23 @@ the plugin's `examples/frameworks/` directory.
 Steps:
 1. Read the three example files, summarize each in a line, and ask which fits
    best (or "none — generate one instead").
-2. Copy the chosen file to `~/.valor/career_framework.md`, e.g.:
+2. Load the chosen example's contents as the **working draft** — read the file
+   and hold it in the conversation. Do **not** copy or write it over
+   `~/.valor/career_framework.md` yet; the existing framework must stay
+   untouched until the user confirms in "Write the framework" below (otherwise
+   backing out, choosing a different example, or an interrupted session would
+   destroy the current framework).
    ```bash
-   cp ~/.valor/repo/examples/frameworks/software-engineer-ic-ladder.md \
-     ~/.valor/career_framework.md
+   cat ~/.valor/repo/examples/frameworks/software-engineer-ic-ladder.md
    ```
-   If `~/.valor/repo` is absent, write the chosen example's contents to
-   `~/.valor/career_framework.md` directly.
-3. Customize with the user: replace the placeholder company values with their
-   real ones, and adjust level codes/titles and competency descriptions to
-   match their organization. Then continue to "Write the framework" below.
+   If `~/.valor/repo` is absent, read the same file from the plugin's
+   `examples/frameworks/` directory instead.
+3. Customize the draft with the user: replace the placeholder company values
+   with their real ones, and adjust level codes/titles and competency
+   descriptions to match their organization. Then continue to "Write the
+   framework" below, which shows the draft, confirms, and only then writes it to
+   `~/.valor/career_framework.md` — so an existing framework is never
+   overwritten before confirmation.
 
 These examples already pass `framework-validate` and use real generic level
 names (not bracketed placeholders), so they will not trip the unedited-template
