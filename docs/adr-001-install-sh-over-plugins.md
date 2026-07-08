@@ -14,8 +14,9 @@ discoverability but are explicitly positioned as commands-only.
 
 Valor's value comes from two layers:
 
-1. **Agent commands** -- 7 discrete commands (briefing, pr-review, design-doc,
-   weekly, tasks, wrapup, prep) that users invoke explicitly.
+1. **Agent commands** -- the discrete commands that users invoke explicitly
+   (currently 10: briefing, pr-review, design-doc, weekly, wrapup, prep,
+   sync-prep, reflection, upward-feedback, setup).
 2. **Ambient coaching** -- an always-on layer that auto-triggers suggestions
    (morning/evening/Friday), classifies completed tasks, maps them to career
    competencies, generates coaching annotations, and records evidence.
@@ -52,7 +53,7 @@ inline approach via `CLAUDE.md` instructions.
 
 - **Marketplace discovery** -- users searching for career coaching tools can
   find Valor and learn about it.
-- **Command-only access** -- users who only want the 7 slash commands without
+- **Command-only access** -- users who only want the slash commands without
   ambient coaching can install the plugin. This is a valid but limited use case.
 
 ## Consequences
