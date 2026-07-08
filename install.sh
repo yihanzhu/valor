@@ -45,9 +45,18 @@ VALOR_CLONE_DIR="$VALOR_HOME/repo"
 # whatever was last pushed" risk.
 #
 # Fetch tags for $1 and check out the latest vX.Y.Z release tag. On success,
-# prints the tag and returns 0. Returns non-zero (no checkout performed) when no
-# release tag exists yet or the checkout is blocked -- the caller decides how to
-# degrade. Works for a clone, an --upgrade, and an --auto-update alike.
+# prints the tag and returns 0. Returns non-zero (no checkout performed) when the
+# remote tag fetch FAILS (offline / auth error), no release tag exists yet, or
+# the checkout is blocked -- the caller decides how to degrade. Works for a
+# clone, an --upgrade, and an --auto-update alike.
+#
+# The latest-tag resolution acts ONLY on FRESHLY FETCHED tags. If `git fetch`
+# fails we return 1 immediately rather than fall through to `git tag --list`,
+# which reads the LOCAL cache: a stale cached tag could otherwise be checked out
+# and reinstalled, silently DOWNGRADING the user (e.g. --auto-update moving an
+# unreleased 0.16.0 checkout back to a cached v0.15.0). Offline is thus a clean
+# no-op, indistinguishable to the caller from "no release tag yet" -- both just
+# degrade without touching the checkout, and neither ever tracks `main`.
 #
 # Resolution is GIT-NATIVE (git's own version sort), deliberately NOT
 # scripts/latest_release_tag.py: this helper runs against whatever repo is on
@@ -61,7 +70,9 @@ VALOR_CLONE_DIR="$VALOR_HOME/repo"
 # where the file is guaranteed present; the two share these semantics.)
 checkout_latest_release_tag() {
     local repo_dir="$1"
-    git -C "$repo_dir" fetch --tags --prune --quiet 2>/dev/null || true
+    # Fetch failure (offline / auth error) is a hard stop: no-op, non-zero. Never
+    # fall through to the stale local tag cache -- that risks a silent downgrade.
+    git -C "$repo_dir" fetch --tags --prune --quiet 2>/dev/null || return 1
     local tag
     tag="$(git -C "$repo_dir" tag --list 'v*' --sort=-v:refname 2>/dev/null \
         | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
