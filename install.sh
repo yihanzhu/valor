@@ -134,11 +134,34 @@ for arg in "$@"; do
         # Fresh install lands on origin's latest RELEASE, not `main` -- so there
         # is no "installed version" to guard against; resolve + check out
         # unconditionally. (Auto-update/upgrade below add the strictly-newer gate.)
-        if clone_tag="$(resolve_latest_release_tag "$VALOR_CLONE_DIR")" \
-            && checkout_release_tag "$VALOR_CLONE_DIR" "$clone_tag"; then
-            echo "Checked out latest release: $clone_tag"
+        #
+        # RESOLUTION and CHECKOUT are kept as SEPARATE steps so their failures
+        # stay distinguishable. Collapsing them into one `if ... && ...` conflates
+        # three different states and lets a checkout failure fall through to the
+        # "no release" branch -- which would still exec the current checkout,
+        # installing a stale tag / `main` / a dirty tree despite a release being
+        # available. The three states and their handling:
+        #   1. tag resolved + checkout OK   -> install the release (normal path).
+        #   2. tag resolved + checkout FAILS -> HARD ABORT (exit 1). A release
+        #      exists but we could not land on it (dirty tree / transient fetch
+        #      error); installing the current checkout would break the release
+        #      guarantee, so we refuse rather than silently ship stale/main/dirty.
+        #   3. no tag resolved (none tagged yet, or origin unreachable) -> there
+        #      is genuinely no release to pin to; install the checkout the clone
+        #      left in place. Auto-update starts tracking releases once one exists.
+        if clone_tag="$(resolve_latest_release_tag "$VALOR_CLONE_DIR")"; then
+            if checkout_release_tag "$VALOR_CLONE_DIR" "$clone_tag"; then
+                echo "Checked out latest release: $clone_tag"
+            else
+                echo "Latest release is $clone_tag, but checking it out in $VALOR_CLONE_DIR failed" >&2
+                echo "(local changes, a dirty tree, or a transient fetch error)." >&2
+                echo "Refusing to install a stale/main checkout when a release is available." >&2
+                echo "Resolve it (e.g. 'git -C $VALOR_CLONE_DIR status'), then re-run --clone." >&2
+                exit 1
+            fi
         else
-            echo "No release tag found yet -- installing from the default branch." >&2
+            echo "No release tag resolved (none tagged yet, or origin unreachable)" >&2
+            echo "-- installing from the current checkout." >&2
             echo "Auto-update starts tracking releases once one is tagged (vX.Y.Z)." >&2
         fi
         remaining_args=()
