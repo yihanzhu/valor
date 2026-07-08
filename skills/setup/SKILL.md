@@ -46,18 +46,46 @@ cp "$PLUGIN_DIR/src/evidence_cli.py" ~/.valor/evidence_cli.py
 If that fails, tell the user to run `install.sh` from the Valor repo
 instead.
 
-### 4. Seed `state.json` via the CLI
+### 4. Seed `state.json`
 
-Let the CLI create and seed `state.json`. It owns the schema
-(`STATE_SCHEMA_VERSION` in `evidence_cli.py`) and writes the current version
-with all default fields, so this never pins a stale schema literal:
+Write the base profile fields, then let the CLI stamp the schema version and
+backfill every newer schema key. The base fields below are the ones later
+steps and the commands read directly (notably `integrations`, which the GitHub
+detection in step 6 writes into) — the migrator does **not** create them, so
+they must be seeded here:
 
 ```bash
+cat > ~/.valor/state.json <<'JSON'
+{
+  "current_level": "",
+  "target_level": "",
+  "ceiling_level": "",
+  "last_briefing_date": "",
+  "last_briefing_timestamp": "",
+  "briefing_count": 0,
+  "coaching_mode": "ambient",
+  "user_work_areas": [],
+  "user_work_areas_pinned": [],
+  "github_owner": "",
+  "jira_projects": [],
+  "integrations": {
+    "github": false,
+    "jira": false,
+    "calendar": false,
+    "news": true
+  }
+}
+JSON
+
+# Stamp the current schema version and backfill newer keys (routines,
+# verification, planning, ...). The CLI owns the schema, so nothing here
+# pins a version number.
 python3 ~/.valor/evidence_cli.py state-migrate
 ```
 
-Do **not** hand-write `state.json` or a `state_schema_version` number here —
-the CLI is the single source of truth for the schema, and duplicating it is
+Do **not** write a `state_schema_version` field or number above — the CLI
+(`STATE_SCHEMA_VERSION` in `evidence_cli.py`) is the single source of truth for
+the schema version, and `state-migrate` stamps it. Duplicating that literal is
 exactly how the two drifted apart.
 
 ### 5. Install the career framework template
