@@ -696,15 +696,17 @@ Then show the available agents and suggest next steps:
 
 ```
 Your Valor agents:
-  1. Morning Briefing  -- auto-suggests before 11am
-  2. PR Review Coach   -- 'review PR #NNN'
-  3. Design Doc Coach  -- 'design doc for TICKET'
-  4. Weekly Reflection -- auto-suggests Friday
-  5. Evening Wrap-up   -- auto-suggests after 4pm
-  6. 1:1 Prep          -- 'prep for 1:1'
-  7. Project Sync Prep -- 'sync prep' before a project sync
-  8. Setup             -- /valor-setup or 'set up valor'
-  9. Ambient Coaching  -- always on ('valor quiet' to suppress)
+   1. Morning Briefing       -- /valor-briefing, auto-suggests before 11am
+   2. PR Review Coach        -- /valor-pr-review, 'review PR #NNN'
+   3. Design Doc Coach       -- /valor-design-doc, 'design doc for TICKET'
+   4. Weekly Reflection      -- /valor-weekly, auto-suggests Friday
+   5. Evening Wrap-up        -- /valor-wrapup, auto-suggests after 4pm
+   6. 1:1 Prep               -- /valor-prep, 'prep for 1:1'
+   7. Project Sync Prep      -- /valor-sync-prep, 'sync prep' before a project sync
+   8. Performance Reflection -- /valor-reflection, 'performance review' / 'self-review'
+   9. Upward Feedback        -- /valor-upward-feedback, 'feedback about my manager'
+  10. Setup                  -- /valor-setup or 'set up valor'
+  11. Ambient Coaching       -- always on ('valor quiet' to suppress)
 ```
 
 - "Try: 'morning briefing' to see your first briefing"
