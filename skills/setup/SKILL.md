@@ -7,6 +7,11 @@ description: "Initialize Valor local state (~/.valor/) for first-time users. Run
 
 Initialize the local Valor directory at `~/.valor/` for first-time use.
 
+> **Plugin-only path — limited by design.** This skill seeds local state and
+> copies a *limited* helper set so the core commands can run. It does **not**
+> install every shared helper, and it cannot enable ambient coaching. For the
+> full experience, run `install.sh` from the Valor repo (see step 7).
+
 ## Steps
 
 ### 1. Check if already initialized
@@ -19,18 +24,39 @@ If `state.json` exists, tell the user: "Valor is already set up. Your state
 and evidence are at `~/.valor/`. Run `valor-evidence stats` to see your
 evidence summary."
 
-### 2. Create the directory and state file
+### 2. Create the directory
 
 ```bash
 mkdir -p ~/.valor/carry-forward
 ```
 
-Create `~/.valor/state.json` with initial content:
+### 3. Install the evidence CLI
+
+The evidence CLI is bundled with the plugin at `bin/valor-evidence`, but it
+needs the Python script at `~/.valor/evidence_cli.py`. Find the plugin
+directory and copy it:
+
+```bash
+# The plugin's bin/ directory is on PATH when the plugin is enabled.
+# The evidence_cli.py source is next to the bin/ directory in the plugin.
+PLUGIN_DIR="$(dirname "$(dirname "$(which valor-evidence)")")"
+cp "$PLUGIN_DIR/src/evidence_cli.py" ~/.valor/evidence_cli.py
+```
+
+If that fails, tell the user to run `install.sh` from the Valor repo
+instead.
+
+### 4. Seed `state.json`
+
+Write the base profile fields, then let the CLI stamp the schema version and
+backfill every newer schema key. The base fields below are the ones later
+steps and the commands read directly (notably `integrations`, which the GitHub
+detection in step 6 writes into) — the migrator does **not** create them, so
+they must be seeded here:
 
 ```bash
 cat > ~/.valor/state.json <<'JSON'
 {
-  "state_schema_version": 2,
   "current_level": "",
   "target_level": "",
   "ceiling_level": "",
@@ -50,32 +76,26 @@ cat > ~/.valor/state.json <<'JSON'
   }
 }
 JSON
+
+# Stamp the current schema version and backfill newer keys (routines,
+# verification, planning, ...). The CLI owns the schema, so nothing here
+# pins a version number.
+python3 ~/.valor/evidence_cli.py state-migrate
 ```
 
-### 3. Install the evidence CLI
+Do **not** write a `state_schema_version` field or number above — the CLI
+(`STATE_SCHEMA_VERSION` in `evidence_cli.py`) is the single source of truth for
+the schema version, and `state-migrate` stamps it. Duplicating that literal is
+exactly how the two drifted apart.
 
-The evidence CLI is bundled with the plugin at `bin/valor-evidence`, but it
-needs the Python script at `~/.valor/evidence_cli.py`. Find the plugin
-directory and copy it:
-
-```bash
-# The plugin's bin/ directory is on PATH when the plugin is enabled.
-# The evidence_cli.py source is next to the bin/ directory in the plugin.
-PLUGIN_DIR="$(dirname "$(dirname "$(which valor-evidence)")")"
-cp "$PLUGIN_DIR/src/evidence_cli.py" ~/.valor/evidence_cli.py
-```
-
-If that fails, tell the user to run `install.sh` from the Valor repo
-instead.
-
-### 4. Install the career framework template
+### 5. Install the career framework template
 
 ```bash
 cp "$PLUGIN_DIR/src/career_framework.md" ~/.valor/career_framework.md
 cp "$PLUGIN_DIR/src/utilities.md" ~/.valor/utilities.md
 ```
 
-### 5. Detect GitHub CLI
+### 6. Detect GitHub CLI
 
 ```bash
 if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
@@ -91,28 +111,39 @@ p.write_text(json.dumps(state, indent=2))
 fi
 ```
 
-### 6. Guide the user
+### 7. Configure your framework and levels via `/valor-setup`
 
-Tell the user:
+Do **not** walk the user through editing `career_framework.md` or setting
+levels here — that logic lives in one place, the `/valor-setup` command.
+Hand off to it:
 
-1. **Edit your career framework:** `~/.valor/career_framework.md` -- fill in
-   your company's levels, competencies, and values.
-2. **Set your levels:** Edit `~/.valor/state.json` and set `current_level`,
-   `target_level`, and `ceiling_level` (e.g., "L3", "L4", "L5").
-3. **Configure integrations:** Set `github_owner` and `jira_projects` in
-   state.json if applicable. Set integration flags to `true` for tools you
-   have available.
+> Run `/valor-setup` (or say "set up valor") to fill in your career framework
+> (levels, competencies, values), set your current / target / ceiling levels,
+> and configure integrations and routines. It is re-runnable and only walks
+> through what is still missing.
 
-### 7. Note about ambient coaching
+### 8. Full experience: run `install.sh`
 
-The ambient coaching rule (always-on career coaching after tasks) requires
-adding Valor's rule to your `~/.claude/CLAUDE.md`. This is not handled by
-the plugin -- run `install.sh` from the Valor repo for ambient coaching:
+The plugin-only path above installs a **limited** helper set —
+`evidence_cli.py`, `career_framework.md`, and `utilities.md`. It does not copy
+the other shared helpers, so features that depend on them are unavailable
+until you run `install.sh`:
+
+- **`verify.py`** — the verification gate used by `/valor-briefing` and
+  `/valor-wrapup`.
+- **`plan.py`** — day-planning / calendar fit used by `/valor-briefing`.
+- **`focus.py`** — project-focus planning.
+- **`collect_transcripts.py`** — the local coverage check in
+  `/valor-reflection`.
+
+Ambient coaching (always-on career coaching after tasks) also requires adding
+Valor's rule to your `~/.claude/CLAUDE.md`, which the plugin cannot do. Run
+`install.sh` from the Valor repo to copy the full helper set and enable
+ambient coaching:
 
 ```bash
 cd ~/.valor/repo && bash install.sh
 ```
 
-Without this step, the 8 Valor commands (`/valor-briefing`,
-`/valor-weekly`, `/valor-prep`, etc.) work normally, but you won't get
-automatic coaching annotations after tasks.
+Without `install.sh`, the command set still loads, but the features listed
+above and automatic coaching annotations after tasks are not available.
