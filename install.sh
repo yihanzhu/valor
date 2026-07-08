@@ -44,42 +44,71 @@ VALOR_CLONE_DIR="$VALOR_HOME/repo"
 # no-op -- they never silently track `main`, which would reintroduce the "run
 # whatever was last pushed" risk.
 #
-# Fetch tags for $1 and check out the latest vX.Y.Z release tag. On success,
-# prints the tag and returns 0. Returns non-zero (no checkout performed) when the
-# remote tag fetch FAILS (offline / auth error), no release tag exists yet, or
-# the checkout is blocked -- the caller decides how to degrade. Works for a
-# clone, an --upgrade, and an --auto-update alike.
+# Resolution is ORIGIN-AUTHORITATIVE: candidate tags come from
+# `git ls-remote --tags <remote>` (origin's CURRENT tags), NEVER the local
+# `git tag --list` cache. `git fetch --tags --prune` does not reliably delete a
+# stale local-only tag, so a cached vX.Y.Z that no longer exists on origin could
+# otherwise be selected and checked out -- silently downgrading the user or
+# resurrecting a withdrawn release. ls-remote sidesteps that: we act only on what
+# origin publishes right now. If ls-remote FAILS (offline / auth error) that is a
+# hard stop -> non-zero, clean no-op; we never fall back to the local cache and
+# never track `main`. Offline is thus indistinguishable to the caller from "no
+# release tag yet": both degrade without touching the checkout.
 #
-# The latest-tag resolution acts ONLY on FRESHLY FETCHED tags. If `git fetch`
-# fails we return 1 immediately rather than fall through to `git tag --list`,
-# which reads the LOCAL cache: a stale cached tag could otherwise be checked out
-# and reinstalled, silently DOWNGRADING the user (e.g. --auto-update moving an
-# unreleased 0.16.0 checkout back to a cached v0.15.0). Offline is thus a clean
-# no-op, indistinguishable to the caller from "no release tag yet" -- both just
-# degrade without touching the checkout, and neither ever tracks `main`.
-#
-# Resolution is GIT-NATIVE (git's own version sort), deliberately NOT
-# scripts/latest_release_tag.py: this helper runs against whatever repo is on
-# disk -- including an OLD ~/.valor/repo left by a prior --clone, from a version
-# BEFORE that script existed. Depending on a file being present in that checkout
-# is exactly the bootstrap regression this avoids; the resolver must stand alone.
-# `--sort=-v:refname` orders semver-aware (v0.10.0 > v0.9.0); the grep keeps only
-# exact vX.Y.Z tags, dropping pre-releases (e.g. v1.2.3-rc.1); head takes the
-# highest. No release tag -> empty output -> return 1. (scripts/latest_release_tag.py
-# stays the canonical resolver for the documented pin command and its tests,
-# where the file is guaranteed present; the two share these semantics.)
-checkout_latest_release_tag() {
+# Resolution is GIT/SHELL-NATIVE, deliberately NOT scripts/latest_release_tag.py:
+# these helpers run against whatever repo is on disk -- including an OLD
+# ~/.valor/repo left by a prior --clone, from a version BEFORE that script
+# existed. Depending on a file being present in that checkout is exactly the
+# bootstrap regression this avoids; the resolver must stand alone.
+# (scripts/latest_release_tag.py stays the canonical resolver for the documented
+# pin command and its tests, where the file is guaranteed present; both share
+# these semantics.)
+
+# Print origin's latest vX.Y.Z release tag on stdout (return 0), or return
+# non-zero with no output when offline / ls-remote fails / no release tag exists.
+# SIDE-EFFECT-FREE: no fetch, no checkout -- so a caller can compare versions and
+# decide whether to move the checkout at all (see the strictly-newer gate below).
+resolve_latest_release_tag() {
     local repo_dir="$1"
-    # Fetch failure (offline / auth error) is a hard stop: no-op, non-zero. Never
-    # fall through to the stale local tag cache -- that risks a silent downgrade.
-    git -C "$repo_dir" fetch --tags --prune --quiet 2>/dev/null || return 1
+    local remote="${2:-origin}"
+    local ls_out
+    # ls-remote queries origin directly; failure (offline/auth) => hard no-op.
+    ls_out="$(git -C "$repo_dir" ls-remote --tags "$remote" 2>/dev/null)" || return 1
+    # Each line is "<sha>\trefs/tags/<name>". Take the ref, strip refs/tags/, keep
+    # only exact vX.Y.Z (this drops annotated-tag `^{}` peel lines AND pre-releases
+    # like v1.2.3-rc.1), then numeric semver sort (v0.10.0 > v0.9.0), highest last.
     local tag
-    tag="$(git -C "$repo_dir" tag --list 'v*' --sort=-v:refname 2>/dev/null \
+    tag="$(printf '%s\n' "$ls_out" \
+        | awk '{print $NF}' \
+        | sed 's#^refs/tags/##' \
         | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
-        | head -n1 || true)"
+        | sort -t. -k1.2,1n -k2,2n -k3,3n \
+        | tail -n1 || true)"
     [ -n "$tag" ] || return 1
-    git -C "$repo_dir" checkout --quiet "$tag" 2>/dev/null || return 1
     printf '%s\n' "$tag"
+}
+
+# Fetch the objects for an already-resolved release tag $2 (ls-remote above only
+# read names, not commits) and check it out in repo $1. Returns non-zero if the
+# fetch or checkout fails (offline / dirty tree) -- caller no-ops, never `main`.
+checkout_release_tag() {
+    local repo_dir="$1" tag="$2"
+    git -C "$repo_dir" fetch --tags --quiet origin 2>/dev/null || return 1
+    git -C "$repo_dir" checkout --quiet "$tag" 2>/dev/null || return 1
+}
+
+# version_gt A B -> exit 0 iff semver A is STRICTLY greater than B (numeric X.Y.Z
+# field comparison; args carry NO leading `v`). Gates the auto-update / upgrade
+# paths so they only ever move FORWARD: if a user is on an unreleased newer build
+# (e.g. 0.16.0 from main) and origin's newest release is older (v0.15.0), the
+# update is skipped rather than silently downgrading them and reporting it as an
+# "update". Equal versions are NOT greater (-> no-op).
+version_gt() {
+    local a="$1" b="$2"
+    [ "$a" = "$b" ] && return 1
+    local hi
+    hi="$(printf '%s\n%s\n' "$a" "$b" | sort -t. -k1,1n -k2,2n -k3,3n | tail -n1)"
+    [ "$hi" = "$a" ]
 }
 
 # --- Handle --clone early (bootstrap from remote) ---
@@ -102,7 +131,11 @@ for arg in "$@"; do
         # script above is fetched from `main` (there is no released copy to fetch
         # first), but everything installed from here on is the released tag. If no
         # release is tagged yet, stay on the default branch and say so.
-        if clone_tag="$(checkout_latest_release_tag "$VALOR_CLONE_DIR")"; then
+        # Fresh install lands on origin's latest RELEASE, not `main` -- so there
+        # is no "installed version" to guard against; resolve + check out
+        # unconditionally. (Auto-update/upgrade below add the strictly-newer gate.)
+        if clone_tag="$(resolve_latest_release_tag "$VALOR_CLONE_DIR")" \
+            && checkout_release_tag "$VALOR_CLONE_DIR" "$clone_tag"; then
             echo "Checked out latest release: $clone_tag"
         else
             echo "No release tag found yet -- installing from the default branch." >&2
@@ -163,18 +196,32 @@ while [ "$#" -gt 0 ]; do
             echo ""
             if [ -d "$SCRIPT_DIR/.git" ]; then
                 echo "Fetching latest release from $(git -C "$SCRIPT_DIR" remote get-url origin 2>/dev/null || echo 'origin')..."
-                if upgrade_tag="$(checkout_latest_release_tag "$SCRIPT_DIR")"; then
-                    VALOR_VERSION="$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "unknown")"
-                    echo "[OK] Checked out release $upgrade_tag (Valor $VALOR_VERSION)"
-                    echo ""
-                    # The checkout just replaced this very file on disk, but bash
-                    # is still running the OLD body. Defer the re-exec until AFTER
-                    # arg parsing (below the loop) so the freshly checked-out
-                    # installer runs with the user's fully-resolved
-                    # --target/--check, not a partially-parsed arg set.
-                    DID_UPGRADE_PULL=true
+                upgrade_old="$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "unknown")"
+                if upgrade_tag="$(resolve_latest_release_tag "$SCRIPT_DIR")"; then
+                    # Only ever move FORWARD: never downgrade to an older tag when
+                    # the working copy is already on a newer (e.g. main) build.
+                    if version_gt "${upgrade_tag#v}" "$upgrade_old"; then
+                        if checkout_release_tag "$SCRIPT_DIR" "$upgrade_tag"; then
+                            VALOR_VERSION="$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "unknown")"
+                            echo "[OK] Checked out release $upgrade_tag (Valor $VALOR_VERSION)"
+                            echo ""
+                            # The checkout just replaced this very file on disk, but
+                            # bash is still running the OLD body. Defer the re-exec
+                            # until AFTER arg parsing (below the loop) so the freshly
+                            # checked-out installer runs with the user's
+                            # fully-resolved --target/--check, not a partial arg set.
+                            DID_UPGRADE_PULL=true
+                        else
+                            echo "Latest release is $upgrade_tag but the checkout was blocked (local changes?)."
+                            echo "Commit or stash changes in $SCRIPT_DIR, then re-run --upgrade."
+                            exit 1
+                        fi
+                    else
+                        echo "Already on the latest release or newer (installed $upgrade_old, latest tag $upgrade_tag). Nothing to upgrade."
+                        exit 0
+                    fi
                 else
-                    echo "No release tag to upgrade to yet (or checkout blocked by local changes)."
+                    echo "No release tag to upgrade to yet (or offline)."
                     echo "Cut a GitHub release (tag vX.Y.Z) for upgrades to track it."
                     exit 0
                 fi
@@ -184,17 +231,32 @@ while [ "$#" -gt 0 ]; do
             fi
             ;;
         --auto-update)
-            old_version="$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "unknown")"
             repo_dir="$VALOR_HOME/repo"
             if [ -d "$repo_dir/.git" ]; then
-                if new_tag="$(checkout_latest_release_tag "$repo_dir")"; then
-                    new_version="$(cat "$repo_dir/VERSION" 2>/dev/null || echo "unknown")"
-                    if [ "$old_version" = "$new_version" ]; then
-                        echo "Valor is already up to date ($new_version)."
+                # The installed version is whatever is currently checked out in the
+                # target repo -- that is what a checkout would overwrite, so compare
+                # against IT (not $SCRIPT_DIR, which may be a different clone).
+                old_version="$(cat "$repo_dir/VERSION" 2>/dev/null || echo "unknown")"
+                if new_tag="$(resolve_latest_release_tag "$repo_dir")"; then
+                    # STRICTLY-NEWER gate, checked BEFORE any checkout: only apply a
+                    # release that is actually newer than what's installed. Equal ->
+                    # already current; older -> would be a silent DOWNGRADE (e.g. a
+                    # user on an unreleased 0.16.0 from main, newest tag v0.15.0).
+                    # In both no-op cases we leave the checkout untouched, so nothing
+                    # is downgraded and no update is reported in the wrong direction.
+                    if version_gt "${new_tag#v}" "$old_version"; then
+                        if checkout_release_tag "$repo_dir" "$new_tag"; then
+                            new_version="$(cat "$repo_dir/VERSION" 2>/dev/null || echo "unknown")"
+                            bash "$repo_dir/install.sh" --target all >/dev/null 2>&1
+                            echo "Valor updated: $old_version -> $new_version ($new_tag)"
+                        else
+                            echo "Valor auto-update: release $new_tag found but checkout failed (skipping)." >&2
+                            exit 0
+                        fi
+                    else
+                        echo "Valor is already up to date (installed $old_version, latest release $new_tag)."
                         exit 0
                     fi
-                    bash "$repo_dir/install.sh" --target all >/dev/null 2>&1
-                    echo "Valor updated: $old_version -> $new_version ($new_tag)"
                 else
                     # No release tag to track yet (or offline). Do NOT fall back to
                     # `main` HEAD -- that would reintroduce the untrusted path.

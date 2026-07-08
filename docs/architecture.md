@@ -258,11 +258,20 @@ Updates track the **latest release tag**, not `main` HEAD. Releases are tagged
 `vX.Y.Z` (matching `VERSION`'s `X.Y.Z`) — this is the one tag convention tooling
 and humans both rely on. "Latest" is resolved semver-aware (numeric field
 comparison, not lexicographic) and skips pre-releases. `install.sh` resolves it
-**git-native** (`git tag --list 'v*' --sort=-v:refname`, filtered to exact
-`vX.Y.Z`) so the `--clone` bootstrap works even against an old `~/.valor/repo`
-that predates any helper script. `scripts/latest_release_tag.py` is the
-equivalent standalone resolver, sharing those semantics, used by the documented
-pin command and covered by its own tests.
+**origin-authoritatively** from `git ls-remote --tags` (origin's *current* tags,
+filtered to exact `vX.Y.Z`, semver-sorted) — never the local `git tag --list`
+cache, which `fetch --prune` may leave holding a stale tag origin has withdrawn.
+Resolution is git/shell-native (no dependency on any helper script) so the
+`--clone` bootstrap works even against an old `~/.valor/repo` that predates one.
+`scripts/latest_release_tag.py` is the equivalent standalone resolver, sharing
+those semantics, used by the documented pin command and covered by its own tests.
+
+Updates only ever move **forward**: `--auto-update` and `--upgrade` compare the
+resolved tag's `X.Y.Z` with the installed version and apply it **only when
+strictly newer**, checking that *before* touching the checkout. A tag that is
+equal (already current) or older (e.g. a user on an unreleased `0.16.0` from
+`main` while the newest tag is `v0.15.0`) is a clean no-op — never a silent
+downgrade, and never reported as an update.
 
 At session start, the ambient rule checks `last_update_check` in state.json.
 If more than `update_check_interval_hours` (default 24) have passed, the agent
