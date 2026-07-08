@@ -256,9 +256,13 @@ activity + agent + statement).
 
 Updates track the **latest release tag**, not `main` HEAD. Releases are tagged
 `vX.Y.Z` (matching `VERSION`'s `X.Y.Z`) — this is the one tag convention tooling
-and humans both rely on. `scripts/latest_release_tag.py` resolves "latest"
-semver-aware (numeric field comparison, not lexicographic) and skips
-pre-releases; `install.sh` feeds it `git tag --list` output.
+and humans both rely on. "Latest" is resolved semver-aware (numeric field
+comparison, not lexicographic) and skips pre-releases. `install.sh` resolves it
+**git-native** (`git tag --list 'v*' --sort=-v:refname`, filtered to exact
+`vX.Y.Z`) so the `--clone` bootstrap works even against an old `~/.valor/repo`
+that predates any helper script. `scripts/latest_release_tag.py` is the
+equivalent standalone resolver, sharing those semantics, used by the documented
+pin command and covered by its own tests.
 
 At session start, the ambient rule checks `last_update_check` in state.json.
 If more than `update_check_interval_hours` (default 24) have passed, the agent

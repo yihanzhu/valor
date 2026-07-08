@@ -40,21 +40,32 @@ VALOR_CLONE_DIR="$VALOR_HOME/repo"
 # --- Release-tag resolution -------------------------------------------------
 # Valor releases are tagged vX.Y.Z (matching VERSION's X.Y.Z). Every update path
 # tracks the latest such tag, resolved semver-aware (NOT lexicographically) and
-# skipping pre-releases, via scripts/latest_release_tag.py. If no release tag
-# exists yet, callers degrade to a clean no-op -- they never silently track
-# `main`, which would reintroduce the "run whatever was last pushed" risk.
+# skipping pre-releases. If no release tag exists yet, callers degrade to a clean
+# no-op -- they never silently track `main`, which would reintroduce the "run
+# whatever was last pushed" risk.
 #
 # Fetch tags for $1 and check out the latest vX.Y.Z release tag. On success,
 # prints the tag and returns 0. Returns non-zero (no checkout performed) when no
 # release tag exists yet or the checkout is blocked -- the caller decides how to
-# degrade. Runs the resolver from the repo's own working tree so it works for a
-# clone, an --upgrade, and an --auto-update alike.
+# degrade. Works for a clone, an --upgrade, and an --auto-update alike.
+#
+# Resolution is GIT-NATIVE (git's own version sort), deliberately NOT
+# scripts/latest_release_tag.py: this helper runs against whatever repo is on
+# disk -- including an OLD ~/.valor/repo left by a prior --clone, from a version
+# BEFORE that script existed. Depending on a file being present in that checkout
+# is exactly the bootstrap regression this avoids; the resolver must stand alone.
+# `--sort=-v:refname` orders semver-aware (v0.10.0 > v0.9.0); the grep keeps only
+# exact vX.Y.Z tags, dropping pre-releases (e.g. v1.2.3-rc.1); head takes the
+# highest. No release tag -> empty output -> return 1. (scripts/latest_release_tag.py
+# stays the canonical resolver for the documented pin command and its tests,
+# where the file is guaranteed present; the two share these semantics.)
 checkout_latest_release_tag() {
     local repo_dir="$1"
     git -C "$repo_dir" fetch --tags --prune --quiet 2>/dev/null || true
     local tag
-    tag="$(git -C "$repo_dir" tag --list 2>/dev/null \
-        | python3 "$repo_dir/scripts/latest_release_tag.py" 2>/dev/null || true)"
+    tag="$(git -C "$repo_dir" tag --list 'v*' --sort=-v:refname 2>/dev/null \
+        | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+        | head -n1 || true)"
     [ -n "$tag" ] || return 1
     git -C "$repo_dir" checkout --quiet "$tag" 2>/dev/null || return 1
     printf '%s\n' "$tag"
