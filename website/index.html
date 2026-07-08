@@ -163,14 +163,23 @@
 
           <ul class="setup-notes">
             <li>
+              <span class="setup-note-label">Read first</span>
+              The bootstrap is fetched from <code>main</code>, then pins to the
+              latest release tag before installing. It's a short shell script —
+              read it before piping to bash:
+              <code>curl -fsSL …/main/install.sh | less</code>.
+            </li>
+            <li>
               <span class="setup-note-label">Per host</span>
               Only need one agent? Pass <code>--target claude-code</code>,
               <code>codex</code>, or <code>cursor</code>.
             </li>
             <li>
               <span class="setup-note-label">Updates</span>
-              Minor and patch releases auto-apply when you start a new session.
-              No re-install needed.
+              Tracks the latest <strong>release tag</strong> (<code>vX.Y.Z</code>),
+              never <code>main</code>. Minor and patch releases auto-apply when you
+              start a new session; major bumps ask first. Pin a version with
+              <code>git -C ~/.valor/repo checkout vX.Y.Z</code>.
             </li>
             <li>
               <span class="setup-note-label">Local state</span>

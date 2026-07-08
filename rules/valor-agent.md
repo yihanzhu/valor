@@ -92,10 +92,16 @@ Skip: routine edits, basic questions, boilerplate, trivial tasks.
 `framework-validate`, `add`, `list`, `search`, `export`, `stats`, `status`.
 For tool discovery patterns (Jira, GitHub, etc.), read `~/.valor/utilities.md`.
 
-**Auto-update:** If `context.update_check_due`, curl the VERSION file from
-`https://raw.githubusercontent.com/yihanzhu/valor/main/VERSION`, compare with `installed_version`.
-Minor/patch: auto-update silently. Major: ask user. Always update timestamp
-via `state-set last_update_check "$(date -Iseconds)"`.
+**Auto-update:** If `context.update_check_due`, resolve the latest **release
+tag** (`vX.Y.Z`) — e.g. `git ls-remote --tags https://github.com/yihanzhu/valor.git`
+or the GitHub releases API — picking the highest version **semver-aware** (NOT
+lexicographic: `v0.10.0` > `v0.9.0`) and **skipping pre-releases**. Compare its
+`X.Y.Z` with `installed_version`. Minor/patch newer: run
+`~/.valor/repo/install.sh --auto-update` silently (it checks out that tag +
+re-installs). Major newer: ask the user first, then run it. No release tag yet,
+same version, or offline: no-op — never track `main`. The check fetches only a
+tag/version string (no user data). Always update the timestamp via
+`state-set last_update_check "$(date -Iseconds)"`.
 
 ## Behavior Rules
 

@@ -38,18 +38,20 @@ The code in this repository does not include:
 ### Auto-update version check
 
 Once per day (configurable via `update_check_interval_hours` in state.json),
-Valor's ambient rule fetches a single file from GitHub to check for new
-versions:
+Valor's ambient rule asks GitHub for the latest **release tag** (`vX.Y.Z`) to
+check for new versions -- for example:
 
 ```
-https://raw.githubusercontent.com/yihanzhu/valor/main/VERSION
+git ls-remote --tags https://github.com/yihanzhu/valor.git
 ```
 
-This request contains no user data -- it downloads a version string (e.g.
-"0.7.0"). If a minor or patch update is available, Valor auto-applies it
-via `git pull` in `~/.valor/repo/`. Major version bumps prompt the user
-first. You can disable this by setting `update_check_interval_hours` to `0`
-in state.json.
+This request contains no user data -- it reads public tag/version metadata. The
+latest release is resolved semver-aware (pre-releases skipped). If a minor or
+patch release is newer than your installed version, Valor auto-applies it by
+checking out that tag in `~/.valor/repo/` and re-installing (never `main` HEAD).
+Major version bumps prompt you first. If no release has been tagged yet, the
+check is a no-op. You can disable it entirely by setting
+`update_check_interval_hours` to `0` in state.json.
 
 ### Tool-initiated network access
 

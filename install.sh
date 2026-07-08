@@ -13,11 +13,22 @@
 #   ./install.sh --check                      Check for drift (uses current target)
 #   ./install.sh --target codex --check       Check drift for Codex
 #   ./install.sh --version                    Print version and exit
-#   ./install.sh --upgrade                    Pull latest + re-install
-#   ./install.sh --auto-update                Pull latest + quiet re-install (for agent-triggered updates)
+#   ./install.sh --upgrade                    Check out latest release tag + re-install
+#   ./install.sh --auto-update                Check out latest release tag + quiet re-install (agent-triggered)
+#
+# Updates track the latest RELEASE TAG (vX.Y.Z), never `main` HEAD -- so you run
+# a released version, not whatever was last pushed. If no release has been tagged
+# yet, the update paths no-op cleanly (they never fall back to `main`).
+#
+# Pin a specific version (and stop auto-update from moving you off it):
+#   git -C ~/.valor/repo checkout vX.Y.Z && bash ~/.valor/repo/install.sh
+#   # then set "update_check_interval_hours": 0 in ~/.valor/state.json
 #
 # Quick install (clones repo then installs):
 #   curl -fsSL https://raw.githubusercontent.com/yihanzhu/valor/main/install.sh | bash -s -- --clone
+# The bootstrap fetches THIS script from `main` (the entry point); it then checks
+# out the latest release tag before installing. Read the script before piping it
+# to bash: curl -fsSL .../main/install.sh | less
 
 set -euo pipefail
 
@@ -25,6 +36,29 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VALOR_HOME="$HOME/.valor"
 VALOR_REPO="https://github.com/yihanzhu/valor.git"
 VALOR_CLONE_DIR="$VALOR_HOME/repo"
+
+# --- Release-tag resolution -------------------------------------------------
+# Valor releases are tagged vX.Y.Z (matching VERSION's X.Y.Z). Every update path
+# tracks the latest such tag, resolved semver-aware (NOT lexicographically) and
+# skipping pre-releases, via scripts/latest_release_tag.py. If no release tag
+# exists yet, callers degrade to a clean no-op -- they never silently track
+# `main`, which would reintroduce the "run whatever was last pushed" risk.
+#
+# Fetch tags for $1 and check out the latest vX.Y.Z release tag. On success,
+# prints the tag and returns 0. Returns non-zero (no checkout performed) when no
+# release tag exists yet or the checkout is blocked -- the caller decides how to
+# degrade. Runs the resolver from the repo's own working tree so it works for a
+# clone, an --upgrade, and an --auto-update alike.
+checkout_latest_release_tag() {
+    local repo_dir="$1"
+    git -C "$repo_dir" fetch --tags --prune --quiet 2>/dev/null || true
+    local tag
+    tag="$(git -C "$repo_dir" tag --list 2>/dev/null \
+        | python3 "$repo_dir/scripts/latest_release_tag.py" 2>/dev/null || true)"
+    [ -n "$tag" ] || return 1
+    git -C "$repo_dir" checkout --quiet "$tag" 2>/dev/null || return 1
+    printf '%s\n' "$tag"
+}
 
 # --- Handle --clone early (bootstrap from remote) ---
 for arg in "$@"; do
@@ -36,11 +70,21 @@ for arg in "$@"; do
             mv "$HOME/valor" "$VALOR_CLONE_DIR"
         fi
         if [ -d "$VALOR_CLONE_DIR/.git" ]; then
-            echo "Valor repo already exists at $VALOR_CLONE_DIR -- pulling latest..."
-            git -C "$VALOR_CLONE_DIR" pull --ff-only
+            echo "Valor repo already exists at $VALOR_CLONE_DIR -- fetching latest release..."
         else
             echo "Cloning Valor to $VALOR_CLONE_DIR..."
-            git clone "$VALOR_REPO" "$VALOR_CLONE_DIR"
+            git clone --quiet "$VALOR_REPO" "$VALOR_CLONE_DIR"
+        fi
+        # Pin the checkout to the latest release tag so a fresh install lands on a
+        # released version, not whatever is currently on `main`. The bootstrap
+        # script above is fetched from `main` (there is no released copy to fetch
+        # first), but everything installed from here on is the released tag. If no
+        # release is tagged yet, stay on the default branch and say so.
+        if clone_tag="$(checkout_latest_release_tag "$VALOR_CLONE_DIR")"; then
+            echo "Checked out latest release: $clone_tag"
+        else
+            echo "No release tag found yet -- installing from the default branch." >&2
+            echo "Auto-update starts tracking releases once one is tagged (vX.Y.Z)." >&2
         fi
         remaining_args=()
         for a in "$@"; do
@@ -96,22 +140,24 @@ while [ "$#" -gt 0 ]; do
             echo "=== Valor Upgrade ==="
             echo ""
             if [ -d "$SCRIPT_DIR/.git" ]; then
-                echo "Pulling latest from $(git -C "$SCRIPT_DIR" remote get-url origin 2>/dev/null || echo 'origin')..."
-                git -C "$SCRIPT_DIR" pull --ff-only || {
-                    echo "Pull failed. Resolve conflicts manually, then re-run install.sh."
-                    exit 1
-                }
-                VALOR_VERSION="$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "unknown")"
-                echo "[OK] Updated to Valor $VALOR_VERSION"
-                echo ""
-                # The git pull just replaced this very file on disk, but bash is
-                # still running the OLD body. Defer the re-exec until AFTER arg
-                # parsing (below the loop) so the freshly pulled installer runs
-                # with the user's fully-resolved --target/--check, not a
-                # partially-parsed arg set.
-                DID_UPGRADE_PULL=true
+                echo "Fetching latest release from $(git -C "$SCRIPT_DIR" remote get-url origin 2>/dev/null || echo 'origin')..."
+                if upgrade_tag="$(checkout_latest_release_tag "$SCRIPT_DIR")"; then
+                    VALOR_VERSION="$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "unknown")"
+                    echo "[OK] Checked out release $upgrade_tag (Valor $VALOR_VERSION)"
+                    echo ""
+                    # The checkout just replaced this very file on disk, but bash
+                    # is still running the OLD body. Defer the re-exec until AFTER
+                    # arg parsing (below the loop) so the freshly checked-out
+                    # installer runs with the user's fully-resolved
+                    # --target/--check, not a partially-parsed arg set.
+                    DID_UPGRADE_PULL=true
+                else
+                    echo "No release tag to upgrade to yet (or checkout blocked by local changes)."
+                    echo "Cut a GitHub release (tag vX.Y.Z) for upgrades to track it."
+                    exit 0
+                fi
             else
-                echo "Not a git repo -- cannot auto-upgrade. Run 'git pull' manually."
+                echo "Not a git repo -- cannot auto-upgrade. Clone from $VALOR_REPO first."
                 exit 1
             fi
             ;;
@@ -119,17 +165,20 @@ while [ "$#" -gt 0 ]; do
             old_version="$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "unknown")"
             repo_dir="$VALOR_HOME/repo"
             if [ -d "$repo_dir/.git" ]; then
-                git -C "$repo_dir" pull --ff-only >/dev/null 2>&1 || {
-                    echo "Valor auto-update: pull failed (offline?)" >&2
-                    exit 1
-                }
-                new_version="$(cat "$repo_dir/VERSION" 2>/dev/null || echo "unknown")"
-                if [ "$old_version" = "$new_version" ]; then
-                    echo "Valor is already up to date ($new_version)."
+                if new_tag="$(checkout_latest_release_tag "$repo_dir")"; then
+                    new_version="$(cat "$repo_dir/VERSION" 2>/dev/null || echo "unknown")"
+                    if [ "$old_version" = "$new_version" ]; then
+                        echo "Valor is already up to date ($new_version)."
+                        exit 0
+                    fi
+                    bash "$repo_dir/install.sh" --target all >/dev/null 2>&1
+                    echo "Valor updated: $old_version -> $new_version ($new_tag)"
+                else
+                    # No release tag to track yet (or offline). Do NOT fall back to
+                    # `main` HEAD -- that would reintroduce the untrusted path.
+                    echo "Valor auto-update: no release tag to track yet (skipping)." >&2
                     exit 0
                 fi
-                bash "$repo_dir/install.sh" --target all >/dev/null 2>&1
-                echo "Valor updated: $old_version -> $new_version"
             else
                 echo "Valor auto-update: no repo at $repo_dir (run install.sh --clone first)" >&2
                 exit 1
@@ -144,10 +193,10 @@ while [ "$#" -gt 0 ]; do
     shift
 done
 
-# An --upgrade just pulled a new install.sh, but this process is still running
-# the old body. Re-exec the updated script now that --target/--check are fully
-# parsed, forwarding both. VALOR_UPGRADE_REEXEC stops the child (which runs a
-# normal install/check, not --upgrade) from ever looping back here.
+# An --upgrade just checked out a new install.sh, but this process is still
+# running the old body. Re-exec the updated script now that --target/--check are
+# fully parsed, forwarding both. VALOR_UPGRADE_REEXEC stops the child (which runs
+# a normal install/check, not --upgrade) from ever looping back here.
 if [ "$DID_UPGRADE_PULL" = true ] && [ -z "${VALOR_UPGRADE_REEXEC:-}" ]; then
     if [ "$CHECK_ONLY" = true ]; then
         VALOR_UPGRADE_REEXEC=1 exec bash "$SCRIPT_DIR/install.sh" --target "$TARGET" --check

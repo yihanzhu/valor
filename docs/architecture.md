@@ -254,16 +254,30 @@ activity + agent + statement).
 
 ## Auto-Update
 
+Updates track the **latest release tag**, not `main` HEAD. Releases are tagged
+`vX.Y.Z` (matching `VERSION`'s `X.Y.Z`) — this is the one tag convention tooling
+and humans both rely on. `scripts/latest_release_tag.py` resolves "latest"
+semver-aware (numeric field comparison, not lexicographic) and skips
+pre-releases; `install.sh` feeds it `git tag --list` output.
+
 At session start, the ambient rule checks `last_update_check` in state.json.
 If more than `update_check_interval_hours` (default 24) have passed, the agent
-curls the remote `VERSION` file and compares with `installed_version`:
+resolves the latest release tag (via `git ls-remote --tags` or the releases API)
+and compares its `X.Y.Z` with `installed_version`:
 
 - **Same version:** updates `last_update_check`, no action
-- **Minor/patch bump:** runs `install.sh --auto-update` silently (git pull +
-  quiet reinstall in `~/.valor/repo/`)
+- **Minor/patch bump:** runs `install.sh --auto-update` silently (checks out the
+  tag + quiet reinstall in `~/.valor/repo/`)
 - **Major bump:** prompts the user before updating
-- **Offline/failure:** skips silently
+- **No release tagged yet / offline / failure:** skips silently — never falls
+  back to `main`
 
-The `--auto-update` flag performs a `git pull --ff-only` in `~/.valor/repo/`,
-re-runs `install.sh --target all` with suppressed output, and prints a
-one-line summary of the version change.
+The `--auto-update` flag fetches tags in `~/.valor/repo/`, checks out the latest
+release tag, re-runs `install.sh --target all` with suppressed output, and prints
+a one-line summary of the version change. `--upgrade` does the same
+interactively. The `--clone` bootstrap is the one path fetched from `main` (it's
+the entry point, with no released copy to fetch first); it checks out the latest
+release tag immediately after cloning. To pin a version, check out its tag
+manually (`git -C ~/.valor/repo checkout vX.Y.Z && bash ~/.valor/repo/install.sh`)
+and set `update_check_interval_hours` to `0`. Auto-update begins tracking
+releases only once a GitHub release has been cut.
