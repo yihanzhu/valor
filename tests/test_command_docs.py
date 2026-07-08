@@ -803,3 +803,89 @@ def test_briefing_retires_completed_week_goals():
     assert "Retire completed goals" in text
     assert "non-retired" in text
     assert "--limit 0" in text  # unbounded scan — default limit drops early-week entries
+
+
+# --- Onboarding-surface accuracy (issue #58) --------------------------------
+#
+# Both onboarding surfaces — the plugin skill (skills/setup/SKILL.md) and the
+# /valor-setup command (commands/setup.md) — had drifted from the shipped
+# command set, and SKILL.md pinned a stale "state_schema_version": 2 literal
+# (code was already at 19) while re-implementing state seeding inline. These
+# pin the surfaces to the CANONICAL command set (the files in commands/*.md) so
+# a stale count/list or a reintroduced schema literal fails CI instead of
+# shipping. The expected command set is derived from commands/*.md, never a
+# hand-maintained list, so the tests themselves can't go stale.
+
+SKILL_SETUP = Path("skills/setup/SKILL.md")
+COMMAND_SETUP = Path("commands/setup.md")
+
+
+def _canonical_command_stems():
+    """The canonical command set is exactly the files in commands/*.md."""
+    return {p.stem for p in COMMANDS_DIR.glob("*.md")}
+
+
+def test_skill_setup_has_no_hardcoded_schema_version():
+    """SKILL.md must not pin a state_schema_version literal — it drifts from
+    evidence_cli.STATE_SCHEMA_VERSION (the root cause here). Seeding is
+    delegated to the CLI's state-migrate instead."""
+    text = SKILL_SETUP.read_text()
+    assert not re.search(r'state_schema_version["\s:]*\d', text), (
+        "skills/setup/SKILL.md hardcodes a state_schema_version number; seed via "
+        "`evidence_cli.py state-migrate` instead so the schema can't drift"
+    )
+    assert "state-migrate" in text, (
+        "SKILL.md should seed state.json via `evidence_cli.py state-migrate`"
+    )
+
+
+@pytest.mark.parametrize("doc", [SKILL_SETUP, COMMAND_SETUP])
+def test_onboarding_surface_has_no_stale_command_count(doc):
+    """Neither onboarding surface may pin a command/agent COUNT that disagrees
+    with the number of files in commands/*.md — that literal (e.g. "the 8 Valor
+    commands") silently goes stale as commands are added or removed."""
+    n = len(_canonical_command_stems())
+    text = doc.read_text()
+    stale = sorted({
+        int(m.group(1))
+        for m in re.finditer(r"(\d+)\s+Valor\s+(?:command|agent)s?", text, re.I)
+        if int(m.group(1)) != n
+    })
+    assert not stale, (
+        f"{doc} pins a Valor command/agent count {stale} != actual {n} "
+        f"({sorted(_canonical_command_stems())})"
+    )
+
+
+def test_setup_command_agent_list_covers_every_command():
+    """The /valor-setup 'Your Valor agents' list must reference every command in
+    commands/*.md by its /valor-<stem> slash command, derived from the canonical
+    source so the list can't silently omit one — it was missing Performance
+    Reflection (/valor-reflection) and Upward Feedback (/valor-upward-feedback)."""
+    text = COMMAND_SETUP.read_text()
+    parts = text.split("Your Valor agents:", 1)
+    assert len(parts) == 2, "commands/setup.md lost its 'Your Valor agents:' list"
+    listing = parts[1].split("```", 1)[0]
+    missing = [
+        stem for stem in sorted(_canonical_command_stems())
+        if f"/valor-{stem}" not in listing
+    ]
+    assert not missing, (
+        f"'Your Valor agents' list omits {missing}; add each as /valor-<stem>"
+    )
+
+
+def test_skill_setup_delegates_config_and_states_limited_helpers():
+    """SKILL.md must delegate framework/level config to /valor-setup (not
+    duplicate it) and be honest that the plugin path installs a LIMITED helper
+    set, pointing at install.sh for the helpers the commands actually invoke."""
+    text = SKILL_SETUP.read_text()
+    assert "/valor-setup" in text, "SKILL.md must delegate config to /valor-setup"
+    assert "install.sh" in text, "SKILL.md must point at install.sh for the full set"
+    assert re.search(r"limited", text, re.I), (
+        "SKILL.md must state the plugin path installs a limited helper set"
+    )
+    for helper in ("verify.py", "plan.py", "focus.py", "collect_transcripts.py"):
+        assert helper in text, (
+            f"SKILL.md should name {helper} as an install.sh-only helper"
+        )
