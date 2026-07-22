@@ -1,7 +1,8 @@
 """Tests for the release-tag resolver (scripts/latest_release_tag.py).
 
-Covers the three behaviours the update path depends on: semver-aware ordering
-(not lexicographic), skipping pre-releases, and the no-tags fallback.
+Covers the behaviours the notify-only update check depends on: semver-aware
+ordering (not lexicographic), skipping pre-releases, the no-tags fallback, and
+the strictly-newer "is an update available" decision behind the notification.
 """
 
 import importlib.util
@@ -15,6 +16,7 @@ lrt = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(lrt)
 
 f = lrt.latest_release_tag
+ua = lrt.update_available
 
 
 # --- semver-aware ordering (NOT lexicographic) ---
@@ -70,11 +72,46 @@ def test_parses_git_tag_list_lines_with_whitespace():
     assert f(["  v1.0.0  ", "v1.1.0\n", ""]) == "v1.1.0"
 
 
+# --- notify decision: is a strictly-newer release available? ---
+
+def test_update_available_returns_newer_tag():
+    assert ua("0.15.0", ["v0.14.0", "v0.15.0", "v0.16.0"]) == "v0.16.0"
+
+
+def test_update_available_equal_version_is_none():
+    # Already current -> nothing to surface (no notification).
+    assert ua("0.16.0", ["v0.15.0", "v0.16.0"]) is None
+
+
+def test_update_available_older_tag_is_none():
+    # Installed is ahead of the newest release (e.g. an unreleased main build):
+    # notify-only never surfaces a downgrade.
+    assert ua("0.16.0", ["v0.15.0"]) is None
+
+
+def test_update_available_no_release_tags_is_none():
+    assert ua("0.16.0", ["nightly", "latest", "v0.17.0-rc.1"]) is None
+
+
+def test_update_available_semver_not_lexicographic():
+    # v0.10.0 > v0.9.0 numerically, so an install on 0.9.0 gets notified.
+    assert ua("0.9.0", ["v0.9.0", "v0.10.0"]) == "v0.10.0"
+
+
+def test_update_available_unknown_installed_surfaces_release():
+    # A garbage/unknown installed version still points at a real release.
+    assert ua("unknown", ["v0.16.0"]) == "v0.16.0"
+
+
+def test_update_available_prefixed_installed_is_accepted():
+    assert ua("v0.15.0", ["v0.16.0"]) == "v0.16.0"
+
+
 # --- end-to-end CLI (the no-tags path the installer relies on) ---
 
-def _run(stdin: str) -> subprocess.CompletedProcess:
+def _run(stdin: str, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
-        [sys.executable, str(_SCRIPT)],
+        [sys.executable, str(_SCRIPT), *args],
         input=stdin,
         capture_output=True,
         text=True,
@@ -89,5 +126,19 @@ def test_cli_prints_tag():
 def test_cli_no_tags_is_clean_noop():
     # Safety-critical: empty stdin -> empty stdout, exit 0 (installer no-ops).
     res = _run("")
+    assert res.returncode == 0
+    assert res.stdout.strip() == ""
+
+
+def test_cli_installed_prints_only_when_newer():
+    # Notify mode: strictly newer -> print the tag.
+    res = _run("v0.16.0\nv0.17.0\n", "--installed", "0.16.0")
+    assert res.returncode == 0
+    assert res.stdout.strip() == "v0.17.0"
+
+
+def test_cli_installed_up_to_date_is_silent_noop():
+    # Notify mode: already current -> empty stdout, exit 0 (installer stays quiet).
+    res = _run("v0.16.0\n", "--installed", "0.16.0")
     assert res.returncode == 0
     assert res.stdout.strip() == ""

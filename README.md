@@ -122,15 +122,14 @@ model provider, not by this repo. Valor does not override those policies.
 curl -fsSL https://raw.githubusercontent.com/yihanzhu/valor/main/install.sh | bash -s -- --clone
 ```
 
-The bootstrap script is fetched from `main` (it's the entry point); it then
-checks out the **latest release tag** (`vX.Y.Z`) before installing, so you land
-on a released version rather than whatever was last pushed. It's a short shell
-script — read it before piping to bash (`curl -fsSL …/main/install.sh | less`).
+The bootstrap script is fetched from `main` (it's the entry point). It's a short
+shell script — read it before piping to bash (`curl -fsSL …/main/install.sh | less`).
 
 This clones the repo to `~/.valor/repo/`, creates `~/.valor/` for local state
 and evidence, and installs Valor for all supported agents (Claude Code,
-Codex CLI, and Cursor). Valor checks for updates daily and auto-applies
-minor/patch **releases** (tracked by tag, never `main` HEAD).
+Codex CLI, and Cursor). Valor checks daily for new **releases** (tagged `vX.Y.Z`,
+never `main` HEAD) and **notifies you** when one is available — updating is
+manual (see below). It never silently pulls `main` or checks anything out.
 
 **Manual install:**
 
@@ -148,18 +147,23 @@ bash install.sh --target codex         # Codex CLI only
 bash install.sh --target cursor        # Cursor only
 ```
 
-**Upgrade manually:**
+**Check for updates:**
 
 ```bash
-cd ~/.valor/repo && bash install.sh --upgrade   # checks out the latest release tag + re-installs
+cd ~/.valor/repo && bash install.sh --upgrade   # tells you if a newer release exists (never self-updates)
 ```
 
-**Pin a specific version:** to stay on one release, check out its tag and
-disable auto-update so it can't move you off:
+**Update to the latest release (manual):** check out the tag and re-install:
 
 ```bash
 git -C ~/.valor/repo checkout vX.Y.Z && bash ~/.valor/repo/install.sh
-# then set "update_check_interval_hours": 0 in ~/.valor/state.json
+```
+
+**Pin a specific version:** do the checkout above, then disable the daily check
+so nothing nudges you off it:
+
+```bash
+# set "update_check_interval_hours": 0 in ~/.valor/state.json
 ```
 
 For a complete walkthrough including career framework setup, level

@@ -514,41 +514,47 @@ def test_command_integration_flags_match_declaration():
     assert not violations, "\n".join(violations)
 
 
-def _upgrade_case_body(text):
-    start = text.index("--upgrade)")
-    return text[start:text.index(";;", start)]
+def _case_body(text, flag):
+    start = text.index(f"{flag})")
+    body = text[start:text.index(";;", start)]
+    # Drop comment lines so prose ("never pulls main") can't trip substring checks.
+    return "\n".join(l for l in body.splitlines() if not l.lstrip().startswith("#"))
 
 
-def test_upgrade_reexecs_after_pull():
-    """M25: --upgrade must re-exec the freshly pulled install.sh -- running the
-    stale in-process body would apply new files with old installer logic. The
-    case body only flags the pull; the re-exec happens after arg parsing."""
+# The bug-prone silent auto-apply machinery (tag checkout + reinstall, re-exec,
+# downgrade/dirty-tree guards) was stripped and deferred to issue #67. The update
+# paths are now NOTIFY-ONLY: they surface a newer release and the manual update
+# command, and never mutate anything. These tests lock that in.
+
+def test_upgrade_is_notify_only():
+    """--upgrade must resolve+notify, never pull, check out, re-install, or
+    re-exec itself."""
     text = Path("install.sh").read_text()
-    assert "DID_UPGRADE_PULL=true" in _upgrade_case_body(text), \
-        "--upgrade case should flag the pull for a deferred re-exec"
-    assert "VALOR_UPGRADE_REEXEC=1 exec bash" in text, \
-        "install.sh does not re-exec the updated install.sh after an upgrade pull"
+    body = _case_body(text, "--upgrade")
+    assert "resolve_newer_release" in body, "--upgrade should resolve the latest release"
+    assert "print_update_instructions" in body, "--upgrade should print manual update steps"
+    for banned in ("pull", "checkout", "exec bash", "--target all"):
+        assert banned not in body, f"--upgrade must not self-mutate (found {banned!r})"
 
 
-def test_upgrade_reexec_guard_prevents_loop():
-    """The re-exec is gated on the guard var being unset, so the re-exec'd child
-    (a plain install) cannot pull+re-exec again."""
+def test_auto_update_is_notify_only():
+    """--auto-update is the agent-triggered path: notify only, never pull `main`,
+    check out a tag, or re-install."""
     text = Path("install.sh").read_text()
-    assert '[ -z "${VALOR_UPGRADE_REEXEC:-}" ]' in text
+    body = _case_body(text, "--auto-update")
+    assert "resolve_newer_release" in body, "--auto-update should resolve the latest release"
+    for banned in ("pull", "checkout", "exec bash", "--target all"):
+        assert banned not in body, f"--auto-update must not self-mutate (found {banned!r})"
 
 
-def test_upgrade_reexec_runs_after_parsing_and_forwards_flags():
-    """The deferred re-exec must run AFTER the arg-parsing loop (so --target and
-    --check are fully resolved) and forward both -- otherwise `--upgrade --check`
-    would silently become a mutating install (regression that was fixed)."""
+def test_no_self_mutating_update_machinery_remains():
+    """The removed release-tag checkout/reinstall/re-exec glue must not leak back
+    in (deferred to #67); nothing may silently track `main`."""
     text = Path("install.sh").read_text()
-    # Re-exec is positioned after the parse loop closes, not inside the case.
-    loop_end = text.index("    esac\n    shift\ndone")
-    assert text.index("VALOR_UPGRADE_REEXEC=1 exec bash") > loop_end, \
-        "re-exec must run after the arg-parsing loop, not mid-parse"
-    # Both a plain-install and a --check-forwarding branch exist.
-    assert 'exec bash "$SCRIPT_DIR/install.sh" --target "$TARGET" --check' in text
-    assert 'if [ "$CHECK_ONLY" = true ]; then' in text
+    for banned in ("VALOR_UPGRADE_REEXEC", "DID_UPGRADE_PULL",
+                   "checkout_release_tag", "resolve_latest_release_tag",
+                   "version_gt"):
+        assert banned not in text, f"removed update machinery leaked back in: {banned!r}"
 
 
 # --- Utilities reference tests ---

@@ -21,11 +21,10 @@ bash install.sh --target cursor           # Cursor only
 This creates `~/.valor/` for local state and evidence, and installs Valor's
 rule and commands into your coding agent.
 
-**Updates track release tags, not `main`.** Releases are tagged `vX.Y.Z`. After
-install, Valor checks daily for a newer release and auto-applies minor/patch
-ones (`install.sh --auto-update` checks out the latest tag and re-installs; major
-bumps ask first). To pin a version, check out its tag and stop auto-update from
-moving you off it:
+**Updates are notify-only.** Releases are tagged `vX.Y.Z`. After install, Valor
+checks daily for a newer release and, if one exists, **tells you** — it never
+pulls `main` or checks anything out on its own. Update manually by checking out
+the tag and re-installing; pin a version by also disabling the daily check:
 
 ```bash
 git -C ~/.valor/repo checkout vX.Y.Z && bash ~/.valor/repo/install.sh
@@ -33,8 +32,8 @@ git -C ~/.valor/repo checkout vX.Y.Z && bash ~/.valor/repo/install.sh
 ```
 
 (If no release has been tagged yet, the `git checkout` above is a no-op and you
-install from the default branch; auto-update starts tracking releases once one
-is cut.)
+install from the default branch; the daily check starts surfacing releases once
+one is cut.)
 
 ## 2. Run Setup
 

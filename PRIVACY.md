@@ -46,12 +46,12 @@ git ls-remote --tags https://github.com/yihanzhu/valor.git
 ```
 
 This request contains no user data -- it reads public tag/version metadata. The
-latest release is resolved semver-aware (pre-releases skipped). If a minor or
-patch release is newer than your installed version, Valor auto-applies it by
-checking out that tag in `~/.valor/repo/` and re-installing (never `main` HEAD).
-Major version bumps prompt you first. If no release has been tagged yet, the
-check is a no-op. You can disable it entirely by setting
-`update_check_interval_hours` to `0` in state.json.
+latest release is resolved semver-aware (pre-releases skipped). If a newer
+release than your installed version exists, Valor **notifies you** and shows the
+manual update command; it never pulls `main`, checks out a tag, or re-installs
+on its own. Updating and pinning are manual (see the README). If no release has
+been tagged yet (or you are offline), the check is a no-op. You can disable it
+entirely by setting `update_check_interval_hours` to `0` in state.json.
 
 ### Tool-initiated network access
 
