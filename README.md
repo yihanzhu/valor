@@ -156,7 +156,7 @@ cd ~/.valor/repo && bash install.sh --upgrade   # tells you if a newer release e
 **Update to the latest release (manual):** check out the tag and re-install:
 
 ```bash
-git -C ~/.valor/repo checkout vX.Y.Z && bash ~/.valor/repo/install.sh
+git -C ~/.valor/repo fetch --tags && git -C ~/.valor/repo checkout vX.Y.Z && bash ~/.valor/repo/install.sh
 ```
 
 **Pin a specific version:** do the checkout above, then disable the daily check

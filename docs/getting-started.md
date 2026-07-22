@@ -27,7 +27,7 @@ pulls `main` or checks anything out on its own. Update manually by checking out
 the tag and re-installing; pin a version by also disabling the daily check:
 
 ```bash
-git -C ~/.valor/repo checkout vX.Y.Z && bash ~/.valor/repo/install.sh
+git -C ~/.valor/repo fetch --tags && git -C ~/.valor/repo checkout vX.Y.Z && bash ~/.valor/repo/install.sh
 # then set "update_check_interval_hours": 0 in ~/.valor/state.json
 ```
 

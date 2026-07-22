@@ -100,7 +100,7 @@ releases API — picking the highest version **semver-aware** (NOT lexicographic
 `v0.10.0` > `v0.9.0`) and **skipping pre-releases**. Compare its `X.Y.Z` with
 `installed_version`. If it is newer, **tell the user** in one line: the new
 version, that updating is manual
-(`git -C ~/.valor/repo checkout vX.Y.Z && bash ~/.valor/repo/install.sh`), and
+(`git -C ~/.valor/repo fetch --tags && git -C ~/.valor/repo checkout vX.Y.Z && bash ~/.valor/repo/install.sh`), and
 that they can pin by setting `update_check_interval_hours` to `0`. Do **not**
 pull, check out, or re-install anything yourself — and never track `main`. Same
 version, no release tagged yet, or offline: no-op. The check fetches only a

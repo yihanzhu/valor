@@ -22,7 +22,7 @@
 # clean no-op.
 #
 # Update to the latest release manually:
-#   git -C ~/.valor/repo checkout vX.Y.Z && bash ~/.valor/repo/install.sh
+#   git -C ~/.valor/repo fetch --tags && git -C ~/.valor/repo checkout vX.Y.Z && bash ~/.valor/repo/install.sh
 # Pin a version (stop the daily check from nudging you off it):
 #   set "update_check_interval_hours": 0 in ~/.valor/state.json
 #
@@ -69,7 +69,7 @@ resolve_newer_release() {
 print_update_instructions() {
     local repo_dir="$1" tag="$2" installed="$3"
     echo "A new Valor release is available: $tag (installed: $installed)."
-    echo "  Update:  git -C $repo_dir checkout $tag && bash $repo_dir/install.sh"
+    echo "  Update:  git -C $repo_dir fetch --tags && git -C $repo_dir checkout $tag && bash $repo_dir/install.sh"
     echo "  Pin:     after checkout, set \"update_check_interval_hours\": 0 in ~/.valor/state.json"
 }
 

@@ -277,7 +277,7 @@ and compares its `X.Y.Z` with `installed_version`:
 Updating is manual and documented:
 
 ```
-git -C ~/.valor/repo checkout vX.Y.Z && bash ~/.valor/repo/install.sh
+git -C ~/.valor/repo fetch --tags && git -C ~/.valor/repo checkout vX.Y.Z && bash ~/.valor/repo/install.sh
 ```
 
 `install.sh --upgrade` and `--auto-update` are themselves notify-only: they

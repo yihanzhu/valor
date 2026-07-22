@@ -518,7 +518,9 @@ def _case_body(text, flag):
     start = text.index(f"{flag})")
     body = text[start:text.index(";;", start)]
     # Drop comment lines so prose ("never pulls main") can't trip substring checks.
-    return "\n".join(l for l in body.splitlines() if not l.lstrip().startswith("#"))
+    return "\n".join(
+        line for line in body.splitlines() if not line.lstrip().startswith("#")
+    )
 
 
 # The bug-prone silent auto-apply machinery (tag checkout + reinstall, re-exec,
