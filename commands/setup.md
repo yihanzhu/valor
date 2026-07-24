@@ -52,7 +52,8 @@ From the `setup-status` output:
 Ask: "Do you have your company's career ladder document? You can:
 1. **Paste the text** directly into this chat
 2. **Describe your levels** and I'll help structure them
-3. **Use a generic template** and customize later"
+3. **Start from a shipped example** (engineering IC / manager / no-levels) and customize
+4. **Use a generic template** generated from your job title, and customize later"
 
 **If the user pastes text or describes their ladder:**
 
@@ -86,6 +87,50 @@ Rules for transformation:
 - Include at least 3 levels (current, target, ceiling) -- more is fine
 - Include company values if the user provides them, as `### [Value Name]`
   sections under a `## Company Values` heading
+
+**If the user wants to start from a shipped example:**
+
+Valor ships ready-made, fully generic example frameworks. Offer them as a
+starting point the user picks, copies, and then customizes:
+
+| Example | File | Good starting point for |
+|---------|------|--------------------------|
+| Software engineering IC ladder | `software-engineer-ic-ladder.md` | IC engineers with leveled ladders (L3-L6 style) |
+| Engineering manager ladder | `engineering-manager-ladder.md` | People managers (M3-M5 style) |
+| Growth stages, no formal levels | `ic-without-formal-levels.md` | Roles or teams without a formal leveled ladder |
+
+The examples live in the installed repo at
+`~/.valor/repo/examples/frameworks/` (the recommended `--clone` install). If you
+installed the plugin only and don't have `~/.valor/repo`, find the same files in
+the plugin's `examples/frameworks/` directory.
+
+Steps:
+1. Read the three example files, summarize each in a line, and ask which fits
+   best (or "none — generate one instead").
+2. Load the chosen example's contents as the **working draft** — read the file
+   and hold it in the conversation. Do **not** copy or write it over
+   `~/.valor/career_framework.md` yet; the existing framework must stay
+   untouched until the user confirms in "Write the framework" below (otherwise
+   backing out, choosing a different example, or an interrupted session would
+   destroy the current framework).
+   ```bash
+   # Substitute the file the user picked in step 1 (the "File" column above):
+   # software-engineer-ic-ladder.md, engineering-manager-ladder.md,
+   # or ic-without-formal-levels.md.
+   cat ~/.valor/repo/examples/frameworks/<chosen-example>.md
+   ```
+   If `~/.valor/repo` is absent, read the same file from the plugin's
+   `examples/frameworks/` directory instead.
+3. Customize the draft with the user: replace the placeholder company values
+   with their real ones, and adjust level codes/titles and competency
+   descriptions to match their organization. Then continue to "Write the
+   framework" below, which shows the draft, confirms, and only then writes it to
+   `~/.valor/career_framework.md` — so an existing framework is never
+   overwritten before confirmation.
+
+These examples already pass `framework-validate` and use real generic level
+names (not bracketed placeholders), so they will not trip the unedited-template
+check — but they still need the values and level codes tailored to the user.
 
 **If the user wants a generic template:**
 
