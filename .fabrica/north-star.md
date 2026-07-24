@@ -10,34 +10,38 @@ promote (or add) the next as `active`; keep the log below.
 
 ## Current north star
 
-### Harden Valor for a broad open-source launch  ·  status: **active**
+### Harden Valor for a broad open-source launch  ·  status: **achieved**
 
-Get the existing, working Valor tool (v0.16.0) to launch quality for strangers: accurate
-onboarding, trustworthy releases, and a framework setup a newcomer can complete without a
-written career ladder. This is the current corporate-engineering-IC tool made ready for public
+Get the existing, working Valor tool to launch quality for strangers: accurate onboarding,
+trustworthy release/update behavior, and a framework setup a newcomer can complete without a
+written career ladder. This was the current corporate-engineering-IC tool made ready for public
 adoption — deliberately distinct from the longer-horizon generalization work (a growth coach
-for everyone whose work is agent-legible), which is **out of scope** for this north star.
+for everyone whose work is agent-legible), which was **out of scope** for this north star.
 
-- **Why it's the north star:** Valor is influence-first, and a broad OSS launch is how it earns
-  adoption and trust. But today a stranger gets a poor or untrustworthy first run — stale
-  plugin-marketplace onboarding, command drift in the docs, and auto-update tracking `main` —
-  and a newcomer without a career ladder has no example to start from.
-- **Done-signal:** all four hold — (1) the plugin-marketplace first-run is accurate and
-  delegates real setup to `/valor-setup`; (2) ADR-001 reflects the shipped command set; (3) the
-  version-check and auto-update follow tagged releases, not `main`, with a documented "read the
-  script / pin a version" note; (4) two to three neutral example career frameworks ship and are
-  offered during setup.
+- **Why it was the north star:** Valor is influence-first, and a broad OSS launch is how it
+  earns adoption and trust. A stranger previously got a poor or untrustworthy first run — stale
+  plugin-marketplace onboarding, command drift in the docs, and updates tracking `main` — and a
+  newcomer without a career ladder had no example to start from.
+- **Done-signal (all met):** (1) the plugin-marketplace first-run is accurate and delegates real
+  setup to `/valor-setup` (#59); (2) ADR-001 reflects the shipped command set (#61); (3) the
+  update path no longer silently tracks `main` — the version-check **notifies** about new tagged
+  releases, with documented read-the-script + pin-a-version guidance (robust silent auto-apply
+  intentionally deferred to #67) (#65); (4) neutral example career frameworks ship and are
+  offered during setup (#64).
 - **Safety note:** public, world-readable repo — no real employer / org / colleague names or
-  non-placeholder emails in any artifact (the hygiene scanner enforces it). Auto-update changes
-  touch the path every user runs, so that change goes to the human merge gate.
+  non-placeholder emails in any artifact (the hygiene scanner enforces it).
 
 ---
 
 ## North-star log
 
-- **Harden Valor for a broad open-source launch** — *active (set 2026-07-08).* Scope: the four
-  Track A launch-blocker fixes above. Retire on the done-signal; the next candidate is the
-  Track B generalization, once its build gate clears.
+- **Harden Valor for a broad open-source launch** — *achieved 2026-07-24* (set 2026-07-08).
+  Shipped via #59, #61, #64, #65 (+ #69 restored a green `main`: version sync to 0.17.0,
+  `/valor-pr-console` registration, pinned ruff). Done-signal ③ was met as **notify-only**
+  (updates notify about new releases + pin / read-the-script); robust silent auto-apply was
+  deliberately deferred to #67. **No active north star is set now** — the next candidate is the
+  Track B generalization (a growth coach for everyone whose work is agent-legible), gated on its
+  de-risk work; set + approve it to re-enable proactive mode.
 
 ### Vetoed-but-Faber-thought-relevant (manager-debate filtered these out)
 
