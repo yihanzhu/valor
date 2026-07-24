@@ -189,8 +189,11 @@ The guided setup walks you through:
 3. **Integrations** -- configure GitHub org, Jira projects, and disable
    tools you don't use
 
-No career ladder handy? The setup can generate a generic engineering ladder
-to start with. You can re-run `/valor-setup` anytime to reconfigure.
+No career ladder handy? Setup offers ready-made, fully generic starting points
+in [`examples/frameworks/`](examples/frameworks/) — a software-engineering IC
+ladder, an engineering-manager ladder, and a no-formal-levels growth framework —
+or it can generate one from your job title. Pick one, then customize. You can
+re-run `/valor-setup` anytime to reconfigure.
 
 When you get promoted, re-run setup or update the three level fields in
 `~/.valor/state.json` directly.
@@ -307,6 +310,7 @@ valor/
 ├── .codex-plugin/          # Codex CLI plugin manifest (discovery only)
 ├── bin/                    # CLI wrappers (valor-evidence)
 ├── commands/               # User-invoked assistant commands
+├── examples/               # Ready-made example career frameworks
 ├── rules/                  # Always-applied Valor rule
 ├── skills/                 # Plugin skills (setup)
 ├── src/                    # Evidence CLI, career framework, utilities
