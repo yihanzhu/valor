@@ -114,7 +114,10 @@ Steps:
    backing out, choosing a different example, or an interrupted session would
    destroy the current framework).
    ```bash
-   cat ~/.valor/repo/examples/frameworks/software-engineer-ic-ladder.md
+   # Substitute the file the user picked in step 1 (the "File" column above):
+   # software-engineer-ic-ladder.md, engineering-manager-ladder.md,
+   # or ic-without-formal-levels.md.
+   cat ~/.valor/repo/examples/frameworks/<chosen-example>.md
    ```
    If `~/.valor/repo` is absent, read the same file from the plugin's
    `examples/frameworks/` directory instead.
