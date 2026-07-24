@@ -748,7 +748,8 @@ Your Valor agents:
    8. Performance Reflection -- /valor-reflection, 'performance review' / 'self-review'
    9. Upward Feedback        -- /valor-upward-feedback, 'feedback about my manager'
   10. Setup                  -- /valor-setup or 'set up valor'
-  11. Ambient Coaching       -- always on ('valor quiet' to suppress)
+  11. PR Review Console      -- /valor-pr-console, 'build a review console for #NNN'
+  12. Ambient Coaching       -- always on ('valor quiet' to suppress)
 ```
 
 - "Try: 'morning briefing' to see your first briefing"

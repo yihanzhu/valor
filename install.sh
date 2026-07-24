@@ -65,6 +65,7 @@ COMMAND_MAP=(
     "reflection:valor-reflection:valor-performance-reflection:Valor performance reflection: turns the cycle's evidence log into a review-ready self-reflection draft (impact themes mapped to competency and company value) plus a confirm-before-submit list of status/role uncertainties"
     "upward-feedback:valor-upward-feedback:valor-upward-feedback:Valor upward feedback: assembles a draft of feedback about your manager for a review cycle, grounded in observed behaviors from meeting notes and 1:1 evidence, for you to review and paste"
     "setup:valor-setup:valor-setup:Valor setup: guided configuration of career framework, levels, and integrations"
+    "pr-console:valor-pr-console:valor-pr-review-console:Valor PR review console: turns a pull request into an interactive C4 diagram (Context to Component to real code) plus a coverage-driven, answer-verified mastery quiz that gates approval on understanding"
 )
 
 # --- Version ---
@@ -211,6 +212,7 @@ apply_shared_transforms() {
         -e 's|/valor-upward-feedback|valor-upward-feedback skill|g' \
         -e 's|/valor-prep|valor-prep skill|g' \
         -e 's|/valor-setup|valor-setup skill|g' \
+        -e 's|/valor-pr-console|valor-pr-review-console skill|g' \
         -e 's|Bash tool|Shell tool|g'
 }
 
@@ -228,7 +230,8 @@ apply_rule_transforms() {
         -e "s|\`/valor-reflection\` command|\`~/$target_dir/skills/valor-performance-reflection/SKILL.md\`|g" \
         -e "s|\`/valor-upward-feedback\` command|\`~/$target_dir/skills/valor-upward-feedback/SKILL.md\`|g" \
         -e "s|\`/valor-prep\` command|\`~/$target_dir/skills/valor-prep/SKILL.md\`|g" \
-        -e "s|\`/valor-setup\` command|\`~/$target_dir/skills/valor-setup/SKILL.md\`|g"
+        -e "s|\`/valor-setup\` command|\`~/$target_dir/skills/valor-setup/SKILL.md\`|g" \
+        -e "s|\`/valor-pr-console\` command|\`~/$target_dir/skills/valor-pr-review-console/SKILL.md\`|g"
 }
 
 # --- Generate Cursor .mdc from the universal agent rule ---
@@ -281,6 +284,9 @@ check_drift() {
         "$SCRIPT_DIR/src/career_framework.md"
         "$SCRIPT_DIR/src/utilities.md"
         "$SCRIPT_DIR/src/coaching-ref.md"
+        "$SCRIPT_DIR/src/pr-console/template.html"
+        "$SCRIPT_DIR/src/pr-console/generate.js"
+        "$SCRIPT_DIR/src/pr-console/assemble.py"
     )
     local runtime_dests=(
         "$VALOR_HOME/evidence_cli.py"
@@ -291,6 +297,9 @@ check_drift() {
         "$VALOR_HOME/career_framework.md"
         "$VALOR_HOME/utilities.md"
         "$VALOR_HOME/coaching-ref.md"
+        "$VALOR_HOME/pr-console/template.html"
+        "$VALOR_HOME/pr-console/generate.js"
+        "$VALOR_HOME/pr-console/assemble.py"
     )
 
     for i in "${!runtime_sources[@]}"; do
@@ -577,6 +586,14 @@ PYEOF
     cp "$SCRIPT_DIR/src/coaching-ref.md" "$VALOR_HOME/coaching-ref.md"
     echo "  [OK] coaching-ref.md"
 
+    # PR review console assets (used by /valor-pr-console): renderer template,
+    # generator workflow, and deterministic layout+inject script.
+    mkdir -p "$VALOR_HOME/pr-console"
+    cp "$SCRIPT_DIR/src/pr-console/template.html" "$VALOR_HOME/pr-console/template.html"
+    cp "$SCRIPT_DIR/src/pr-console/generate.js"   "$VALOR_HOME/pr-console/generate.js"
+    cp "$SCRIPT_DIR/src/pr-console/assemble.py"   "$VALOR_HOME/pr-console/assemble.py"
+    echo "  [OK] pr-console/ (template + generator + assembler)"
+
     # Record installed version
     python3 -c "
 import json
@@ -752,7 +769,8 @@ print_summary_all() {
     echo "  8. Performance Reflection -- 'half-year reflection' at review time"
     echo "  9. Upward Feedback   -- 'feedback about my manager' at review time"
     echo "  10. Setup            -- /valor-setup or 'set up valor'"
-    echo "  11. Ambient Coaching -- always on ('valor quiet' to suppress)"
+    echo "  11. PR Review Console -- 'build a review console for #NNN'"
+    echo "  12. Ambient Coaching -- always on ('valor quiet' to suppress)"
     echo ""
     echo "Next step: run /valor-setup (or say 'set up valor') in your agent"
     echo ""
