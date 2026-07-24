@@ -20,7 +20,11 @@ node:  {"id","label":[..],"sub"?,"impact":"new|chg|ctx","phase":"both|after"?, .
 codeNode adds: "code":true,"sym","anchor","file","detail":{text,before?,after?}
 edge:  {"from","to","kind":"flow|ref","phase":"both|after"?}
 """
-import argparse, json, os, re, sys
+import argparse
+import json
+import os
+import re
+import sys
 
 COLS = {"context": 4, "container": 4, "component": 3}
 

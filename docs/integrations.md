@@ -41,6 +41,7 @@ vice versa — or CI will fail. -->
 |---------|--------|------|----------|------|------------------|
 | Morning Briefing | PRs to review, your open PRs, Monday catch-up | Active tickets, watched tickets, spare-capacity backlog pickups (unassigned/stale/High-priority) | Today's events, RSVP status, day-plan scheduling, OOO-aware suggest (records off-days, skips on OOO) | AI/ML, tech, world headlines, markets (US + Canada) pulse | Competency stats, coaching tone |
 | PR Review Coach | **Required** -- fetches PR diff and metadata | -- | -- | -- | Records review evidence |
+| PR Review Console | **Required** -- fetches PR diff and metadata to build the interactive C4 review console | -- | -- | -- | Records review-console evidence |
 | Design Doc Coach | -- | Ticket lookup for context | -- | -- | Records design doc evidence |
 | Weekly Reflection | Merged PRs, reviewed PRs | Tickets completed this week | -- | -- | Competency breakdown, trends |
 | Evening Wrap-up | Optional: today's activity from your repos | Optional: today's ticket activity | Captures meeting notes from event attachments into evidence | -- | Today's entries, carry-forward |
@@ -121,6 +122,7 @@ If all integrations are set to `false`, Valor still works:
 - **Performance Reflection:** Fully functional -- the draft is built from the evidence store and career framework, and the coverage check still runs on local git history and agent transcripts. Enabled integrations only add optional coverage cross-checks (uncaptured PRs/tickets/meetings).
 - **Upward Feedback:** Fully functional -- built entirely from the evidence store (meeting_notes + 1:1 evidence) and the optional 1:1 doc; no integrations used.
 - **PR Review Coach:** Requires GitHub (cannot function without it).
+- **PR Review Console:** Requires GitHub (cannot function without it).
 
 This is a valid workflow for users who want career coaching without
 connecting external services.
