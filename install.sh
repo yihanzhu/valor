@@ -69,7 +69,7 @@ resolve_newer_release() {
 print_update_instructions() {
     local repo_dir="$1" tag="$2" installed="$3"
     echo "A new Valor release is available: $tag (installed: $installed)."
-    echo "  Update:  git -C $repo_dir fetch --tags && git -C $repo_dir checkout $tag && bash $repo_dir/install.sh"
+    echo "  Update:  git -C \"$repo_dir\" fetch --tags && git -C \"$repo_dir\" checkout $tag && bash \"$repo_dir/install.sh\""
     echo "  Pin:     after checkout, set \"update_check_interval_hours\": 0 in ~/.valor/state.json"
 }
 
