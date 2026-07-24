@@ -9,6 +9,8 @@ required.
 ```bash
 git clone https://github.com/yihanzhu/valor.git ~/.valor/repo
 cd ~/.valor/repo
+# pin to the latest release tag (stays on the default branch if none tagged yet):
+tag="$(git tag --list | python3 scripts/latest_release_tag.py)"; [ -n "$tag" ] && git checkout "$tag"
 bash install.sh                           # All targets (default)
 # or install for a specific target:
 bash install.sh --target claude-code      # Claude Code only
@@ -18,6 +20,20 @@ bash install.sh --target cursor           # Cursor only
 
 This creates `~/.valor/` for local state and evidence, and installs Valor's
 rule and commands into your coding agent.
+
+**Updates are notify-only.** Releases are tagged `vX.Y.Z`. After install, Valor
+checks daily for a newer release and, if one exists, **tells you** — it never
+pulls `main` or checks anything out on its own. Update manually by checking out
+the tag and re-installing; pin a version by also disabling the daily check:
+
+```bash
+git -C ~/.valor/repo fetch --tags && git -C ~/.valor/repo checkout vX.Y.Z && bash ~/.valor/repo/install.sh
+# then set "update_check_interval_hours": 0 in ~/.valor/state.json
+```
+
+(If no release has been tagged yet, the `git checkout` above is a no-op and you
+install from the default branch; the daily check starts surfacing releases once
+one is cut.)
 
 ## 2. Run Setup
 

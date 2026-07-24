@@ -13,11 +13,23 @@
 #   ./install.sh --check                      Check for drift (uses current target)
 #   ./install.sh --target codex --check       Check drift for Codex
 #   ./install.sh --version                    Print version and exit
-#   ./install.sh --upgrade                    Pull latest + re-install
-#   ./install.sh --auto-update                Pull latest + quiet re-install (for agent-triggered updates)
+#   ./install.sh --upgrade                    Check for a newer release + show how to update (notify-only)
+#   ./install.sh --auto-update                Notify if a newer release exists (agent-triggered; notify-only)
+#
+# Updates are NOTIFY-ONLY. Valor never silently tracks `main` HEAD or checks out
+# a tag for you -- it tells you when a newer RELEASE (tagged vX.Y.Z) is available,
+# and you update manually. With no release tagged yet (or offline) the check is a
+# clean no-op.
+#
+# Update to the latest release manually:
+#   git -C ~/.valor/repo fetch --tags && git -C ~/.valor/repo checkout vX.Y.Z && bash ~/.valor/repo/install.sh
+# Pin a version (stop the daily check from nudging you off it):
+#   set "update_check_interval_hours": 0 in ~/.valor/state.json
 #
 # Quick install (clones repo then installs):
 #   curl -fsSL https://raw.githubusercontent.com/yihanzhu/valor/main/install.sh | bash -s -- --clone
+# It's a short shell script -- read it before piping to bash:
+#   curl -fsSL .../main/install.sh | less
 
 set -euo pipefail
 
@@ -25,6 +37,41 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VALOR_HOME="$HOME/.valor"
 VALOR_REPO="https://github.com/yihanzhu/valor.git"
 VALOR_CLONE_DIR="$VALOR_HOME/repo"
+
+# --- Release-update notification (notify-only; never self-mutates) ----------
+# Valor never silently pulls `main` or checks out a tag. These helpers only
+# *look*: they resolve origin's latest RELEASE tag (vX.Y.Z) and, when it is newer
+# than the installed VERSION, tell the user how to update and pin -- manually.
+# The semver-aware "which tag is latest / is it newer" logic lives in the pure,
+# tested scripts/latest_release_tag.py; here we just query origin and format the
+# message. Offline, no release tagged yet, and already-current all degrade to a
+# clean no-op -- nothing is ever fetched, checked out, or re-installed.
+
+# Print origin's latest release tag IF it is strictly newer than the version
+# installed in repo $1; otherwise print nothing. Never fetches, checks out, or
+# mutates anything. A missing resolver, an unreachable origin, or no-newer-release
+# all yield empty output (return 0), so callers cleanly no-op.
+resolve_newer_release() {
+    local repo_dir="$1"
+    local resolver="$SCRIPT_DIR/scripts/latest_release_tag.py"
+    [ -f "$resolver" ] || return 0
+    local installed
+    installed="$(cat "$repo_dir/VERSION" 2>/dev/null || echo "unknown")"
+    # ls-remote reads origin's CURRENT tags; on failure (offline) the pipe is
+    # empty and the resolver prints nothing. `--installed` makes the resolver emit
+    # the latest tag only when it is strictly newer than $installed.
+    git -C "$repo_dir" ls-remote --tags origin 2>/dev/null \
+        | python3 "$resolver" --installed "$installed" 2>/dev/null || true
+}
+
+# Print manual update + pin instructions for a newer release $2 (installed $3, in
+# repo $1). Notify-only: it prints commands for the user to run, never runs them.
+print_update_instructions() {
+    local repo_dir="$1" tag="$2" installed="$3"
+    echo "A new Valor release is available: $tag (installed: $installed)."
+    echo "  Update:  git -C \"$repo_dir\" fetch --tags && git -C \"$repo_dir\" checkout $tag && bash \"$repo_dir/install.sh\""
+    echo "  Pin:     after checkout, set \"update_check_interval_hours\": 0 in ~/.valor/state.json"
+}
 
 # --- Handle --clone early (bootstrap from remote) ---
 for arg in "$@"; do
@@ -74,7 +121,6 @@ VALOR_VERSION="$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "unknown")"
 # --- Parse arguments ---
 TARGET="all"
 CHECK_ONLY=false
-DID_UPGRADE_PULL=false
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -94,43 +140,35 @@ while [ "$#" -gt 0 ]; do
             exit 0
             ;;
         --upgrade)
-            echo "=== Valor Upgrade ==="
+            echo "=== Valor Update Check ==="
             echo ""
+            # Notify-only: report whether a newer release exists and how to apply
+            # it. Never pulls `main`, checks out a tag, or re-installs.
             if [ -d "$SCRIPT_DIR/.git" ]; then
-                echo "Pulling latest from $(git -C "$SCRIPT_DIR" remote get-url origin 2>/dev/null || echo 'origin')..."
-                git -C "$SCRIPT_DIR" pull --ff-only || {
-                    echo "Pull failed. Resolve conflicts manually, then re-run install.sh."
-                    exit 1
-                }
-                VALOR_VERSION="$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "unknown")"
-                echo "[OK] Updated to Valor $VALOR_VERSION"
-                echo ""
-                # The git pull just replaced this very file on disk, but bash is
-                # still running the OLD body. Defer the re-exec until AFTER arg
-                # parsing (below the loop) so the freshly pulled installer runs
-                # with the user's fully-resolved --target/--check, not a
-                # partially-parsed arg set.
-                DID_UPGRADE_PULL=true
+                installed="$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "unknown")"
+                newer="$(resolve_newer_release "$SCRIPT_DIR")"
+                if [ -n "$newer" ]; then
+                    print_update_instructions "$SCRIPT_DIR" "$newer" "$installed"
+                else
+                    echo "Valor is up to date (installed $installed) -- no newer release tagged (or offline)."
+                fi
             else
-                echo "Not a git repo -- cannot auto-upgrade. Run 'git pull' manually."
+                echo "Not a git repo -- clone from $VALOR_REPO first, then update manually."
                 exit 1
             fi
+            exit 0
             ;;
         --auto-update)
-            old_version="$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "unknown")"
+            # Notify-only (agent-triggered). Stays silent unless a newer release
+            # exists; never pulls `main`, checks out a tag, or re-installs.
             repo_dir="$VALOR_HOME/repo"
             if [ -d "$repo_dir/.git" ]; then
-                git -C "$repo_dir" pull --ff-only >/dev/null 2>&1 || {
-                    echo "Valor auto-update: pull failed (offline?)" >&2
-                    exit 1
-                }
-                new_version="$(cat "$repo_dir/VERSION" 2>/dev/null || echo "unknown")"
-                if [ "$old_version" = "$new_version" ]; then
-                    echo "Valor is already up to date ($new_version)."
-                    exit 0
+                installed="$(cat "$repo_dir/VERSION" 2>/dev/null || echo "unknown")"
+                newer="$(resolve_newer_release "$repo_dir")"
+                if [ -n "$newer" ]; then
+                    print_update_instructions "$repo_dir" "$newer" "$installed"
                 fi
-                bash "$repo_dir/install.sh" --target all >/dev/null 2>&1
-                echo "Valor updated: $old_version -> $new_version"
+                # No newer release / no release tagged yet / offline: clean no-op.
             else
                 echo "Valor auto-update: no repo at $repo_dir (run install.sh --clone first)" >&2
                 exit 1
@@ -144,18 +182,6 @@ while [ "$#" -gt 0 ]; do
     esac
     shift
 done
-
-# An --upgrade just pulled a new install.sh, but this process is still running
-# the old body. Re-exec the updated script now that --target/--check are fully
-# parsed, forwarding both. VALOR_UPGRADE_REEXEC stops the child (which runs a
-# normal install/check, not --upgrade) from ever looping back here.
-if [ "$DID_UPGRADE_PULL" = true ] && [ -z "${VALOR_UPGRADE_REEXEC:-}" ]; then
-    if [ "$CHECK_ONLY" = true ]; then
-        VALOR_UPGRADE_REEXEC=1 exec bash "$SCRIPT_DIR/install.sh" --target "$TARGET" --check
-    else
-        VALOR_UPGRADE_REEXEC=1 exec bash "$SCRIPT_DIR/install.sh" --target "$TARGET"
-    fi
-fi
 
 RULE_SOURCE="$SCRIPT_DIR/rules/valor-agent.md"
 

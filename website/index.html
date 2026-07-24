@@ -163,14 +163,23 @@
 
           <ul class="setup-notes">
             <li>
+              <span class="setup-note-label">Read first</span>
+              The bootstrap is fetched from <code>main</code>. It's a short shell
+              script — read it before piping to bash:
+              <code>curl -fsSL …/main/install.sh | less</code>.
+            </li>
+            <li>
               <span class="setup-note-label">Per host</span>
               Only need one agent? Pass <code>--target claude-code</code>,
               <code>codex</code>, or <code>cursor</code>.
             </li>
             <li>
               <span class="setup-note-label">Updates</span>
-              Minor and patch releases auto-apply when you start a new session.
-              No re-install needed.
+              Checks for new <strong>releases</strong> (tagged <code>vX.Y.Z</code>,
+              never <code>main</code>) when you start a session and
+              <strong>notifies</strong> you when one is available — updating is
+              manual. Pin a version with
+              <code>git -C ~/.valor/repo checkout vX.Y.Z</code>.
             </li>
             <li>
               <span class="setup-note-label">Local state</span>

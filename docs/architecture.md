@@ -254,16 +254,39 @@ activity + agent + statement).
 
 ## Auto-Update
 
+The update check is **notify-only**: Valor tells you when a newer release is
+available and you update manually. It never silently tracks `main` HEAD or
+checks a tag out for you. Releases are tagged `vX.Y.Z` (matching `VERSION`'s
+`X.Y.Z`) — the one tag convention tooling and humans both rely on. "Latest" is
+resolved semver-aware (numeric field comparison, not lexicographic) and skips
+pre-releases. The shared resolver is `scripts/latest_release_tag.py` (pure,
+stdlib-only, covered by its own tests); it does the "which tag is latest / is it
+strictly newer than the installed version" decision and also backs the
+documented pin command.
+
 At session start, the ambient rule checks `last_update_check` in state.json.
 If more than `update_check_interval_hours` (default 24) have passed, the agent
-curls the remote `VERSION` file and compares with `installed_version`:
+resolves the latest release tag (via `git ls-remote --tags` or the releases API)
+and compares its `X.Y.Z` with `installed_version`:
 
-- **Same version:** updates `last_update_check`, no action
-- **Minor/patch bump:** runs `install.sh --auto-update` silently (git pull +
-  quiet reinstall in `~/.valor/repo/`)
-- **Major bump:** prompts the user before updating
-- **Offline/failure:** skips silently
+- **Same version / no release tagged yet / offline:** updates
+  `last_update_check`, no action — never falls back to `main`
+- **Newer release available:** tells the user the new version and the manual
+  update command; a major bump is called out to confirm first
 
-The `--auto-update` flag performs a `git pull --ff-only` in `~/.valor/repo/`,
-re-runs `install.sh --target all` with suppressed output, and prints a
-one-line summary of the version change.
+Updating is manual and documented:
+
+```
+git -C ~/.valor/repo fetch --tags && git -C ~/.valor/repo checkout vX.Y.Z && bash ~/.valor/repo/install.sh
+```
+
+`install.sh --upgrade` and `--auto-update` are themselves notify-only: they
+resolve the latest release tag and, when it is strictly newer than the installed
+version, print how to update and pin — they never pull, check out, or re-install
+anything (`--upgrade` reports interactively; `--auto-update` stays silent unless
+there is something newer). The `--clone` bootstrap is the plain install action —
+it clones the repo (or fast-forwards an existing checkout) and installs. To pin a
+version, check out its tag manually as above and set
+`update_check_interval_hours` to `0`. Robust automatic apply-on-update (tag
+checkout + reinstall, with downgrade and dirty-tree guards) is intentionally not
+enabled here; it is deferred to a follow-up (issue #67).
