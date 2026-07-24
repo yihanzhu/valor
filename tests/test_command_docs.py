@@ -392,6 +392,7 @@ _DECL_VALUES = ("required", "optional", "none")
 MATRIX_NAME_TO_CMD = {
     "Morning Briefing": "briefing",
     "PR Review Coach": "pr-review",
+    "PR Review Console": "pr-console",
     "Design Doc Coach": "design-doc",
     "Weekly Reflection": "weekly",
     "Evening Wrap-up": "wrapup",
