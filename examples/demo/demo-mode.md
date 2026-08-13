@@ -6,9 +6,16 @@ in it is fictional. `~/.valor/state.json` has all four integrations set to
 
 ## Where data comes from
 
-When a Valor command's spec says to fetch from GitHub, Jira, the calendar, news,
-or local git, do **not** call those tools, run `gh`, or search the web. Read the
-matching fixture below and treat its contents as that source's response:
+**The fixtures stand in for the integrations, so treat every integration as
+available.** A command's spec normally gates its sections on
+`context.integrations.<name>` and skips them when the flag is false. In this
+profile the flags are false so that nothing can reach a real system — not because
+the data is missing. Run every section anyway, sourcing it from the fixture. A
+briefing here should include tickets, PRs, the calendar, news, and a day plan.
+
+When a spec says to fetch from GitHub, Jira, the calendar, news, or local git, do
+**not** call those tools, run `gh`, or search the web. Read the matching fixture
+below and treat its contents as that source's response:
 
 | The spec asks for | Read instead |
 |---|---|

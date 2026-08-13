@@ -194,6 +194,10 @@ HOME=~/valor-demo bash install.sh && python3 examples/demo/seed.py ~/valor-demo
 See [examples/demo/README.md](examples/demo/README.md) and
 [examples/demo/DEMO.md](examples/demo/DEMO.md).
 
+Want to see the output before installing anything? [valor.sh/demo](https://valor.sh/demo)
+replays a recorded transcript of every workflow from that same profile, and
+embeds a real, fully interactive PR review console you can click through.
+
 ## First-Time Setup
 
 After install, open your agent and run `/valor-setup` (or say "set up valor").

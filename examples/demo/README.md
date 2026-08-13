@@ -95,6 +95,23 @@ The data is seeded so the features that look like magic have something to find:
 - **A manager commitment that wasn't delivered** — upward feedback grounded in
   observed behavior
 
+## The captures (and the website)
+
+[`captures/`](captures/) holds one file per workflow: a short front-matter block
+plus the output that command produced against this profile. They're the source
+for the site's [`/demo`](../../website/demo.html) page, which replays them —
+so the website shows real output instead of hand-written examples.
+
+```bash
+python3 examples/demo/build_transcripts.py          # captures/ -> website/demo/transcripts.json
+python3 examples/demo/build_transcripts.py --check  # verify without writing
+```
+
+To re-capture from your own dry run: replace the body of a file in `captures/`,
+bump `CAPTURED_ON` in the builder if the run date moved, re-run it, and commit
+both. A test asserts the generated JSON matches the captures, and that every
+command in `commands/` has one.
+
 ## Editing it
 
 The fixtures are plain JSON and Markdown; change the persona, the stack, or the

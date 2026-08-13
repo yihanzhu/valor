@@ -1,0 +1,357 @@
+<title>PR #418 — payments: jittered exponential backoff for provider retries</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{
+  --paper:#f4f5f8;--surface:#fff;--surface-2:#eceef4;--ink:#181b22;--ink-2:#4c5464;--ink-3:#79808f;--line:#e0e3eb;--line-2:#cfd3de;
+  --new:#0e7565;--new-bg:#d9f0ea;--new-ink:#0b3b34;--chg:#4f46e5;--chg-bg:#e4e2fb;--chg-ink:#2a2570;--ctx:#7c8394;--ctx-bg:#e9ebf1;--ctx-ink:#3a3f4c;
+  --accent:#4f46e5;--edge:#b9bece;--edge-hot:#4f46e5;--good:#0e7565;--bad:#c0392b;--add-bg:#e3f4ea;--del-bg:#fbe9e7;
+  --shadow:0 1px 2px rgba(20,24,40,.05),0 8px 26px rgba(20,24,40,.07);
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;--sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --paper:#0c0d11;--surface:#14161d;--surface-2:#1b1e27;--ink:#e8e9ef;--ink-2:#a8aebb;--ink-3:#767d8c;--line:#242833;--line-2:#333846;
+  --new:#57c3b1;--new-bg:#123a33;--new-ink:#8fe0d0;--chg:#8b93f8;--chg-bg:#211f3f;--chg-ink:#bcb9f8;--ctx:#7c8394;--ctx-bg:#23262f;--ctx-ink:#b8bdca;
+  --accent:#8b93f8;--edge:#3c4252;--edge-hot:#8b93f8;--good:#57c3b1;--bad:#e0685c;--add-bg:#10281c;--del-bg:#2a1618;--shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.45);}}
+:root[data-theme="light"]{--paper:#f4f5f8;--surface:#fff;--surface-2:#eceef4;--ink:#181b22;--ink-2:#4c5464;--ink-3:#79808f;--line:#e0e3eb;--line-2:#cfd3de;--new:#0e7565;--new-bg:#d9f0ea;--new-ink:#0b3b34;--chg:#4f46e5;--chg-bg:#e4e2fb;--chg-ink:#2a2570;--ctx:#7c8394;--ctx-bg:#e9ebf1;--ctx-ink:#3a3f4c;--accent:#4f46e5;--edge:#b9bece;--edge-hot:#4f46e5;--good:#0e7565;--bad:#c0392b;--add-bg:#e3f4ea;--del-bg:#fbe9e7;--shadow:0 1px 2px rgba(20,24,40,.05),0 8px 26px rgba(20,24,40,.07);}
+:root[data-theme="dark"]{--paper:#0c0d11;--surface:#14161d;--surface-2:#1b1e27;--ink:#e8e9ef;--ink-2:#a8aebb;--ink-3:#767d8c;--line:#242833;--line-2:#333846;--new:#57c3b1;--new-bg:#123a33;--new-ink:#8fe0d0;--chg:#8b93f8;--chg-bg:#211f3f;--chg-ink:#bcb9f8;--ctx:#7c8394;--ctx-bg:#23262f;--ctx-ink:#b8bdca;--accent:#8b93f8;--edge:#3c4252;--edge-hot:#8b93f8;--good:#57c3b1;--bad:#e0685c;--add-bg:#10281c;--del-bg:#2a1618;--shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.45);}
+
+*{box-sizing:border-box}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding:0 18px 90px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+h1{font-size:24px;font-weight:800;letter-spacing:-.02em;margin:7px 0 5px;text-wrap:balance}
+h2{font-size:18px;font-weight:750;margin:0}
+button{font-family:var(--sans)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+header.hero{padding:20px 0 4px}
+header.hero .sub{color:var(--ink-2);font-size:14px;max-width:74ch;margin-top:2px}
+header.hero .sub b{color:var(--ink)}
+
+.controls{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--paper) 90%,transparent);backdrop-filter:blur(9px);
+  border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:8px 11px;margin:14px 0 8px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.crumbs{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:12.5px;min-width:0}
+.crumbs button{background:transparent;border:0;color:var(--ink-2);font-weight:650;cursor:pointer;padding:5px 8px;border-radius:7px;display:inline-flex;align-items:center;gap:6px}
+.crumbs button:hover:not(:disabled){background:var(--surface-2);color:var(--ink)}
+.crumbs button:disabled{color:var(--ink);cursor:default}
+.crumbs button .lv{font-family:var(--mono);font-size:9px;color:var(--accent)}
+.crumbs .sep{color:var(--ink-3);font-size:12px}
+.spacer{flex:1}
+.zo{font-size:12px;font-weight:650;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:6px 11px;cursor:pointer}
+.zo:disabled{opacity:.4;cursor:not-allowed}
+.sw{position:relative;width:116px;height:29px;border-radius:8px;background:var(--surface-2);cursor:pointer;border:1px solid var(--line);overflow:hidden;flex:none}
+.sw .thumb{position:absolute;top:2px;left:2px;width:55px;height:23px;border-radius:6px;background:var(--surface);box-shadow:var(--shadow);transition:transform .22s cubic-bezier(.4,0,.2,1)}
+.sw.after .thumb{transform:translateX(55px)}
+.sw .lab{position:absolute;top:0;height:29px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;width:57px;z-index:1;pointer-events:none}
+.sw .lab.b{left:0;color:var(--ink-2)} .sw .lab.a{right:0;color:var(--ink-3)}
+.sw.after .lab.a{color:var(--new)} .sw:not(.after) .lab.b{color:var(--chg)}
+.play{font-size:12px;font-weight:700;color:#fff;background:var(--accent);border:0;border-radius:8px;padding:7px 13px;cursor:pointer}
+.play:hover{filter:brightness(1.06)} .play.busy{opacity:.7;cursor:default}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-2);align-items:center;padding:0 2px 2px}
+.legend .lg{display:inline-flex;align-items:center;gap:6px}
+.legend .sw2{width:12px;height:12px;border-radius:4px;border:2px solid}
+.sw2.new{background:var(--new-bg);border-color:var(--new)} .sw2.chg{background:var(--chg-bg);border-color:var(--chg)} .sw2.ctx{background:var(--ctx-bg);border-color:var(--ctx)}
+.legend b{color:var(--accent)}
+
+.stage-wrap{background:var(--surface);border:1px solid var(--line);border-radius:15px;box-shadow:var(--shadow);padding:6px;margin-top:8px;overflow:auto}
+svg.stage{display:block;width:100%;height:auto;min-width:480px}
+.cap-bar{min-height:20px;text-align:center;font-size:12.5px;color:var(--ink-2);margin:8px 4px 0;font-weight:600}
+.cap-bar .step{font-family:var(--mono);font-size:11px;color:var(--accent);margin-right:8px}
+
+.node{cursor:pointer}
+.n-rect{stroke-width:2;transition:opacity .3s,filter .15s}
+.node.new .n-rect{fill:var(--new-bg);stroke:var(--new)} .node.new .n-label{fill:var(--new-ink)}
+.node.chg .n-rect{fill:var(--chg-bg);stroke:var(--chg)} .node.chg .n-label{fill:var(--chg-ink)}
+.node.ctx .n-rect{fill:var(--ctx-bg);stroke:var(--ctx)} .node.ctx .n-label{fill:var(--ctx-ink)}
+.node.leaf{cursor:default}
+.n-label{font-family:var(--sans);font-size:12.5px;font-weight:650;text-anchor:middle;dominant-baseline:middle;pointer-events:none}
+.n-sub{font-family:var(--sans);font-size:9.5px;text-anchor:middle;pointer-events:none;opacity:.72}
+.n-tag{font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.05em;text-anchor:middle;pointer-events:none}
+.n-af{pointer-events:none;font-family:var(--mono);font-weight:700}
+.node.cool .n-rect{opacity:.28} .node.cool .n-label,.node.cool .n-sub,.node.cool .n-tag,.node.cool .n-af{opacity:.22}
+.node.hot .n-rect,.node:hover:not(.leaf) .n-rect{stroke-width:3}
+.node.drill:hover .n-rect,.node.codez:hover .n-rect{filter:drop-shadow(0 2px 9px color-mix(in srgb,var(--accent) 42%,transparent))}
+.node.playing .n-rect{stroke:var(--accent);stroke-width:3.5;filter:drop-shadow(0 3px 10px color-mix(in srgb,var(--accent) 45%,transparent))}
+.edge{fill:none;stroke:var(--edge);stroke-width:2;transition:opacity .3s,stroke .15s}
+.edge.ref{stroke-dasharray:5 5;opacity:.85}
+.edge.cool{opacity:.1} .edge.hot{stroke:var(--edge-hot);stroke-width:2.6;opacity:1}
+.arrow{fill:var(--edge)} .arrow-hot{fill:var(--edge-hot)}
+
+.detail{margin-top:11px;background:var(--surface);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);overflow:hidden}
+.detail .empty{padding:14px 16px;color:var(--ink-3);font-size:12.5px}
+.detail .card{padding:14px 16px}
+.detail .top{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:6px}
+.detail .nm{font-size:14.5px;font-weight:750}
+.badge{font-family:var(--mono);font-size:9px;letter-spacing:.05em;text-transform:uppercase;font-weight:700;padding:3px 7px;border-radius:6px}
+.badge.new{background:var(--new-bg);color:var(--new-ink)} .badge.chg{background:var(--chg-bg);color:var(--chg-ink)} .badge.ctx{background:var(--ctx-bg);color:var(--ctx-ink)}
+.detail .sym{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-left:auto}
+.detail .blurb{font-size:13.5px;color:var(--ink);margin:0}
+.detail .zbtn{margin-top:11px;font-size:12.5px;font-weight:700;color:#fff;background:var(--accent);border:0;border-radius:8px;padding:8px 13px;cursor:pointer}
+
+#codeWrap{display:none;margin-top:8px}
+.code-head{background:var(--surface);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:14px 16px;margin-bottom:9px}
+.code-head .top{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.code-head .nm{font-size:17px;font-weight:800}
+.code-head .sym{font-family:var(--mono);font-size:12px;color:var(--accent);background:var(--surface-2);padding:3px 9px;border-radius:7px}
+.code-head .file{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+.code-head .why{font-size:13.5px;color:var(--ink);margin:9px 0 0}
+.code-head .ba{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:11px}
+@media (max-width:560px){.code-head .ba{grid-template-columns:1fr}}
+.code-head .ba .box{border-radius:9px;padding:9px 12px;font-size:12.5px}
+.code-head .ba .b{background:var(--ctx-bg)} .code-head .ba .a{background:var(--new-bg)}
+.code-head .ba .k{font-family:var(--mono);font-size:9px;text-transform:uppercase;font-weight:700;display:block;margin-bottom:3px}
+.code-head .ba .b .k{color:var(--ink-3)} .code-head .ba .a .k{color:var(--new-ink)}
+.difflegend{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);margin:0 2px 6px}
+.difflegend .add{color:var(--good)} .difflegend .del{color:var(--bad)}
+.codebox{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);max-height:60vh;overflow:auto}
+.codebox pre{margin:0;font-family:var(--mono);font-size:12px;line-height:1.55}
+.codebox .ln{display:block;padding:0 14px;white-space:pre;border-left:3px solid transparent}
+.codebox .ln.add{background:var(--add-bg)} .codebox .ln.del{background:var(--del-bg)}
+.codebox .ln.hunk{color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.codebox .ln.meta{color:var(--ink-3)}
+.codebox .ln.focus{border-left-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.ctxnote{font-size:12.5px;color:var(--ink-2);background:var(--ctx-bg);border-radius:9px;padding:9px 13px;margin-bottom:9px}
+
+.gate{margin-top:38px}
+.gate-head{display:flex;gap:11px;align-items:center;margin-bottom:5px}
+.gate-head .lock{width:25px;height:25px;color:var(--accent)}
+.gate .cap{color:var(--ink-2);font-size:13.5px;margin:2px 0 4px;max-width:72ch}
+.gate .cap b{color:var(--ink)}
+.meter{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:11px 15px;margin:12px 0}
+.meter .bar{flex:1;height:8px;border-radius:6px;background:var(--surface-2);overflow:hidden}
+.meter .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .4s}
+.meter .txt{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--ink)} .meter .txt b{color:var(--accent)}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:15px 17px;margin-bottom:11px}
+.q .qhead{display:flex;gap:9px;align-items:baseline;margin-bottom:11px}
+.q .qn{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:700;flex:none}
+.q .qt{font-size:14.5px;font-weight:650}
+.q .diff2{font-family:var(--mono);font-size:9px;letter-spacing:.05em;text-transform:uppercase;padding:2px 6px;border-radius:5px;margin-left:auto;flex:none;align-self:center}
+.diff2.easy{background:var(--new-bg);color:var(--new-ink)} .diff2.medium{background:var(--chg-bg);color:var(--chg-ink)} .diff2.hard{background:var(--ctx-bg);color:var(--ctx-ink)}
+.opts{display:flex;flex-direction:column;gap:7px}
+.opt{text-align:left;font-size:13.5px;color:var(--ink);padding:10px 13px;border:1px solid var(--line-2);border-radius:9px;background:var(--surface);cursor:pointer;display:flex;gap:9px;align-items:flex-start}
+.opt:hover:not(:disabled){border-color:var(--accent);background:var(--surface-2)}
+.opt:disabled{cursor:default}
+.opt .mk{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--ink-3);flex:none;width:15px}
+.opt.correct{border-color:var(--good);background:var(--new-bg)} .opt.correct .mk{color:var(--good)}
+.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,var(--surface))} .opt.wrong .mk{color:var(--bad)}
+.opt.dim{opacity:.55}
+.qexpl{margin-top:11px;font-size:12.5px;color:var(--ink-2);background:var(--surface-2);border-radius:9px;padding:10px 13px;border-left:3px solid var(--accent);display:none}
+.qexpl.show{display:block} .qexpl .k{font-family:var(--mono);font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);font-weight:700;display:block;margin-bottom:3px}
+.verdict{margin-top:16px;border-radius:14px;padding:20px;text-align:center;border:1px solid var(--line);box-shadow:var(--shadow);background:var(--surface)}
+.verdict.pass{border-color:var(--good);background:color-mix(in srgb,var(--good) 9%,var(--surface))}
+.verdict h3{font-size:18px;margin:0 0 5px} .verdict p{margin:0 auto;color:var(--ink-2);font-size:13px;max-width:60ch}
+.verdict .approve{margin-top:13px;font-size:13.5px;font-weight:750;color:#fff;background:var(--good);border:0;border-radius:10px;padding:10px 18px;cursor:pointer}
+.verdict .approve[disabled]{background:var(--ctx);cursor:not-allowed;opacity:.7}
+.verdict .after-approve{margin-top:11px;font-size:12.5px;color:var(--good);font-weight:650;display:none}
+.startbtn{margin-top:8px;font-size:14px;font-weight:750;color:#fff;background:var(--accent);border:0;border-radius:11px;padding:12px 22px;cursor:pointer;box-shadow:var(--shadow)}
+.startbtn:hover{filter:brightness(1.06)}
+.qprog{display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:12px}
+.qprog .qbar{flex:1;height:7px;border-radius:5px;background:var(--surface-2);overflow:hidden}
+.qprog .qbar i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.qcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:22px}
+.qcard .qq{font-size:17px;font-weight:750;line-height:1.4;margin-bottom:16px;text-wrap:balance}
+.qopts{display:flex;flex-direction:column;gap:9px}
+.qopt{text-align:left;font-size:14px;color:var(--ink);padding:13px 15px;border:1.5px solid var(--line-2);border-radius:11px;background:var(--surface);cursor:pointer;display:flex;gap:11px;align-items:flex-start}
+.qopt:hover{border-color:var(--accent);background:var(--surface-2)}
+.qopt.picked{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface));box-shadow:inset 0 0 0 1px var(--accent)}
+.qopt .mk{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);flex:none;width:16px}
+.qnav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px}
+.qhint{font-size:12.5px;color:var(--ink-3)}
+.nextbtn{font-size:13.5px;font-weight:750;color:#fff;background:var(--accent);border:0;border-radius:10px;padding:11px 20px;cursor:pointer}
+.nextbtn[disabled]{background:var(--ctx);opacity:.55;cursor:not-allowed}
+.wronglist{display:flex;flex-direction:column;gap:11px;margin:14px 0}
+.wrongitem{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--bad);border-radius:11px;padding:13px 15px;box-shadow:var(--shadow)}
+.wrongitem .wq{font-size:14px;font-weight:700;margin-bottom:8px}
+.wrongitem .wa{font-size:13px;margin:2px 0}
+.wrongitem .wa.bad{color:var(--bad)} .wrongitem .wa.good{color:var(--good)}
+.wrongitem .wexpl{font-size:12.5px;color:var(--ink-2);margin-top:7px;padding-top:7px;border-top:1px dashed var(--line)}
+.footer{margin-top:42px;padding-top:15px;border-top:1px solid var(--line);font-size:11px;color:var(--ink-3);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+  <div id="explorer">
+  <header class="hero">
+    <div class="eyebrow">C4 review console</div>
+    <h1 id="prtitle">PR #418 — payments: jittered exponential backoff for provider retries</h1>
+    <div class="sub"><span id="prsub">Retries used to fire on a fixed 2-second beat, so a slow provider got a synchronised burst from every pod at once. This moves retry handling into the shared transport, spreads the waits out with jitter, caps them, and decides in one place what is even safe to repeat.</span> Boxes are named in plain English. <b>Click a ⤢ box to zoom into its parts</b>, or a <b>&lt;/&gt; box to see the real code (L4)</b>. Flip <b>Before ⇄ After</b> or <b>▶ Play</b> a request, then pass the check to mark yourself approval-ready.</div>
+  </header>
+
+  <div class="controls">
+    <nav class="crumbs" id="crumbs"></nav>
+    <span class="spacer"></span>
+    <div class="sw after" id="phase" role="switch" aria-checked="true" tabindex="0"><span class="lab b">Before</span><span class="lab a">After</span><span class="thumb"></span></div>
+    <button class="play" id="play">▶ Play</button>
+    <button class="zo" id="zoomout" disabled>⤺ Zoom out</button>
+  </div>
+  <div class="legend">
+    <span class="lg"><span class="sw2 new"></span>New</span>
+    <span class="lg"><span class="sw2 chg"></span>Modified</span>
+    <span class="lg"><span class="sw2 ctx"></span>Unchanged</span>
+    <span class="lg"><b>⤢</b> zoom into parts</span>
+    <span class="lg"><b>&lt;/&gt;</b> see the code</span>
+  </div>
+
+  <div class="stage-wrap" id="stageWrap"><svg class="stage" id="stage" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <div class="cap-bar" id="cap"></div>
+  <div id="codeWrap"></div>
+
+  <div class="detail" id="detail"><div class="empty">Hover a box for a one-line summary. Click a ⤢ box to zoom into its parts, or a &lt;/&gt; box to open its code.</div></div>
+  </div><!-- /explorer -->
+
+  <section class="gate" id="gate">
+    <div class="gate-head">
+      <svg class="lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+      <h2>Approval check</h2>
+    </div>
+    <div id="quizEntry">
+      <p class="cap">Prove you understand the change before approving. <b>Twelve questions, one at a time</b> — the diagram is hidden once you start, so know it first. You need <b>all twelve correct</b>; miss any and you go back to the diagram and retake until you ace it.</p>
+      <button class="startbtn" id="startBtn">Start the approval quiz →</button>
+    </div>
+    <div id="quizRun" style="display:none"></div>
+    <div id="quizResult" style="display:none"></div>
+  </section>
+
+  <div class="footer">Interactive C4 review aid · L1 Context → L2 Containers → L3 Components → L4 Code · reflects PR head bc96fca · self-check only — record the real approval in GitHub</div>
+</div>
+
+<script>
+const QUIZ = [{"q": "After this PR, what happens when the provider returns 500 to a capture?", "options": ["It fails immediately — a capture is a POST, and POSTs are never retried", "It retries up to 5 times with jittered backoff", "It retries 3 times with a flat 2-second wait, as before", "It retries only when PAYMENTS_RETRY_JITTER is set"], "answer_index": 0, "explanation": "capture() now calls transport.request(\"POST\", ...), and _is_retryable() returns False for any verb outside {GET, HEAD, PUT, DELETE} before it ever looks at the status code. The tempting answer is 5 attempts, because that is what the PR title promises — but the verb check runs first, so this PR silently removes the retries captures used to get.", "difficulty": "hard"}, {"q": "The check for which verbs may be retried sits in the transport. Why there rather than in each caller?", "options": ["So a new caller cannot opt itself into retrying a POST by accident", "So callers keep control over their own retry semantics", "So it can live next to the provider's error-code mapping", "Because the delay function needs the verb to compute the backoff"], "answer_index": 0, "explanation": "The PR description states this directly, and the code backs it: _is_retryable() takes the method and is consulted inside request(), so every caller inherits the rule instead of choosing it. Option 2 is the opposite of the design's intent.", "difficulty": "easy"}, {"q": "What does PAYMENTS_RETRY_JITTER actually control?", "options": ["Only the attempt count — 5 instead of 3; the jittered delay applies either way", "Whether jitter is applied to the backoff at all", "Whether the transport retries anything", "Whether the provider's Retry-After header is honoured"], "answer_index": 0, "explanation": "The flag is read once into RETRY_JITTER and used in exactly one place: attempts = attempts or (MAX_ATTEMPTS if RETRY_JITTER else 3). retry_with_jitter() is called regardless, so the name promises a kill switch that the code does not implement.", "difficulty": "hard"}, {"q": "The provider answers a retryable request with 503 and Retry-After: 60. How long does the transport wait?", "options": ["30 seconds — Retry-After is honoured but clamped to the cap", "60 seconds — a provider's Retry-After always wins", "A random value up to 0.25 × 2^attempt seconds", "It does not wait, because 503 responses are not retryable"], "answer_index": 0, "explanation": "retry_with_jitter() returns min(float(retry_after), MAX_DELAY), and MAX_DELAY is 30.0. The provider's value takes precedence over the computed curve, but never over the ceiling.", "difficulty": "medium"}, {"q": "Why does full jitter beat the old fixed interval?", "options": ["A fixed interval makes every pod retry on the same boundary, so a slowing provider gets a synchronised burst", "Random delays are cheaper to compute than a fixed sleep", "It guarantees each attempt waits longer than the one before it", "It keeps total retry time constant no matter how many attempts run"], "answer_index": 0, "explanation": "This is the failure the PR exists to fix: with a flat 2-second wait, every pod wakes together and amplifies the outage. Full jitter picks a random point in [0, ceiling], which deliberately does not guarantee increasing waits — option 3 describes plain exponential backoff without jitter.", "difficulty": "easy"}, {"q": "What is the risk in float(retry_after) inside retry_with_jitter?", "options": ["Retry-After may be an HTTP date, and float() would raise inside the retry path", "It rounds sub-second values down to zero", "It bypasses MAX_DELAY for values above the cap", "It only reads the header on the final attempt"], "answer_index": 0, "explanation": "HTTP allows Retry-After to carry either seconds or a date. A date reaches float() and raises ValueError from inside the retry path, so a throttling signal becomes a crash. The cap is applied correctly, which rules out option 3.", "difficulty": "medium"}];
+const DIFFS = {"api/payments_client.py": "diff --git a/api/payments_client.py b/api/payments_client.py\nindex a91b3f7..d502e64 100644\n--- a/api/payments_client.py\n+++ b/api/payments_client.py\n@@ -1,29 +1,20 @@\n \"\"\"Client for the payments provider.\"\"\"\n-import time\n-\n-import httpx\n-\n from net import transport\n\n PROVIDER = \"https://payments.example.com/v2\"\n\n\n-def _post_with_retry(path, payload, attempts=3):\n-    \"\"\"Retry a provider call on 5xx, waiting a flat 2s between tries.\"\"\"\n-    for _ in range(attempts):\n-        resp = httpx.post(f\"{PROVIDER}{path}\", json=payload, timeout=5.0)\n-        if resp.status_code < 500:\n-            return resp\n-        time.sleep(2.0)\n-    raise RuntimeError(f\"provider call failed: {path}\")\n-\n-\n def capture(charge_id, amount_cents):\n     \"\"\"Capture an authorised charge.\"\"\"\n-    resp = _post_with_retry(\"/captures\", {\"charge\": charge_id, \"amount\": amount_cents})\n+    resp = transport.request(\n+        \"POST\", f\"{PROVIDER}/captures\",\n+        json={\"charge\": charge_id, \"amount\": amount_cents},\n+    )\n     resp.raise_for_status()\n     return resp.json()\n\n\n def fetch_charge(charge_id):\n     \"\"\"Read a charge back from the provider.\"\"\"\n-    resp = _post_with_retry(f\"/charges/{charge_id}\", {})\n+    resp = transport.request(\"GET\", f\"{PROVIDER}/charges/{charge_id}\")\n     resp.raise_for_status()\n     return resp.json()", "net/transport.py": "diff --git a/net/transport.py b/net/transport.py\nindex 3c1a9e2..7b4f0d8 100644\n--- a/net/transport.py\n+++ b/net/transport.py\n@@ -1,12 +1,18 @@\n \"\"\"Shared outbound HTTP transport.\n\n Every service-to-service call goes through `request()`. Retry policy lives here\n-so callers don't each invent their own.\n+so callers don't each invent their own, and so a single place decides what is\n+safe to retry.\n \"\"\"\n+import os\n+import random\n import time\n\n import httpx\n\n DEFAULT_TIMEOUT = 5.0\n+RETRY_JITTER = os.environ.get(\"PAYMENTS_RETRY_JITTER\", \"0\") == \"1\"\n+MAX_ATTEMPTS = 5\n+BASE_DELAY = 0.25\n+MAX_DELAY = 30.0\n+IDEMPOTENT_METHODS = frozenset({\"GET\", \"HEAD\", \"PUT\", \"DELETE\"})\n\n\n class TransportError(RuntimeError):\n@@ -14,20 +20,88 @@ class TransportError(RuntimeError):\n     \"\"\"A call failed after the transport gave up retrying.\"\"\"\n\n\n-def request(method, url, *, attempts=3, delay=2.0, **kw):\n-    \"\"\"Send a request, retrying a fixed number of times on 5xx/timeout.\"\"\"\n-    last = None\n-    for _ in range(attempts):\n-        try:\n-            resp = httpx.request(method, url, timeout=DEFAULT_TIMEOUT, **kw)\n-            if resp.status_code < 500:\n-                return resp\n-            last = TransportError(f\"{resp.status_code} from {url}\")\n-        except httpx.TimeoutException as exc:\n-            last = exc\n-        time.sleep(delay)\n-    raise TransportError(f\"gave up on {method} {url}\") from last\n+def retry_with_jitter(attempt, *, retry_after=None):\n+    \"\"\"Delay before `attempt` (0-based), in seconds.\n+\n+    Exponential backoff with full jitter: each pod picks a random point in\n+    [0, base * 2**attempt] instead of waking on the same boundary as every\n+    other pod. Capped at MAX_DELAY — an unbounded backoff turns a blip into a\n+    stall, which is worse than failing fast.\n+\n+    A provider-supplied Retry-After always wins: it knows its own recovery\n+    better than our curve does.\n+    \"\"\"\n+    if retry_after is not None:\n+        return min(float(retry_after), MAX_DELAY)\n+    ceiling = min(BASE_DELAY * (2 ** attempt), MAX_DELAY)\n+    return random.uniform(0, ceiling)\n+\n+\n+def _is_retryable(method, resp, exc):\n+    \"\"\"Retry only what is safe to repeat.\n+\n+    The verb check lives here rather than in the caller so a new caller can't\n+    opt itself into retrying a POST by accident.\n+    \"\"\"\n+    if method.upper() not in IDEMPOTENT_METHODS:\n+        return False\n+    if exc is not None:\n+        return isinstance(exc, httpx.TimeoutException)\n+    return resp is not None and resp.status_code >= 500\n+\n+\n+def request(method, url, *, attempts=None, **kw):\n+    \"\"\"Send a request, retrying safe failures with jittered backoff.\"\"\"\n+    attempts = attempts or (MAX_ATTEMPTS if RETRY_JITTER else 3)\n+    last = None\n+    for attempt in range(attempts):\n+        resp = exc = None\n+        try:\n+            resp = httpx.request(method, url, timeout=DEFAULT_TIMEOUT, **kw)\n+            if resp.status_code < 500:\n+                return resp\n+            last = TransportError(f\"{resp.status_code} from {url}\")\n+        except httpx.TimeoutException as err:\n+            exc = err\n+            last = err\n+        if not _is_retryable(method, resp, exc) or attempt == attempts - 1:\n+            break\n+        header = resp.headers.get(\"Retry-After\") if resp is not None else None\n+        time.sleep(retry_with_jitter(attempt, retry_after=header))\n+    raise TransportError(f\"gave up on {method} {url}\") from last"};
+const CTXCODE = {};
+
+const SCENES = {"context": {"kind": "context", "level": "L1", "crumb": "Context", "cols": 4, "rows": 1, "nodes": [{"id": "SYS", "label": ["Checkout service"], "impact": "chg", "phase": "both", "detail": {"text": ""}, "sub": "the system this PR changes", "drill": "container", "col": 0, "row": 0}, {"id": "CLI", "label": ["Client app"], "impact": "ctx", "phase": "both", "detail": {"text": "Asks the checkout service to capture a payment. Unchanged by this PR, but it inherits the new failure behaviour: a capture that used to retry now fails on the first provider error."}, "sub": "starts a checkout", "col": 1, "row": 0}, {"id": "PROV", "label": ["Payments provider"], "impact": "ctx", "phase": "both", "detail": {"text": "Captures charges and issues refunds. Under load it slows down and returns 5xx, sometimes with a Retry-After header asking us to back off."}, "sub": "external service", "col": 2, "row": 0}, {"id": "ENV", "label": ["Deploy config"], "impact": "new", "phase": "after", "detail": {"text": "New: PAYMENTS_RETRY_JITTER decides how many attempts the transport makes. Read once when the process starts, so flipping it needs a restart."}, "sub": "environment", "col": 3, "row": 0}], "edges": [{"from": "CLI", "to": "SYS", "kind": "flow", "phase": "both"}, {"from": "SYS", "to": "PROV", "kind": "flow", "phase": "both"}, {"from": "ENV", "to": "SYS", "kind": "ref", "phase": "after"}], "play": [], "caps": {}}, "container": {"kind": "container", "level": "L2", "crumb": "Inside", "cols": 4, "rows": 1, "nodes": [{"id": "front", "label": ["Front door"], "impact": "chg", "phase": "both", "detail": {"text": ""}, "sub": "payments client", "drill": "cmp_front", "col": 0, "row": 0}, {"id": "transport", "label": ["Shared transport"], "impact": "chg", "phase": "both", "detail": {"text": ""}, "sub": "every outbound call", "drill": "cmp_transport", "col": 1, "row": 0}, {"id": "policy", "label": ["Retry rulebook"], "impact": "new", "phase": "after", "detail": {"text": ""}, "sub": "how long to wait", "drill": "cmp_policy", "col": 2, "row": 0}, {"id": "PROV", "label": ["Payments provider"], "impact": "ctx", "phase": "both", "detail": {"text": "The service being called. Its 5xx responses and Retry-After header are the inputs the rulebook reacts to."}, "sub": "external service", "col": 3, "row": 0}], "edges": [{"from": "front", "to": "transport", "kind": "flow", "phase": "both"}, {"from": "transport", "to": "policy", "kind": "ref", "phase": "after"}, {"from": "transport", "to": "PROV", "kind": "flow", "phase": "both"}], "play": ["front", "transport", "policy"], "caps": {"front": "takes the capture call", "transport": "decides what may repeat", "policy": "waits, with jitter"}}, "cmp_front": {"kind": "component", "level": "L3", "crumb": "Front door", "cols": 3, "rows": 1, "nodes": [{"id": "capture", "label": ["Capture a charge"], "impact": "chg", "phase": "both", "detail": {"text": "Sends a capture to the provider, now through the shared transport instead of its own retry helper.", "before": "Called a private helper that retried any 5xx three times with a flat 2-second wait.", "after": "Calls the transport as a POST. The transport refuses to repeat non-idempotent verbs, so a capture that hits a 5xx now fails on the first attempt."}, "code": true, "sym": "capture", "anchor": "def capture(charge_id, amount_cents)", "file": "api/payments_client.py", "col": 0, "row": 0}, {"id": "fetch", "label": ["Read a charge back"], "impact": "chg", "phase": "both", "detail": {"text": "Reads a charge's current state from the provider.", "before": "POSTed an empty body to a read endpoint, which meant a read was treated as a write.", "after": "Uses GET, so it is genuinely retry-eligible under the new rules."}, "code": true, "sym": "fetch_charge", "anchor": "def fetch_charge(charge_id)", "file": "api/payments_client.py", "col": 1, "row": 0}, {"id": "oldhelper", "label": ["Old retry helper"], "impact": "chg", "phase": "both", "detail": {"text": "Deleted. Its job moved down into the transport.", "before": "Every caller in this file got flat 2-second retries, whether or not the call was safe to repeat.", "after": "Gone, along with this file's direct httpx and time imports."}, "code": true, "sym": "_post_with_retry", "anchor": "_post_with_retry", "file": "api/payments_client.py", "col": 2, "row": 0}], "edges": [{"from": "capture", "to": "fetch", "kind": "ref", "phase": "both"}], "play": [], "caps": {}}, "cmp_transport": {"kind": "component", "level": "L3", "crumb": "Shared transport", "cols": 3, "rows": 1, "nodes": [{"id": "request", "label": ["Send a request"], "impact": "chg", "phase": "both", "detail": {"text": "The one outbound path: try, decide whether the failure may be repeated, wait, try again.", "before": "Looped a fixed number of times and slept a flat delay after every failure, retrying anything including writes.", "after": "Stops immediately when the failure is not retryable or attempts run out, and prefers the provider's Retry-After over its own computed delay."}, "code": true, "sym": "request", "anchor": "def request(method, url", "file": "net/transport.py", "col": 0, "row": 0}, {"id": "retryable", "label": ["May this repeat?"], "impact": "new", "phase": "after", "detail": {"text": "Says yes only for idempotent verbs, and then only for timeouts or 5xx.", "before": "No such check existed — the loop retried whatever it was given.", "after": "Lives in the transport rather than in each caller, so a new caller cannot opt itself into retrying a POST by accident."}, "code": true, "sym": "_is_retryable", "anchor": "def _is_retryable(method, resp, exc)", "file": "net/transport.py", "col": 1, "row": 0}], "edges": [{"from": "request", "to": "retryable", "kind": "ref", "phase": "after"}], "play": [], "caps": {}}, "cmp_policy": {"kind": "component", "level": "L3", "crumb": "Retry rulebook", "cols": 3, "rows": 1, "nodes": [{"id": "jitter", "label": ["How long to wait"], "impact": "new", "phase": "after", "detail": {"text": "Exponential backoff with full jitter: a random point in the window rather than the window's edge.", "before": "A flat 2 seconds, identical on every pod and every attempt.", "after": "Every pod picks its own delay, so a slow provider stops receiving one synchronised burst. A Retry-After from the provider wins, clamped to the ceiling."}, "code": true, "sym": "retry_with_jitter", "anchor": "def retry_with_jitter(attempt", "file": "net/transport.py", "col": 0, "row": 0}, {"id": "limits", "label": ["The limits"], "impact": "new", "phase": "after", "detail": {"text": "Five attempts, 30 seconds maximum, 0.25s base.", "before": "Three attempts, 2 seconds, both passed in by callers as defaults.", "after": "The ceiling is the part that matters: an unbounded backoff turns a brief blip into a stall, which is worse than failing fast."}, "code": true, "sym": "MAX_ATTEMPTS / MAX_DELAY / BASE_DELAY", "anchor": "MAX_DELAY = 30.0", "file": "net/transport.py", "col": 1, "row": 0}, {"id": "flag", "label": ["The rollout switch"], "impact": "new", "phase": "after", "detail": {"text": "An environment flag, read once at import.", "before": "No flag; the retry shape was whatever the caller passed.", "after": "Worth reading closely: it selects 5 attempts instead of 3, and nothing more. The jittered delay is used whether the flag is on or off."}, "code": true, "sym": "RETRY_JITTER", "anchor": "RETRY_JITTER = os.environ.get", "file": "net/transport.py", "col": 2, "row": 0}], "edges": [{"from": "jitter", "to": "limits", "kind": "ref", "phase": "after"}, {"from": "flag", "to": "limits", "kind": "ref", "phase": "after"}], "play": [], "caps": {}}};
+
+const M=26,CW=196,CH=64,GX=30,GY=46;
+function layout(scene){const pos={};for(const n of scene.nodes){const span=n.span||1;const x=M+n.col*(CW+GX),y=M+n.row*(CH+GY),w=span*CW+(span-1)*GX;pos[n.id]={x,y,w,h:CH,cx:x+w/2,cy:y+CH/2};}return{pos,W:M*2+scene.cols*CW+(scene.cols-1)*GX,H:M*2+scene.rows*CH+(scene.rows-1)*GY};}
+function edgePath(a,b){let sx,sy,ex,ey;if(b.cy>a.cy+1){sx=a.cx;sy=a.y+a.h;ex=b.cx;ey=b.y;const my=(sy+ey)/2;return`M${sx},${sy} C${sx},${my} ${ex},${my} ${ex},${ey}`;}if(b.cy<a.cy-1){sx=a.cx;sy=a.y;ex=b.cx;ey=b.y+b.h;const my=(sy+ey)/2;return`M${sx},${sy} C${sx},${my} ${ex},${my} ${ex},${ey}`;}if(b.cx>a.cx){sx=a.x+a.w;sy=a.cy;ex=b.x;ey=b.cy;}else{sx=a.x;sy=a.cy;ex=b.x+b.w;ey=b.cy;}const mx=(sx+ex)/2;return`M${sx},${sy} C${mx},${sy} ${mx},${ey} ${ex},${ey}`;}
+const NS="http://www.w3.org/2000/svg";
+function el(t,a){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;}
+function escg(s){return String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+
+let PATH=[{t:"scene",id:"context"}]; let cur={phase:"after"}; let selId=null,playTimer=null;
+const stage=document.getElementById("stage"),stageWrap=document.getElementById("stageWrap"),codeWrap=document.getElementById("codeWrap");
+const cap=document.getElementById("cap"),detailDock=document.getElementById("detail");
+const playBtn=document.getElementById("play"),zoomOut=document.getElementById("zoomout"),phaseSw=document.getElementById("phase");
+const DOCK_EMPTY='<div class="empty">Hover a box for a one-line summary. Click a ⤢ box to zoom into its parts, or a &lt;/&gt; box to open its code.</div>';
+
+function topView(){return PATH[PATH.length-1];}
+function navTo(v){stopPlay();cap.textContent="";selId=null;PATH.push(v);render();}
+function popTo(i){stopPlay();cap.textContent="";selId=null;PATH=PATH.slice(0,i+1);render();}
+
+function renderCrumbs(){const c=document.getElementById("crumbs");c.innerHTML="";PATH.forEach((v,i)=>{if(i>0)c.append(Object.assign(document.createElement("span"),{className:"sep",textContent:"›"}));const b=document.createElement("button");const lvl=v.t==="code"?"L4":SCENES[v.id].level;const name=v.t==="code"?v.comp.label.join(" "):SCENES[v.id].crumb;b.innerHTML=`<span class="lv">${lvl}</span>${escg(name)}`;b.disabled=(i===PATH.length-1);b.onclick=()=>popTo(i);c.append(b);});}
+
+function render(){
+  renderCrumbs();
+  const v=topView();const isCode=v.t==="code";
+  zoomOut.disabled=PATH.length<=1;
+  phaseSw.style.visibility=isCode?"hidden":"visible";
+  const scene=isCode?null:SCENES[v.id];
+  playBtn.style.visibility=(!isCode&&scene.play.length)?"visible":"hidden";
+  if(isCode){stageWrap.style.display="none";cap.textContent="";codeWrap.style.display="block";renderCode(v.comp);detailDock.style.display="none";}
+  else{codeWrap.style.display="none";stageWrap.style.display="";detailDock.style.display="";renderScene(v.id);if(!selId)detailDock.innerHTML=DOCK_EMPTY;}
+}
+
+function renderScene(sid){
+  const scene=SCENES[sid];const{pos,W,H}=layout(scene);
+  stage.innerHTML="";stage.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  const defs=el("defs",{});defs.innerHTML=`<marker id="ar" markerWidth="9" markerHeight="9" refX="7.5" refY="4" orient="auto"><path class="arrow" d="M0,0 L8,4 L0,8 Z"/></marker><marker id="arh" markerWidth="9" markerHeight="9" refX="7.5" refY="4" orient="auto"><path class="arrow-hot" d="M0,0 L8,4 L0,8 Z"/></marker>`;stage.append(defs);
+  const gE=el("g",{}),gN=el("g",{});stage.append(gE,gN);
+  const vis=id=>{const n=scene.nodes.find(x=>x.id===id);return n&&(cur.phase==="after"||n.phase!=="after");};
+  for(const e of scene.edges){if(cur.phase!=="after"&&e.phase==="after")continue;if(!vis(e.from)||!vis(e.to))continue;const p=el("path",{class:`edge ${e.kind}`,d:edgePath(pos[e.from],pos[e.to]),"marker-end":"url(#ar)"});p.dataset.from=e.from;p.dataset.to=e.to;gE.append(p);}
+  for(const n of scene.nodes){
+    if(cur.phase!=="after"&&n.phase==="after")continue;
+    const pp=pos[n.id];const kind=n.drill?"drill":(n.code?"codez":"leaf");
+    const g=el("g",{class:`node ${n.impact} ${kind}`,tabindex:"0",role:"button"});g.dataset.id=n.id;
+    g.append(el("rect",{class:"n-rect",x:pp.x,y:pp.y,width:pp.w,height:pp.h,rx:13}));
+    const lines=n.label;const hasSub=!!n.sub;
+    const baseY=pp.cy+(hasSub?-6:0)-(lines.length>1?6:0);
+    const t=el("text",{class:"n-label",x:pp.cx,y:baseY});lines.forEach((ln,i)=>{const ts=el("tspan",{x:pp.cx,dy:i===0?0:14});ts.textContent=ln;t.append(ts);});g.append(t);
+    if(hasSub){const sb=el("text",{class:"n-sub",x:pp.cx,y:pp.y+pp.h-9});sb.textContent=n.sub;g.append(sb);}
+    if(n.impact==="new"){const tg=el("text",{class:"n-tag",x:pp.x+18,y:pp.y+13,fill:"var(--new)"});tg.textContent="NEW";g.append(tg);}
+    if(kind!=="leaf"){const z=el("text",{class:"n-af",x:pp.x+pp.w-(n.code?20:13),y:pp.y+15,"text-anchor":"middle","font-size":n.code?"11":"13",fill:"var(--accent)"});z.textContent=n.code?"</>":"⤢";g.append(z);}
+    gN.append(g);
+  }
+  stage.querySelectorAll(".node").forEach(g=>{
+    g.addEventListener("click",()=>onNode(sid,g.dataset.id));
+    g.addEventListener("mouseenter",()=>{if(!selId&&!playTimer){applyHot(g.dataset.id);showDock(SCENES[sid].nodes.find(x=>x.id===g.dataset.id));}});
+    g.addEventListener("mouseleave",()=>{if(!selId&&!playTimer){clearHot();detailDock.innerHTML=DOCK_EMPTY;}});
+    g.addEventListener("focus",()=>{if(!selId&&!playTimer){applyHot(g.dataset.id);showDock(SCENES[sid].nodes.find(x=>x.id===g.dataset.id));}});
+    g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onNode(sid,g.dataset.id);}});
+  });
+}
+
+function onNode(sid,id){const n=SCENES[sid].nodes.find(x=>x.id===id);if(n.drill){navTo({t:"scene",id:n.drill});return;}if(n.code){navTo({t:"code",comp:n});return;}selId=id;applyHot(id);showDock(n);}
+function edgesOf(id){return[...stage.querySelectorAll(".edge")].filter(p=>p.dataset.from===id||p.dataset.to===id);}
+function applyHot(id){clearHotSoft();const inc=edgesOf(id);const nb=new Set([id]);inc.forEach(p=>{p.classList.add("hot");p.setAttribute("marker-end","url(#arh)");nb.add(p.dataset.from);nb.add(p.dataset.to);});stage.querySelectorAll(".edge").forEach(p=>{if(!p.classList.contains("hot"))p.classList.add("cool");});stage.querySelectorAll(".node").forEach(g=>{if(!nb.has(g.dataset.id))g.classList.add("cool");});}
+function clearHotSoft(){stage.querySelectorAll(".node").forEach(g=>g.classList.remove("cool","hot"));stage.querySelectorAll(".edge").forEach(p=>{p.classList.remove("cool","hot");p.setAttribute("marker-end","url(#ar)");});}
+function clearHot(){clearHotSoft();stage.querySelectorAll(".node").forEach(g=>g.classList.remove("playing"));}
+
+const IMP={new:"New in this PR",chg:"Modified",ctx:"Unchanged"};
+function showDock(n){let ba="";if(n.detail.before||n.detail.after)ba=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px"><div style="background:var(--ctx-bg);border-radius:9px;padding:9px 12px;font-size:12.5px"><span style="font-family:var(--mono);font-size:9px;text-transform:uppercase;color:var(--ink-3);font-weight:700;display:block;margin-bottom:3px">Before</span>${escg(n.detail.before||"—")}</div><div style="background:var(--new-bg);border-radius:9px;padding:9px 12px;font-size:12.5px"><span style="font-family:var(--mono);font-size:9px;text-transform:uppercase;color:var(--new-ink);font-weight:700;display:block;margin-bottom:3px">After</span>${escg(n.detail.after||"—")}</div></div>`;
+  const sym=n.sym?`<span class="sym">${escg(n.sym)}</span>`:"";
+  const zb=n.drill?`<button class="zbtn" id="zbtn">Zoom into its parts →</button>`:(n.code?`<button class="zbtn" id="zbtn">See the code (L4) →</button>`:"");
+  detailDock.innerHTML=`<div class="card"><div class="top"><span class="nm">${escg(n.label.join(" "))}</span><span class="badge ${n.impact}">${IMP[n.impact]}</span>${sym}</div><p class="blurb">${escg(n.detail.text)}</p>${ba}${zb}</div>`;
+  const b=detailDock.querySelector("#zbtn");if(b)b.onclick=()=>{if(n.drill)navTo({t:"scene",id:n.drill});else navTo({t:"code",comp:n});};
+}
+
+function renderCode(comp){
+  const f=comp.file||"";const diff=DIFFS[f];const ctx=CTXCODE[comp.id];
+  let ba="";if(comp.detail.before||comp.detail.after)ba=`<div class="ba"><div class="box b"><span class="k">Before</span>${escg(comp.detail.before||"—")}</div><div class="box a"><span class="k">After</span>${escg(comp.detail.after||"—")}</div></div>`;
+  const head=`<div class="code-head"><div class="top"><span class="nm">${escg(comp.label.join(" "))}</span><span class="badge ${comp.impact}">${IMP[comp.impact]}</span><span class="sym">${escg(comp.sym||"")}</span><span class="file">${escg(f)}</span></div><p class="why">${escg(comp.detail.text)}</p>${ba}</div>`;
+  let body;
+  if(diff){body=`<div class="difflegend"><span class="del">− before</span> · <span class="add">+ after</span> — the real diff</div><div class="codebox" id="cbox"><pre>${renderDiff(diff,comp.anchor)}</pre></div>`;}
+  else if(ctx){body=`<div class="ctxnote">This file isn't changed by the PR — it's existing code the change relies on, shown for context.</div><div class="codebox"><pre>${renderPlain(ctx)}</pre></div>`;}
+  else body=`<div class="ctxnote">No code excerpt available.</div>`;
+  codeWrap.innerHTML=head+body;
+  const box=codeWrap.querySelector("#cbox"),foc=codeWrap.querySelector(".ln.focus");if(box&&foc)box.scrollTop=Math.max(0,foc.offsetTop-box.clientHeight/3);
+}
+function renderDiff(text,anchor){const lines=text.split("\n");let out="",f=false;for(const ln of lines){let cls="ln";if(/^diff --git|^index |^--- |^\+\+\+ /.test(ln))cls+=" meta";else if(/^@@/.test(ln))cls+=" hunk";else if(/^\+/.test(ln))cls+=" add";else if(/^-/.test(ln))cls+=" del";if(!f&&anchor&&ln.indexOf(anchor)>=0){cls+=" focus";f=true;}out+=`<span class="${cls}">${escg(ln||" ")}</span>`;}return out;}
+function renderPlain(text){return text.split("\n").map(l=>`<span class="ln">${escg(l||" ")}</span>`).join("");}
+
+function play(){const v=topView();if(v.t!=="scene")return;const s=SCENES[v.id];if(!s.play.length)return;if(cur.phase!=="after")setPhase("after");stopPlay();selId=null;playBtn.classList.add("busy");playBtn.textContent="● Playing…";const seq=s.play;let i=0;const step=()=>{clearHot();const id=seq[i];const g=stage.querySelector(`.node[data-id="${id}"]`);stage.querySelectorAll(".node").forEach(x=>x.classList.add("cool"));if(g){g.classList.remove("cool");g.classList.add("playing");}if(i>0){const pe=[...stage.querySelectorAll(".edge")].find(p=>p.dataset.from===seq[i-1]&&p.dataset.to===id);if(pe){pe.classList.remove("cool");pe.classList.add("hot");pe.setAttribute("marker-end","url(#arh)");}}cap.innerHTML=`<span class="step">${i+1}/${seq.length}</span>${escg(s.caps[id]||"")}`;i++;if(i<seq.length)playTimer=setTimeout(step,1200);else playTimer=setTimeout(()=>{stopPlay();cap.textContent="";clearHot();},1700);};step();}
+function stopPlay(){if(playTimer){clearTimeout(playTimer);playTimer=null;}playBtn.classList.remove("busy");playBtn.textContent="▶ Play";}
+
+function setPhase(p){cur.phase=p;phaseSw.classList.toggle("after",p==="after");phaseSw.setAttribute("aria-checked",p==="after");const v=topView();if(v.t==="scene")renderScene(v.id);}
+phaseSw.addEventListener("click",()=>{stopPlay();cap.textContent="";selId=null;setPhase(cur.phase==="after"?"before":"after");});
+phaseSw.addEventListener("keydown",e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();stopPlay();selId=null;setPhase(cur.phase==="after"?"before":"after");}});
+playBtn.addEventListener("click",play);
+zoomOut.addEventListener("click",()=>{if(PATH.length>1)popTo(PATH.length-2);});
+
+/* ---- approval quiz: exam mode, one question at a time, must get ALL correct ---- */
+const explorer=document.getElementById("explorer"),quizEntry=document.getElementById("quizEntry"),quizRun=document.getElementById("quizRun"),quizResult=document.getElementById("quizResult");
+let QZ=[],qidx=0,answers=[];
+function scrollTop(){try{window.scrollTo(0,0);}catch(e){}}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function startQuiz(){
+  QZ=shuffle(QUIZ).map(q=>({q:q.q,difficulty:q.difficulty,explanation:q.explanation,options:shuffle(q.options.map((t,i)=>({text:t,correct:i===q.answer_index})))}));
+  qidx=0;answers=new Array(QZ.length).fill(-1);
+  explorer.style.display="none";quizEntry.style.display="none";quizResult.style.display="none";quizResult.innerHTML="";quizRun.style.display="block";
+  renderQ();scrollTop();
+}
+function renderQ(){
+  const q=QZ[qidx],last=qidx===QZ.length-1,pct=Math.round(qidx/QZ.length*100);
+  const opts=q.options.map((o,oi)=>`<button class="qopt${answers[qidx]===oi?" picked":""}" data-oi="${oi}"><span class="mk">${String.fromCharCode(65+oi)}</span><span>${escg(o.text)}</span></button>`).join("");
+  quizRun.innerHTML=`<div class="qprog"><span>Question ${qidx+1} of ${QZ.length}</span><span class="qbar"><i style="width:${pct}%"></i></span></div><div class="qcard"><div class="qq">${escg(q.q)}</div><div class="qopts">${opts}</div></div><div class="qnav"><span class="qhint">${answers[qidx]<0?"Pick an answer to continue":"&nbsp;"}</span><button class="nextbtn" id="nextBtn"${answers[qidx]<0?" disabled":""}>${last?"Finish &amp; see results":"Next question →"}</button></div>`;
+  quizRun.querySelectorAll(".qopt").forEach(b=>b.onclick=()=>{answers[qidx]=+b.dataset.oi;quizRun.querySelectorAll(".qopt").forEach(x=>x.classList.remove("picked"));b.classList.add("picked");const nb=document.getElementById("nextBtn");nb.disabled=false;const h=quizRun.querySelector(".qhint");if(h)h.innerHTML="&nbsp;";});
+  document.getElementById("nextBtn").onclick=()=>{if(answers[qidx]<0)return;if(last)finishQuiz();else{qidx++;renderQ();scrollTop();}};
+}
+function finishQuiz(){
+  let cor=0;const wrong=[];
+  QZ.forEach((q,i)=>{const ch=q.options[answers[i]];if(ch&&ch.correct)cor++;else wrong.push({q,you:ch});});
+  quizRun.style.display="none";quizResult.style.display="block";scrollTop();
+  if(cor===QZ.length){
+    quizResult.innerHTML=`<div class="verdict pass"><h3>✓ ${cor} / ${QZ.length} — you understand this PR</h3><p>You can explain what changes, why it's safe, and how a request flows end to end. You're ready — record your approval in GitHub.</p><button class="approve" id="apv">Mark myself ready to approve</button><div class="after-approve" id="aftv">Noted — now leave the review in GitHub. This console can't approve for you.</div></div>`;
+    const a=document.getElementById("apv");a.onclick=()=>{a.disabled=true;document.getElementById("aftv").style.display="block";};
+  }else{
+    const list=wrong.map(({q,you})=>{const right=q.options.find(o=>o.correct);return `<div class="wrongitem"><div class="wq">${escg(q.q)}</div><div class="wa bad">Your answer: ${escg(you?you.text:"—")}</div><div class="wa good">Correct: ${escg(right.text)}</div><div class="wexpl">${escg(q.explanation)}</div></div>`;}).join("");
+    quizResult.innerHTML=`<div class="verdict"><h3>${cor} / ${QZ.length} — not yet</h3><p>Approving means understanding every part. Review what you missed below, then go back into the diagram and dig into those pieces. Retake until you get all ${QZ.length} right.</p></div><div class="wronglist">${list}</div><button class="startbtn" id="backBtn">← Back to the diagram</button>`;
+    document.getElementById("backBtn").onclick=backToDiagram;
+  }
+}
+function backToDiagram(){
+  quizResult.style.display="none";quizResult.innerHTML="";quizRun.style.display="none";quizEntry.style.display="block";explorer.style.display="";
+  PATH=[{t:"scene",id:"context"}];selId=null;render();scrollTop();
+}
+document.getElementById("startBtn").onclick=startQuiz;
+render();
+</script>

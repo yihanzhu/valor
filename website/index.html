@@ -43,6 +43,7 @@
         </a>
         <nav class="site-nav" aria-label="Primary">
           <a href="#features">Features</a>
+          <a href="./demo.html">Demo</a>
           <a href="#workflow">How it works</a>
           <a href="#install">Setup</a>
           <a href="https://github.com/yihanzhu/valor/blob/main/docs/getting-started.md" rel="noreferrer">Docs</a>
@@ -106,20 +107,22 @@
                 <div class="chat-agent">
                   <span class="chat-role chat-role-agent">Valor</span>
                   <div class="chat-out">
-                    <h4>Primary focus</h4>
-                    <p>Land the auth retry fix before noon. Post the rollout note in the incident thread.</p>
-
-                    <h4>Review queue</h4>
+                    <h4>Suggested priorities</h4>
                     <ul>
-                      <li><code>PR #418</code> needs a migration note before review.</li>
-                      <li><code>PR #421</code> looks unblocked and ready to merge.</li>
+                      <li>Finish the refund idempotency key <span style="color:var(--text-dim)">— advances week goal 1</span></li>
+                      <li>Rollback note, then take <code>#418</code> out of review <span style="color:var(--text-dim)">— unblocks PROJ-248</span></li>
                     </ul>
 
-                    <h4>Carry-forward</h4>
-                    <p>Yesterday's wrap flagged session-cache risk across two tickets touching <code>/auth/session.py</code>.</p>
+                    <h4>Needs confirmation</h4>
+                    <p>The <code>#checkout</code> message asking the provider for a rate-limit date is carried as "not sent" and can't be verified from here — confirm or drop?</p>
 
-                    <h4>Coaching nudge</h4>
-                    <p>This is <span class="accent-text">next-level coordination work</span> — reduce merge risk early and leave a handoff others can reuse.</p>
+                    <h4>Day plan</h4>
+                    <ul>
+                      <li><code>10:30–13:30</code> refund idempotency <span style="color:var(--text-dim)">· deep</span></li>
+                      <li><code>13:30–14:00</code> prep: checkout sync <span style="color:var(--text-dim)">· reserved</span></li>
+                    </ul>
+
+                    <p class="footnote">Today has exactly one deep block — the refund fix gets all of it.</p>
                   </div>
                 </div>
               </div>
@@ -196,6 +199,12 @@
             <p class="eyebrow">Features</p>
             <h2 id="features-h">Just talk to your agent. Valor knows what you mean.</h2>
             <p class="band-lede">Eleven on-demand workflows plus ambient coaching, triggered by natural language. It fits your day to your real calendar gaps, verifies carried-forward work before re-raising it, focuses on the project whose sync is next, turns a dense PR into a diagram a cold reviewer can follow, and at review time assembles a self-reflection from your evidence — flagging what to confirm instead of overclaiming. All against a local evidence store. No dashboards, no telemetry.</p>
+            <p class="band-lede" style="margin-top:14px">
+              Every panel below is a trimmed excerpt of output Valor actually
+              produced, not a mock-up — <a href="./demo.html">the demo page</a>
+              has the full transcripts and a review console you can click
+              through.
+            </p>
           </header>
 
           <div class="feature-row">
@@ -226,26 +235,22 @@
                 <div class="chat-agent">
                   <span class="chat-role chat-role-agent">Valor</span>
                   <div class="chat-out">
-                    <h4>Tickets <span style="color:var(--text-dim);font-weight:400">(Jira)</span></h4>
+                    <h4>Work context</h4>
                     <ul>
-                      <li><span class="ok">●</span> <code>AUTH-412</code> Retry storm under load — In Progress</li>
-                      <li><span class="warn">●</span> <code>AUTH-418</code> Session cache invalidation — In Review</li>
+                      <li><code>PROJ-244</code> Retry storm under partial outage — <em>In Review</em>. Per your standing rules this sits ahead of new work: PROJ-248 is blocked until it lands.</li>
+                      <li><code>PROJ-231</code> Refunds can double-apply — <em>In Progress</em>. Week goal 1 — the one you wrote down as "the one that matters".</li>
                     </ul>
 
-                    <h4>Pull requests</h4>
+                    <h4>Career focus</h4>
                     <ul>
-                      <li><code>#418</code> auth: retry policy with jittered backoff</li>
-                      <li><code>#421</code> deps: bump httpx 0.27 → 0.28</li>
+                      <li>Gap: Industry Knowledge <span style="color:var(--text-dim)">(2 of 51 entries this cycle)</span></li>
+                      <li>The 16:30 partner call is the opening — go in having read their rate-limit change, not just ready to explain ours.</li>
                     </ul>
 
-                    <h4>Coaching nudge</h4>
-                    <p>Add a one-line rollback note to <code>#418</code>. That's the <span class="accent-text">L5 coordination signal</span> your framework weights most this quarter.</p>
+                    <h4>Held (blocked)</h4>
+                    <p>PROJ-259 profiling — behind Riley's results. Not surfaced as actionable today.</p>
 
-                    <h4>Day plan</h4>
-                    <ul>
-                      <li><code>09:00–10:30</code> AUTH-412 retry fix <span style="color:var(--text-dim)">· deep block</span></li>
-                      <li><code>13:30–14:00</code> review <code>#421</code> <span style="color:var(--text-dim)">· fragmented</span></li>
-                    </ul>
+                    <p class="footnote"><span class="ok">✓</span> Gate: 2 claims — 0 resolved · 1 unresolved · 1 unverified</p>
                   </div>
                 </div>
               </div>
@@ -278,19 +283,19 @@
                 <div class="chat-agent">
                   <span class="chat-role chat-role-agent">Valor</span>
                   <div class="chat-out">
-                    <h4>Architecture</h4>
-                    <p>Retry policy lives in the wrong layer. Move from <code>api.client</code> → <code>net.transport</code>. Future RPCs will need it too.</p>
+                    <h4>Behaviour changes the description doesn't mention</h4>
+                    <p><code>api/payments_client.py:12</code> — <code>capture()</code> now routes through the transport as a <code>POST</code>, and the new verb check refuses to retry non-idempotent verbs. So captures no longer retry at all; the old helper gave them 3 attempts on 5xx.</p>
+                    <p><span class="warn">!</span> Captures are the call that most needs a story on provider 5xx. Silently dropping their retries during an outage is the opposite of this PR's goal — and it won't show up in tests that only exercise <code>GET</code>.</p>
 
                     <h4>Test gaps</h4>
                     <ul>
-                      <li><span class="warn">!</span> No coverage for jitter bounds.</li>
-                      <li><span class="warn">!</span> Backoff cap untested above 30s.</li>
+                      <li><code>random.uniform(0, ceiling)</code> can return ~0, so a "backoff" can be no wait at all. If that's intended, assert it.</li>
                     </ul>
 
                     <h4>Tone check</h4>
-                    <p>Comment on line 84 reads sharper than intended — soften to a question.</p>
+                    <p>Your reply to Riley reads slightly clipped — reasoning first, conclusion second. Same content, easier to agree with.</p>
 
-                    <p class="footnote"><span class="ok">✓</span> Logged as evidence · code_review · subject_matter</p>
+                    <p class="footnote"><span class="ok">✓</span> Logged as evidence · pr_review_own_scope · subject_matter</p>
                   </div>
                 </div>
               </div>
@@ -327,20 +332,20 @@
                 <div class="chat-agent">
                   <span class="chat-role chat-role-agent">Valor</span>
                   <div class="chat-out">
-                    <h4>Console built <span style="color:var(--text-dim);font-weight:400">(4 containers · 11 components)</span></h4>
+                    <h4>Console built <span style="color:var(--text-dim);font-weight:400">(3 containers · 8 components)</span></h4>
                     <ul>
                       <li><span class="ok">●</span> <code>L1</code> Context — who calls the retry path</li>
-                      <li><span class="ok">●</span> <code>L2</code> Inside — front door, rulebook, transport</li>
+                      <li><span class="ok">●</span> <code>L2</code> Inside — front door, transport, rulebook</li>
                       <li><span class="ok">●</span> <code>L3→L4</code> Components → the real diff lines</li>
                     </ul>
 
                     <h4>Mastery quiz</h4>
-                    <p>10 questions, answers verified against the diff. 2 candidates dropped as ambiguous.</p>
+                    <p>8 candidates generated, 2 dropped in verification — one depended on the env flag, so both answers were correct. That leaves 6, and the reviewer needs all 6.</p>
 
                     <h4>Gate</h4>
-                    <p>Reviewer must ace the quiz to be <span class="accent-text">approval-ready</span> — record the actual approval in GitHub.</p>
+                    <p>Acing it marks you <span class="accent-text">approval-ready</span> — the actual approval still happens in GitHub.</p>
 
-                    <p class="footnote"><span class="ok">✓</span> Published as a private Artifact · evidence · leadership</p>
+                    <p class="footnote"><span class="ok">✓</span> <a href="./demo.html#console" style="color:var(--accent)">Try this console →</a> · evidence · leadership</p>
                   </div>
                 </div>
               </div>
@@ -376,23 +381,19 @@
                 <div class="chat-agent">
                   <span class="chat-role chat-role-agent">Valor</span>
                   <div class="chat-out">
-                    <h4>Shipped today</h4>
+                    <h4>Meeting notes captured</h4>
                     <ul>
-                      <li><span class="ok">✓</span> Merged <code>#421</code> (httpx bump, 2 reviews)</li>
-                      <li><span class="ok">✓</span> Drafted rollback note on <code>#418</code></li>
-                      <li><span class="ok">✓</span> 1:1 with E. — confirmed L5 target</li>
+                      <li><span class="ok">✓</span> Checkout weekly sync → recorded as evidence. Decisions: <code>#418</code> stays the critical path.</li>
+                      <li><span class="ok">✓</span> 1:1 → Sam still hasn't shared the written L4 expectations. Third week carried.</li>
                     </ul>
 
-                    <h4>Carry forward → tomorrow</h4>
-                    <ul>
-                      <li><span class="warn">→</span> Land <code>#418</code> before standup</li>
-                      <li><span class="warn">→</span> Reply to AUTH-412 thread (Sami)</li>
-                    </ul>
+                    <h4>Verification gate</h4>
+                    <p>The provider rate-limit message — <span class="ok">resolved.</span> It went out in <code>#checkout</code> at 15:52, so the "not sent" claim is retired rather than carried into tomorrow.</p>
 
-                    <h4>Reflection</h4>
-                    <p>Strong execution day. Light on the <span class="accent-text">cross-team alignment</span> axis — flag for Friday's weekly.</p>
+                    <h4>Career note</h4>
+                    <p>The honest counterweight: everything you shipped today was inside scope somebody else had already decided. Sam's L4 note hasn't moved.</p>
 
-                    <p class="footnote"><span class="ok">✓</span> Saved to <code>~/.valor/carry-forward/carry-forward-2026-05-16.md</code></p>
+                    <p class="footnote"><span class="ok">✓</span> Saved to <code>~/.valor/carry-forward/carry-forward-2026-08-13.md</code></p>
                   </div>
                 </div>
               </div>
@@ -430,17 +431,20 @@
                   <div class="chat-out">
                     <h4>Impact themes</h4>
                     <ul>
-                      <li>Auth reliability — retry + session-cache fixes. <span style="color:var(--text-dim)">subject_matter · Ownership</span></li>
-                      <li>Dependency migration — drove the httpx cutover. <span style="color:var(--text-dim)">collaboration · led</span></li>
+                      <li>Made the payments path survive a degraded provider. <span style="color:var(--text-dim)">subject_matter · autonomy_scope · Ownership</span></li>
+                      <li>Set the outbound-HTTP boundary with the platform team. <span style="color:var(--text-dim)">collaboration · Collaboration</span></li>
                     </ul>
+
+                    <h4>Work in git but not in your log</h4>
+                    <p><code>#397</code> "retry budget metrics", merged 2026-06-18. No evidence entry — it belongs in theme 1. Add it?</p>
 
                     <h4>Confirm before you submit</h4>
                     <ul>
-                      <li><span class="warn">?</span> Is the retry fix live, or still rolling out? <span style="color:var(--text-dim)">(status: merged)</span></li>
-                      <li><span class="warn">?</span> Did you lead the migration or co-build it? <span style="color:var(--text-dim)">(role: unset)</span></li>
+                      <li><span class="warn">?</span> The transport decision is recorded <code>decided-by-other</code> — confirm that's how you'd tell it.</li>
+                      <li><span class="warn">?</span> The funnel instrumentation has no role recorded. Led, or co-built?</li>
                     </ul>
 
-                    <p class="footnote"><span class="ok">✓</span> Built from your evidence log · plain-text, paste-ready</p>
+                    <p class="footnote"><span class="ok">✓</span> Built from 51 evidence entries · plain-text, paste-ready</p>
                   </div>
                 </div>
               </div>

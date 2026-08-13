@@ -293,6 +293,15 @@ What shipped:
   can reach an external system. Ships with a ~20-minute run-book and its own
   test suite (fixtures parse, dates resolve, demo-safety settings hold, the
   run-book covers every command).
+- **`/demo` on the website**: the landing page's hand-written output panels are
+  gone. A new demo page replays recorded transcripts of every workflow — captured
+  from the demo profile and generated into the site from
+  `examples/demo/captures/` — and embeds a **real** `/valor-pr-console` artifact,
+  self-contained and fully interactive, built from the profile's fixture PR. Ten
+  of the eleven workflows need a model at runtime and the site has no backend, so
+  those are honestly labelled as recordings; the console is the genuine thing.
+  Tests hold the generated JSON in sync with the captures, require a transcript
+  per command, and assert the console makes no network calls.
 - version stays at 0.17.0
 
 ## Future Considerations
