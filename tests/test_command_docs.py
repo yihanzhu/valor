@@ -515,6 +515,78 @@ def test_command_integration_flags_match_declaration():
     assert not violations, "\n".join(violations)
 
 
+# --- Doc / site surface coverage -----------------------------------------
+#
+# `/valor-pr-console` shipped documented in docs/integrations.md only -- the one
+# surface a test already forced -- and stayed missing from the README table, the
+# architecture agent table, and the website for a full release. These tests put
+# the remaining user-facing surfaces under the same contract, so the next new
+# command can't be announced on one surface and forgotten on three.
+
+ALL_COMMAND_STEMS = sorted(set(MATRIX_NAME_TO_CMD.values()) | NON_WORKFLOW_COMMANDS)
+
+# Spelled-out counts, for the website's prose claim.
+_COUNT_WORDS = {
+    9: "Nine", 10: "Ten", 11: "Eleven", 12: "Twelve", 13: "Thirteen",
+    14: "Fourteen", 15: "Fifteen",
+}
+
+
+@pytest.mark.parametrize("stem", ALL_COMMAND_STEMS)
+def test_readme_documents_every_command(stem):
+    """Every command appears in the README (agent table + command list)."""
+    text = Path("README.md").read_text()
+    assert f"/valor-{stem}" in text, (
+        f"README.md never mentions /valor-{stem} -- add it to the "
+        '"What Valor Does Today" table and the Commands list'
+    )
+
+
+@pytest.mark.parametrize("stem", ALL_COMMAND_STEMS)
+def test_architecture_documents_every_command(stem):
+    """Every command has a row in the architecture agent table."""
+    text = Path("docs/architecture.md").read_text()
+    assert f"/valor-{stem}" in text, (
+        f"docs/architecture.md never mentions /valor-{stem} -- add a row to the "
+        "Agent Architecture table"
+    )
+
+
+def test_architecture_states_the_real_agent_count():
+    n = len(ALL_COMMAND_STEMS)
+    text = Path("docs/architecture.md").read_text()
+    assert f"Valor has {n} discrete agents" in text, (
+        f"docs/architecture.md must say 'Valor has {n} discrete agents' "
+        f"({n} files in commands/)"
+    )
+
+
+def test_agent_rule_declares_every_command():
+    """rules/valor-agent.md is the always-injected source of truth: its command
+    table and its stated count must match commands/."""
+    n = len(ALL_COMMAND_STEMS)
+    text = Path("rules/valor-agent.md").read_text()
+    assert f"**{n} agent commands**" in text, (
+        f"rules/valor-agent.md must say '**{n} agent commands**'"
+    )
+    for stem in ALL_COMMAND_STEMS:
+        assert f"/valor-{stem}" in text, (
+            f"rules/valor-agent.md has no trigger row for /valor-{stem}"
+        )
+
+
+def test_website_workflow_count_matches_command_set():
+    """The landing page's 'N on-demand workflows' claim must match commands/."""
+    n = len(ALL_COMMAND_STEMS)
+    word = _COUNT_WORDS.get(n)
+    assert word, f"add {n} to _COUNT_WORDS in this test"
+    text = Path("website/index.html").read_text()
+    assert f"{word} on-demand workflows" in text, (
+        f"website/index.html must say '{word} on-demand workflows' "
+        f"({n} files in commands/)"
+    )
+
+
 def _case_body(text, flag):
     start = text.index(f"{flag})")
     body = text[start:text.index(";;", start)]

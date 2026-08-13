@@ -1,0 +1,49 @@
+{
+  "_comment": "INVENTED headlines for the Valor demo profile — stands in for the briefing's news search while integrations.news is false. Every item is fictional and every link points at example.com on purpose: nothing here should be mistaken for a real story or repeated as fact.",
+  "fictional": true,
+  "generated_for": "{{TODAY}}",
+  "items": [
+    {
+      "category": "ai_ml",
+      "title": "Open-weights model release claims parity with last year's frontier models on coding benchmarks",
+      "source": "Example Tech Daily (fictional)",
+      "url": "https://example.com/news/open-weights-coding-parity",
+      "why_it_matters": "Cheaper local inference is the recurring theme for anything privacy-sensitive."
+    },
+    {
+      "category": "ai_ml",
+      "title": "Survey: most engineering orgs still have no policy on AI-assisted code review",
+      "source": "Example Engineering Weekly (fictional)",
+      "url": "https://example.com/news/ai-review-policy-survey",
+      "why_it_matters": "Adjacent to the review-console idea — the gate-on-understanding angle."
+    },
+    {
+      "category": "tech",
+      "title": "Payments provider announces stricter per-tenant rate limits next quarter",
+      "source": "Example Payments Report (fictional)",
+      "url": "https://example.com/news/provider-rate-limits",
+      "why_it_matters": "Directly relevant to PROJ-244 and today's partner call."
+    },
+    {
+      "category": "tech",
+      "title": "Postmortem roundup: three outages last month traced to synchronised retries",
+      "source": "Example Reliability Digest (fictional)",
+      "url": "https://example.com/news/retry-storm-postmortems",
+      "why_it_matters": "Useful precedent to cite in the #418 rollback note."
+    },
+    {
+      "category": "world",
+      "title": "Regulators publish draft guidance on automated decision disclosure",
+      "source": "Example Wire (fictional)",
+      "url": "https://example.com/news/automated-decision-guidance",
+      "why_it_matters": null
+    },
+    {
+      "category": "markets",
+      "title": "Sample market pulse: broad indices flat, semis up modestly, rates unchanged",
+      "source": "Example Markets (fictional)",
+      "url": "https://example.com/news/market-pulse",
+      "why_it_matters": "Placeholder numbers only — the demo profile has no live market data."
+    }
+  ]
+}

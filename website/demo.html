@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Valor — demo</title>
+    <meta name="description" content="Talk to a recorded Valor session, and drive a real PR review console. One screen, no reading.">
+    <meta name="theme-color" content="#08090c">
+    <link rel="canonical" href="https://valor.sh/demo">
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+    <link rel="apple-touch-icon" href="./favicon.svg">
+    <link rel="manifest" href="./manifest.webmanifest">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Valor — demo">
+    <meta property="og:description" content="Talk to a recorded Valor session, and drive a real PR review console.">
+    <meta property="og:url" content="https://valor.sh/demo">
+    <meta property="og:site_name" content="Valor">
+    <meta property="og:image" content="./og.svg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Valor — demo">
+    <meta name="twitter:description" content="Talk to a recorded Valor session, and drive a real PR review console.">
+    <meta name="twitter:image" content="./og.svg">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="./styles.css">
+
+    <style>
+      /* One screen. The page never scrolls; only the thread does. */
+      html, body { height: 100%; overflow: hidden; }
+      body { display: flex; flex-direction: column; }
+
+      .bar {
+        flex: none; display: flex; align-items: center; gap: 14px;
+        padding: 0 18px; height: 54px; border-bottom: 1px solid var(--line);
+        background: var(--bg-2);
+      }
+      .bar .brand { margin-right: auto; }
+      .views { display: flex; gap: 4px; padding: 3px; background: var(--code-bg); border: 1px solid var(--line); border-radius: 999px; }
+      .view-btn {
+        appearance: none; cursor: pointer; font: inherit; font-size: 0.82rem; font-weight: 500;
+        background: none; border: 0; border-radius: 999px; padding: 6px 14px; color: var(--text-dim);
+      }
+      .view-btn[aria-pressed="true"] { background: var(--surface-2); color: var(--text); }
+      .view-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      .bar-link {
+        appearance: none; cursor: pointer; font: inherit; font-size: 0.82rem; background: none;
+        border: 0; color: var(--text-dim); padding: 6px 4px;
+      }
+      .bar-link:hover { color: var(--text); }
+
+      main { flex: 1; min-height: 0; display: flex; }
+      .view { flex: 1; min-height: 0; display: none; flex-direction: column; }
+      .view.is-active { display: flex; }
+
+      /* chat */
+      .thread {
+        flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+        padding: 18px 20px 8px; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent;
+        max-width: 900px; width: 100%; margin: 0 auto;
+      }
+      .thread::-webkit-scrollbar { width: 10px; }
+      .thread::-webkit-scrollbar-track { background: transparent; }
+      .thread::-webkit-scrollbar-thumb {
+        background: var(--line-2); border-radius: 999px;
+        border: 3px solid transparent; background-clip: content-box;
+      }
+      .sys { margin: 0 0 6px; color: var(--text-faint); font-size: 0.8rem; }
+      .sys button {
+        appearance: none; background: none; border: 0; padding: 0; cursor: pointer; font: inherit;
+        color: var(--text-dim); text-decoration: underline; text-underline-offset: 3px;
+      }
+      .thinking { color: var(--text-dim); font-style: italic; }
+      .cursor {
+        display: inline-block; width: 7px; height: 0.95em; background: var(--accent);
+        vertical-align: -2px; animation: blink 1s steps(2) infinite;
+      }
+      @keyframes blink { 50% { opacity: 0; } }
+      @media (prefers-reduced-motion: reduce) { .cursor { animation: none; } }
+
+      .chat-out pre {
+        margin: 10px 0 0; padding: 12px 14px; overflow-x: auto; background: var(--code-bg);
+        border: 1px solid var(--line); border-radius: var(--radius-sm);
+        font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.65; color: var(--text-soft);
+      }
+      .chat-out a { color: var(--azure); }
+      .chat-out h4.coach { color: var(--accent-bright); }
+
+      .composer { flex: none; border-top: 1px solid var(--line); background: var(--bg-2); }
+      .composer-inner { max-width: 900px; margin: 0 auto; padding: 12px 20px 14px; }
+      .composer-row { display: flex; gap: 8px; align-items: center; }
+      .composer input {
+        flex: 1; min-width: 0; background: var(--code-bg); color: var(--text);
+        border: 1px solid var(--line-2); border-radius: var(--radius-sm);
+        padding: 11px 13px; font-family: var(--font-sans); font-size: 0.92rem;
+      }
+      .composer input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+      .composer .btn { padding: 10px 15px; font-size: 0.85rem; flex: none; }
+      .composer-foot { display: flex; gap: 12px; align-items: center; margin-top: 9px; }
+      .composer-foot .bar-link { flex: none; font-size: 0.78rem; margin-left: auto; }
+      .chips { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+      .chip-suggest {
+        appearance: none; cursor: pointer; font: inherit; font-size: 0.8rem;
+        background: var(--surface-2); color: var(--text-soft);
+        border: 1px solid var(--line-2); border-radius: 999px; padding: 5px 12px;
+        max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      .chip-suggest:hover { border-color: var(--accent-dim); color: var(--text); }
+      .chip-suggest:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+      /* console */
+      .console-note {
+        flex: none; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+        justify-content: space-between; padding: 9px 20px; border-bottom: 1px solid var(--line);
+        background: var(--bg-2); font-size: 0.8rem; color: var(--text-dim);
+      }
+      .console-note strong { color: var(--ok); font-weight: 600; }
+      .console-frame { flex: 1; min-height: 0; width: 100%; border: 0; background: #fff; }
+
+      /* about */
+      dialog.about {
+        max-width: 620px; width: calc(100% - 32px); border: 1px solid var(--line-2);
+        border-radius: var(--radius); background: var(--surface); color: var(--text-soft);
+        padding: 22px 24px; font-size: 0.9rem; line-height: 1.65;
+      }
+      dialog.about::backdrop { background: rgba(4, 5, 8, 0.72); }
+      dialog.about h2 { margin: 0 0 10px; font-size: 1.05rem; color: var(--text); }
+      dialog.about p { margin: 0 0 12px; }
+      dialog.about strong { color: var(--text); font-weight: 600; }
+      dialog.about code {
+        font-family: var(--font-mono); font-size: 0.8rem; display: block; overflow-x: auto;
+        padding: 10px 12px; background: var(--code-bg); border: 1px solid var(--line);
+        border-radius: var(--radius-sm); color: var(--accent-bright); margin: 0 0 12px;
+      }
+      dialog.about .about-close { margin-top: 4px; }
+
+      @media (max-width: 640px) {
+        .bar { gap: 8px; padding: 0 12px; }
+        .bar .brand-version, .bar-link.wide { display: none; }
+        .chat-user, .chat-agent { grid-template-columns: 1fr; gap: 4px; }
+        .thread { padding: 14px 14px 6px; }
+        .composer-inner { padding: 10px 14px 12px; }
+      }
+      /* Safety valve: on a very short viewport, let the document scroll. */
+      @media (max-height: 460px) {
+        html, body { height: auto; overflow: auto; }
+        .thread { max-height: 60vh; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bar">
+      <a class="brand" href="./" aria-label="Valor home">
+        <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 4l6 16 3-8 3 8 6-16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="brand-text">valor</span>
+        <span class="brand-version">v0.17.0</span>
+      </a>
+
+      <div class="views" role="group" aria-label="Switch view">
+        <button class="view-btn" type="button" id="view-chat" aria-pressed="true">Session</button>
+        <button class="view-btn" type="button" id="view-console" aria-pressed="false">Review console</button>
+      </div>
+
+      <button class="bar-link" type="button" id="about-open">About this demo</button>
+      <a class="bar-link wide" href="./#install">Install</a>
+    </div>
+
+    <main>
+      <section class="view is-active" id="panel-chat" aria-label="Recorded Valor session">
+        <div class="thread" id="thread" aria-live="polite" aria-atomic="false"></div>
+        <div class="composer">
+          <div class="composer-inner">
+            <form class="composer-row" id="form" autocomplete="off">
+              <label for="input" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Message your agent</label>
+              <input id="input" type="text" placeholder="start my day" spellcheck="false">
+              <button class="btn btn-primary" type="submit">Send</button>
+            </form>
+            <div class="composer-foot">
+              <div class="chips" id="chips"></div>
+              <button class="bar-link" type="button" id="restart">start over</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="panel-console" aria-label="PR review console">
+        <div class="console-note">
+          <span><strong>Live, not recorded.</strong> Built with <code>/valor-pr-console</code>'s own renderer from the demo PR's diff — zoom in, flip Before ⇄ After, take the quiz.</span>
+          <a class="btn btn-ghost" href="./demo/pr-console.html" target="_blank" rel="noreferrer" style="padding:5px 11px;font-size:0.78rem">Full page ↗</a>
+        </div>
+        <iframe class="console-frame" id="console-frame" title="PR review console for pull request 418" data-src="./demo/pr-console.html"></iframe>
+      </section>
+    </main>
+
+    <dialog class="about" id="about">
+      <h2>About this demo</h2>
+      <p>
+        <strong>The session is recorded.</strong> A live agent needs a model at
+        runtime and this site has no backend, so the replies were captured by
+        running Valor against a
+        <a href="https://github.com/yihanzhu/valor/tree/main/examples/demo" rel="noreferrer">seeded profile</a>
+        — a fictional engineer at L3 targeting L4, fictional tickets, every
+        integration switched off, real output. Ask something it hasn't heard and
+        it says so.
+      </p>
+      <p><strong>The review console is not recorded.</strong> That's the real artifact.</p>
+      <p>Run the whole thing yourself, against a throwaway home:</p>
+      <code>HOME=~/valor-demo bash install.sh &amp;&amp; python3 examples/demo/seed.py ~/valor-demo</code>
+      <p style="margin-bottom:16px">
+        <a href="https://github.com/yihanzhu/valor/blob/main/examples/demo/DEMO.md" rel="noreferrer">Run-book</a> ·
+        <a href="https://github.com/yihanzhu/valor" rel="noreferrer">GitHub</a> ·
+        <a href="https://github.com/yihanzhu/valor/blob/main/PRIVACY.md" rel="noreferrer">Privacy</a> ·
+        <a href="./">Home</a>
+      </p>
+      <button class="btn btn-primary about-close" type="button" id="about-close">Close</button>
+    </dialog>
+
+    <script>
+      /* Scoped: a top-level `function scrollTo(...)` in a classic script replaces
+         window.scrollTo, which broke this page once. Nothing here touches the global. */
+      (function () {
+        "use strict";
+
+        var thread = document.getElementById("thread");
+        var chipsEl = document.getElementById("chips");
+        var form = document.getElementById("form");
+        var input = document.getElementById("input");
+        var calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        var data = null;
+        var byId = null;
+        var suggestions = [];
+        var stream = null;
+
+        function esc(s) {
+          return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+        function normalize(s) {
+          return String(s).toLowerCase().replace(/[^a-z0-9#\s]/g, " ").replace(/\s+/g, " ").trim();
+        }
+
+        /* ---- markdown-lite: only what the commands actually emit ---- */
+        function inline(text) {
+          return esc(text)
+            .replace(/`([^`]+)`/g, "<code>$1</code>")
+            .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+            .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s.,);]|$)/g, "$1<em>$2</em>")
+            .replace(/(https?:\/\/[^\s<)]+)/g, '<a href="$1" rel="noreferrer">$1</a>');
+        }
+
+        function blocks(text) {
+          var lines = String(text).split("\n");
+          var out = [];
+          var list = null;
+          var pre = null;
+          var para = null;
+
+          function flushList() {
+            if (!list) return;
+            out.push("<ul>" + list.join("") + "</ul>");
+            list = null;
+          }
+          function flushPre() {
+            if (!pre) return;
+            while (pre.length && pre[pre.length - 1] === "") pre.pop();
+            out.push("<pre>" + pre.map(esc).join("\n") + "</pre>");
+            pre = null;
+          }
+          function flushPara() {
+            if (!para) return;
+            var joined = para.join(" ");
+            var tone = /^[✓✅]/.test(joined) ? "ok" : /^[→]/.test(joined) ? "warn" : "";
+            out.push("<p" + (tone ? ' class="' + tone + '"' : "") + ">" + inline(joined) + "</p>");
+            para = null;
+          }
+
+          for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].replace(/\s+$/, "");
+            var indented = /^ {4}/.test(line);
+
+            if (pre) {
+              if (line === "" || indented) { pre.push(line.replace(/^ {4}/, "")); continue; }
+              flushPre();
+            }
+            if (line === "") { flushPara(); flushList(); continue; }
+
+            var heading = line.match(/^(#{2,4})\s+(.*)$/);
+            if (heading) {
+              flushPara(); flushList();
+              out.push("<h4" + (heading[1].length === 4 ? ' class="coach"' : "") + ">" +
+                inline(heading[2]) + "</h4>");
+              continue;
+            }
+
+            var item = line.match(/^\s*[-*]\s+(.*)$/);
+            if (item) { flushPara(); (list = list || []).push("<li>" + inline(item[1]) + "</li>"); continue; }
+
+            /* An indented line under an open bullet is that bullet wrapping. */
+            if (list && /^\s+\S/.test(line)) {
+              list[list.length - 1] = list[list.length - 1]
+                .replace(/<\/li>$/, " " + inline(line.trim()) + "</li>");
+              continue;
+            }
+            if (indented && !para) { pre = [line.replace(/^ {4}/, "")]; continue; }
+
+            flushList();
+            (para = para || []).push(line.trim());
+          }
+          flushPara(); flushPre(); flushList();
+          return out;
+        }
+
+        /* ---- chat ---- */
+        function atBottom() {
+          var slack = thread.scrollHeight - thread.scrollTop - thread.clientHeight;
+          return !(slack > 90);
+        }
+        function pin() {
+          if (typeof thread.scrollHeight === "number") thread.scrollTop = thread.scrollHeight;
+        }
+        function stopStream() {
+          if (stream) { window.clearTimeout(stream.timer); stream = null; }
+        }
+        function finishStream() {
+          if (!stream) return;
+          stream.host.innerHTML = stream.items.join("");
+          stopStream();
+          pin();
+        }
+        function startStream(host, items) {
+          stopStream();
+          if (calm) { host.innerHTML = items.join(""); pin(); return; }
+          stream = { host: host, items: items, i: 0, timer: null };
+          function tick() {
+            if (!stream) return;
+            var follow = atBottom();
+            stream.i += 1;
+            stream.host.innerHTML = stream.items.slice(0, stream.i).join("") +
+              (stream.i < stream.items.length ? '<span class="cursor" aria-hidden="true"></span>' : "");
+            if (follow) pin();
+            if (stream.i < stream.items.length) stream.timer = window.setTimeout(tick, 85);
+            else stream = null;
+          }
+          stream.timer = window.setTimeout(tick, 50);
+        }
+
+        function addUser(text) {
+          var row = document.createElement("div");
+          row.className = "chat-user";
+          row.innerHTML = '<span class="chat-role">You</span><span class="chat-msg">' + esc(text) + "</span>";
+          thread.appendChild(row);
+        }
+        function addAgent() {
+          var row = document.createElement("div");
+          row.className = "chat-agent";
+          row.innerHTML = '<span class="chat-role chat-role-agent">Valor</span>';
+          var body = document.createElement("div");
+          body.className = "chat-out";
+          row.appendChild(body);
+          thread.appendChild(row);
+          return body;
+        }
+
+        function renderChips() {
+          chipsEl.innerHTML = "";
+          suggestions.slice(0, 3).forEach(function (id) {
+            var entry = byId[id];
+            if (!entry) return;
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "chip-suggest";
+            btn.textContent = entry.phrase;
+            btn.addEventListener("click", function () { say(entry); });
+            chipsEl.appendChild(btn);
+          });
+        }
+
+        function say(entry) {
+          stopStream();
+          addUser(entry.phrase);
+          var body = addAgent();
+
+          suggestions = entry.suggests.filter(function (id) { return id !== entry.id; });
+          renderChips();
+          input.value = "";
+          if (suggestions.length && byId[suggestions[0]]) input.placeholder = byId[suggestions[0]].phrase;
+          pin();
+
+          var items = blocks(entry.output);
+          if (calm) { body.innerHTML = items.join(""); pin(); return; }
+          body.innerHTML = '<p class="thinking">working…</p>';
+          window.setTimeout(function () { startStream(body, items); }, 240);
+        }
+
+        function findEntry(text) {
+          var q = normalize(text);
+          if (!q) return null;
+          var slash = q.replace(/\s/g, "-");
+          var words = q.split(" ").filter(function (w) { return w.length > 2; });
+          var best = null;
+          var bestScore = 0;
+          for (var i = 0; i < data.entries.length; i++) {
+            var entry = data.entries[i];
+            if (entry.command.indexOf("/valor-") === 0 && slash.indexOf(entry.command.slice(1)) === 0) {
+              return entry;
+            }
+            if (!words.length) continue;
+            var hay = normalize(entry.phrase + " " + entry.label + " " + entry.id);
+            var hits = 0;
+            words.forEach(function (w) { if (hay.indexOf(w) !== -1) hits += 1; });
+            var score = hits / words.length;
+            if (score > bestScore) { bestScore = score; best = entry; }
+          }
+          return bestScore >= 0.5 ? best : null;
+        }
+
+        function sayUnknown(text) {
+          stopStream();
+          addUser(text);
+          var body = addAgent();
+          var options = suggestions.slice(0, 3).map(function (id) {
+            return "<code>" + esc(byId[id].phrase) + "</code>";
+          }).join(", ");
+          body.innerHTML =
+            "<p>This session is a recording, so I only have the replies that were captured against the " +
+            "demo profile — there's no model behind this page to answer something new.</p>" +
+            (options ? "<p>From here it has: " + options + ".</p>" : "");
+          input.value = "";
+          pin();
+        }
+
+        function start() {
+          stopStream();
+          thread.innerHTML = "";
+          var note = document.createElement("p");
+          note.className = "sys";
+          note.innerHTML =
+            "Recorded session · fictional profile · real output — " +
+            '<button type="button" id="sys-about">what does that mean?</button>';
+          thread.appendChild(note);
+          var link = note.querySelector("#sys-about");
+          if (link) link.addEventListener("click", openAbout);
+          suggestions = data.start.slice();
+          renderChips();
+          if (byId[data.start[0]]) input.placeholder = byId[data.start[0]].phrase;
+        }
+
+        form.addEventListener("submit", function (event) {
+          event.preventDefault();
+          var text = input.value.trim();
+          if (!text) return;
+          var entry = findEntry(text);
+          if (entry) say(entry);
+          else sayUnknown(text);
+        });
+        thread.addEventListener("click", function () { if (stream) finishStream(); });
+        document.getElementById("restart").addEventListener("click", function () {
+          start();
+          if (input.focus) input.focus();
+        });
+
+        /* ---- views ---- */
+        var chatBtn = document.getElementById("view-chat");
+        var consoleBtn = document.getElementById("view-console");
+        var chatPanel = document.getElementById("panel-chat");
+        var consolePanel = document.getElementById("panel-console");
+        var frame = document.getElementById("console-frame");
+
+        function showView(which) {
+          var wantConsole = which === "console";
+          chatPanel.classList.toggle("is-active", !wantConsole);
+          consolePanel.classList.toggle("is-active", wantConsole);
+          chatBtn.setAttribute("aria-pressed", String(!wantConsole));
+          consoleBtn.setAttribute("aria-pressed", String(wantConsole));
+          /* Load the console only when it's first asked for. */
+          if (wantConsole && !frame.getAttribute("src")) frame.setAttribute("src", frame.dataset.src);
+          if (!wantConsole && input.focus) input.focus();
+        }
+        chatBtn.addEventListener("click", function () { showView("chat"); });
+        consoleBtn.addEventListener("click", function () { showView("console"); });
+
+        /* ---- about ---- */
+        var about = document.getElementById("about");
+        function openAbout() {
+          if (typeof about.showModal === "function") about.showModal();
+          else about.setAttribute("open", "");
+        }
+        function closeAbout() {
+          if (typeof about.close === "function") about.close();
+          else about.removeAttribute("open");
+        }
+        document.getElementById("about-open").addEventListener("click", openAbout);
+        document.getElementById("about-close").addEventListener("click", closeAbout);
+
+        window.fetch("./demo/transcripts.json").then(function (response) {
+          if (!response.ok) throw new Error(String(response.status));
+          return response.json();
+        }).then(function (payload) {
+          data = payload;
+          byId = {};
+          data.entries.forEach(function (entry) { byId[entry.id] = entry; });
+          start();
+        }).catch(function () {
+          thread.innerHTML =
+            '<p class="sys">This page loads its transcripts over HTTP, so it needs to be served rather ' +
+            'than opened from disk. They are plain text in the repo: <code>examples/demo/captures/</code>.</p>';
+          input.disabled = true;
+          form.querySelector("button").disabled = true;
+        });
+      })();
+    </script>
+  </body>
+</html>

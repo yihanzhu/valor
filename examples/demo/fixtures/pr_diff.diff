@@ -1,0 +1,162 @@
+diff --git a/net/transport.py b/net/transport.py
+index 3c1a9e2..7b4f0d8 100644
+--- a/net/transport.py
++++ b/net/transport.py
+@@ -1,12 +1,18 @@
+ """Shared outbound HTTP transport.
+
+ Every service-to-service call goes through `request()`. Retry policy lives here
+-so callers don't each invent their own.
++so callers don't each invent their own, and so a single place decides what is
++safe to retry.
+ """
++import os
++import random
+ import time
+
+ import httpx
+
+ DEFAULT_TIMEOUT = 5.0
++RETRY_JITTER = os.environ.get("PAYMENTS_RETRY_JITTER", "0") == "1"
++MAX_ATTEMPTS = 5
++BASE_DELAY = 0.25
++MAX_DELAY = 30.0
++IDEMPOTENT_METHODS = frozenset({"GET", "HEAD", "PUT", "DELETE"})
+
+
+ class TransportError(RuntimeError):
+@@ -14,20 +20,88 @@ class TransportError(RuntimeError):
+     """A call failed after the transport gave up retrying."""
+
+
+-def request(method, url, *, attempts=3, delay=2.0, **kw):
+-    """Send a request, retrying a fixed number of times on 5xx/timeout."""
+-    last = None
+-    for _ in range(attempts):
+-        try:
+-            resp = httpx.request(method, url, timeout=DEFAULT_TIMEOUT, **kw)
+-            if resp.status_code < 500:
+-                return resp
+-            last = TransportError(f"{resp.status_code} from {url}")
+-        except httpx.TimeoutException as exc:
+-            last = exc
+-        time.sleep(delay)
+-    raise TransportError(f"gave up on {method} {url}") from last
++def retry_with_jitter(attempt, *, retry_after=None):
++    """Delay before `attempt` (0-based), in seconds.
++
++    Exponential backoff with full jitter: each pod picks a random point in
++    [0, base * 2**attempt] instead of waking on the same boundary as every
++    other pod. Capped at MAX_DELAY — an unbounded backoff turns a blip into a
++    stall, which is worse than failing fast.
++
++    A provider-supplied Retry-After always wins: it knows its own recovery
++    better than our curve does.
++    """
++    if retry_after is not None:
++        return min(float(retry_after), MAX_DELAY)
++    ceiling = min(BASE_DELAY * (2 ** attempt), MAX_DELAY)
++    return random.uniform(0, ceiling)
++
++
++def _is_retryable(method, resp, exc):
++    """Retry only what is safe to repeat.
++
++    The verb check lives here rather than in the caller so a new caller can't
++    opt itself into retrying a POST by accident.
++    """
++    if method.upper() not in IDEMPOTENT_METHODS:
++        return False
++    if exc is not None:
++        return isinstance(exc, httpx.TimeoutException)
++    return resp is not None and resp.status_code >= 500
++
++
++def request(method, url, *, attempts=None, **kw):
++    """Send a request, retrying safe failures with jittered backoff."""
++    attempts = attempts or (MAX_ATTEMPTS if RETRY_JITTER else 3)
++    last = None
++    for attempt in range(attempts):
++        resp = exc = None
++        try:
++            resp = httpx.request(method, url, timeout=DEFAULT_TIMEOUT, **kw)
++            if resp.status_code < 500:
++                return resp
++            last = TransportError(f"{resp.status_code} from {url}")
++        except httpx.TimeoutException as err:
++            exc = err
++            last = err
++        if not _is_retryable(method, resp, exc) or attempt == attempts - 1:
++            break
++        header = resp.headers.get("Retry-After") if resp is not None else None
++        time.sleep(retry_with_jitter(attempt, retry_after=header))
++    raise TransportError(f"gave up on {method} {url}") from last
+diff --git a/api/payments_client.py b/api/payments_client.py
+index a91b3f7..d502e64 100644
+--- a/api/payments_client.py
++++ b/api/payments_client.py
+@@ -1,29 +1,20 @@
+ """Client for the payments provider."""
+-import time
+-
+-import httpx
+-
+ from net import transport
+
+ PROVIDER = "https://payments.example.com/v2"
+
+
+-def _post_with_retry(path, payload, attempts=3):
+-    """Retry a provider call on 5xx, waiting a flat 2s between tries."""
+-    for _ in range(attempts):
+-        resp = httpx.post(f"{PROVIDER}{path}", json=payload, timeout=5.0)
+-        if resp.status_code < 500:
+-            return resp
+-        time.sleep(2.0)
+-    raise RuntimeError(f"provider call failed: {path}")
+-
+-
+ def capture(charge_id, amount_cents):
+     """Capture an authorised charge."""
+-    resp = _post_with_retry("/captures", {"charge": charge_id, "amount": amount_cents})
++    resp = transport.request(
++        "POST", f"{PROVIDER}/captures",
++        json={"charge": charge_id, "amount": amount_cents},
++    )
+     resp.raise_for_status()
+     return resp.json()
+
+
+ def fetch_charge(charge_id):
+     """Read a charge back from the provider."""
+-    resp = _post_with_retry(f"/charges/{charge_id}", {})
++    resp = transport.request("GET", f"{PROVIDER}/charges/{charge_id}")
+     resp.raise_for_status()
+     return resp.json()
+diff --git a/tests/test_transport.py b/tests/test_transport.py
+index 5f0c8b1..2ad7e93 100644
+--- a/tests/test_transport.py
++++ b/tests/test_transport.py
+@@ -12,3 +12,19 @@ def test_returns_first_success(monkeypatch):
+     assert transport.request("GET", "https://example.com/x").status_code == 200
+
+
++def test_backoff_is_capped():
++    assert transport.retry_with_jitter(40) <= transport.MAX_DELAY
++
++
++def test_retry_after_header_wins():
++    assert transport.retry_with_jitter(0, retry_after="12") == 12.0
++
++
++def test_post_is_not_retried(monkeypatch):
++    calls = []
++
++    def fail(*a, **kw):
++        calls.append(1)
++        raise httpx.TimeoutException("slow")
++
++    monkeypatch.setattr(httpx, "request", fail)
++    with pytest.raises(transport.TransportError):
++        transport.request("POST", "https://example.com/x")
++    assert len(calls) == 1

@@ -1,0 +1,124 @@
+{
+  "_comment": "Fictional GitHub data for the Valor demo profile. Stands in for `gh` while integrations.github is false.",
+  "owner": "example-org",
+  "repo": "checkout-service",
+  "me": "alex",
+  "review_requests": [
+    {
+      "number": 421,
+      "title": "deps: bump httpx 0.27 -> 0.28",
+      "repo": "example-org/checkout-service",
+      "author": "jordan",
+      "state": "open",
+      "updated": "{{TODAY}}",
+      "url": "https://github.com/example-org/checkout-service/pull/421",
+      "additions": 6,
+      "deletions": 6,
+      "files": 2,
+      "checks": "passing",
+      "reviews": [],
+      "note": "Small, unblocked, ready to merge — the fragmented-slot pickup."
+    },
+    {
+      "number": 424,
+      "title": "checkout: cache address validation results per session",
+      "repo": "example-org/checkout-service",
+      "author": "riley",
+      "state": "open",
+      "updated": "{{TODAY-1}}",
+      "url": "https://github.com/example-org/checkout-service/pull/424",
+      "additions": 214,
+      "deletions": 38,
+      "files": 9,
+      "checks": "failing",
+      "reviews": [],
+      "note": "Touches the p99 regression in PROJ-259. Bigger review, needs a real slot."
+    }
+  ],
+  "my_open_prs": [
+    {
+      "number": 418,
+      "title": "payments: jittered exponential backoff for provider retries",
+      "repo": "example-org/checkout-service",
+      "author": "alex",
+      "state": "open",
+      "updated": "{{TODAY}}",
+      "url": "https://github.com/example-org/checkout-service/pull/418",
+      "additions": 96,
+      "deletions": 21,
+      "files": 3,
+      "checks": "passing",
+      "reviews": [
+        {"reviewer": "riley", "state": "commented", "at": "{{TODAY-1}}"}
+      ],
+      "ticket": "PROJ-244",
+      "note": "One round of comments answered; needs a rollback note before it merges."
+    },
+    {
+      "number": 419,
+      "title": "payments: idempotency key on the refund path",
+      "repo": "example-org/checkout-service",
+      "author": "alex",
+      "state": "draft",
+      "updated": "{{TODAY-1}}",
+      "url": "https://github.com/example-org/checkout-service/pull/419",
+      "additions": 47,
+      "deletions": 4,
+      "files": 2,
+      "checks": "pending",
+      "reviews": [],
+      "ticket": "PROJ-231",
+      "note": "Draft — the day's primary focus."
+    }
+  ],
+  "merged_recent": [
+    {
+      "number": 412,
+      "title": "checkout: log provider error codes on failure",
+      "repo": "example-org/checkout-service",
+      "merged": "{{TODAY-2}}",
+      "url": "https://github.com/example-org/checkout-service/pull/412",
+      "ticket": "PROJ-238",
+      "reviews": 2
+    },
+    {
+      "number": 408,
+      "title": "docs: payments retry contract",
+      "repo": "example-org/checkout-service",
+      "merged": "{{TODAY-4}}",
+      "url": "https://github.com/example-org/checkout-service/pull/408",
+      "ticket": "PROJ-241",
+      "reviews": 1
+    }
+  ],
+  "reviewed_recent": [
+    {
+      "number": 415,
+      "title": "platform: shared transport client skeleton",
+      "repo": "example-org/platform-core",
+      "author": "jordan",
+      "reviewed": "{{TODAY-3}}",
+      "url": "https://github.com/example-org/platform-core/pull/415",
+      "outcome": "approved with comments",
+      "note": "Cross-team review — Alex flagged the retry-layer placement that PROJ-248 now depends on."
+    },
+    {
+      "number": 410,
+      "title": "checkout: extract the provider adapter interface",
+      "repo": "example-org/checkout-service",
+      "author": "dana",
+      "reviewed": "{{TODAY-6}}",
+      "url": "https://github.com/example-org/checkout-service/pull/410",
+      "outcome": "changes requested"
+    }
+  ],
+  "merged_this_cycle": [
+    {"number": 341, "title": "payments: idempotency keys on the charge path", "merged": "{{CYCLE_START+34}}", "ticket": "PROJ-186"},
+    {"number": 356, "title": "payments: provider adapters behind an interface", "merged": "{{CYCLE_START+52}}", "ticket": "PROJ-192"},
+    {"number": 371, "title": "ops: provider-degradation runbook", "merged": "{{CYCLE_START+78}}", "ticket": "PROJ-205"},
+    {"number": 389, "title": "checkout: migrate webhooks off the deprecated queue client", "merged": "{{CYCLE_START+109}}", "ticket": "PROJ-219"},
+    {"number": 397, "title": "payments: retry budget metrics", "merged": "{{CYCLE_START+126}}", "ticket": null,
+     "note": "Merged but never logged as evidence — the reflection coverage check should catch this one."},
+    {"number": 412, "title": "checkout: log provider error codes on failure", "merged": "{{TODAY-2}}", "ticket": "PROJ-238"}
+  ]
+}

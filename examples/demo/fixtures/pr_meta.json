@@ -1,0 +1,31 @@
+{
+  "_comment": "Fictional PR metadata for the Valor demo profile — stands in for `gh pr view --json`. Pairs with pr_diff.diff. Used by /valor-pr-review and /valor-pr-console.",
+  "number": 418,
+  "title": "payments: jittered exponential backoff for provider retries",
+  "url": "https://github.com/example-org/checkout-service/pull/418",
+  "repo": "example-org/checkout-service",
+  "author": "alex",
+  "state": "open",
+  "headRefOid": "9f2c1ab4d7e35608bb1f0c2a4e7d9013cc5be412",
+  "baseRefName": "main",
+  "headRefName": "alex/PROJ-244-retry-jitter",
+  "ticket": "PROJ-244",
+  "body": "Fixed-interval retries synchronise across pods: when the provider slows down, every pod retries on the same 2s boundary and we amplify the outage instead of riding it out.\n\nThis moves retry handling out of the payments client and into the shared transport layer, where it belongs (PROJ-248 needs it there too), and replaces the fixed interval with exponential backoff plus full jitter, capped at 30s and 5 attempts.\n\nRollout: behind `PAYMENTS_RETRY_JITTER`, default on in staging only.\n\nReviewer notes:\n- the cap matters more than the base delay — a runaway backoff is worse than a fast failure\n- `Retry-After` from the provider wins over our computed delay\n- non-idempotent verbs are never retried; that check is deliberately in the transport, not the caller",
+  "files": [
+    {"path": "net/transport.py", "additions": 71, "deletions": 3},
+    {"path": "api/payments_client.py", "additions": 9, "deletions": 18},
+    {"path": "tests/test_transport.py", "additions": 16, "deletions": 0}
+  ],
+  "reviews": [
+    {
+      "reviewer": "riley",
+      "state": "commented",
+      "at": "{{TODAY-1}}",
+      "comments": [
+        {"path": "net/transport.py", "line": 84, "body": "Why full jitter rather than decorrelated? Genuine question, not a blocker."},
+        {"path": "net/transport.py", "line": 96, "body": "Does the cap apply to the total elapsed time or per attempt?"}
+      ]
+    }
+  ],
+  "checks": "passing"
+}

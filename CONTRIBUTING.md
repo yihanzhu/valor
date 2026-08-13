@@ -26,7 +26,8 @@ Run checks before opening a PR:
 
 ```bash
 python3 -m pytest -q
-python3 -m compileall src tests scripts
+python3 -m compileall src tests scripts examples
+ruff check src tests scripts examples
 ```
 
 ### Company-info hygiene (required)

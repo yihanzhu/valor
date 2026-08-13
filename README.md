@@ -43,6 +43,7 @@ hardcoding one.
 | --------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------- |
 | **Morning Briefing**  | Auto before 11am, or `/valor-briefing`         | Jira tickets, PRs, calendar, news, coaching, and priorities ranked by week goals + dependencies |
 | **PR Review Coach**   | `/valor-pr-review` or "help me review"         | Senior-level code review guidance with architecture, testing, and tone coaching |
+| **PR Review Console** | `/valor-pr-console` or "build a review console" | Turns a PR into an interactive C4 walkthrough (context → containers → components → real code) with Before ⇄ After, a request-flow animation, and a diff-verified mastery quiz that gates "approval-ready" on understanding |
 | **Design Doc Coach**  | `/valor-design-doc` or "how should I approach" | Structured design guidance with options, trade-offs, and recommendations        |
 | **Weekly Reflection** | Auto Friday, or `/valor-weekly`                | Week summary mapped to competencies, gap analysis, and 1:1 narrative            |
 | **Evening Wrap-up**   | Auto after 4pm, or `/valor-wrapup`             | Day summary, carry-forward items, career reflection, and meeting-notes capture from calendar attachments |
@@ -178,6 +179,25 @@ configuration, and integration options, see
 - [Privacy Model](PRIVACY.md)
 - [Roadmap](ROADMAP.md)
 
+## Showing Valor to someone else
+
+`examples/demo/` is a seeded, entirely fictional profile for demoing all eleven
+workflows without exposing your own work. It installs into a throwaway `HOME`, so
+your real `~/.valor` is unreachable from the demo — the mock is in the *inputs*
+(invented tickets, PRs, calendar, evidence), while every briefing, review and
+reflection you show is real Valor output. Ships with a ~20-minute run-book.
+
+```bash
+HOME=~/valor-demo bash install.sh && python3 examples/demo/seed.py ~/valor-demo
+```
+
+See [examples/demo/README.md](examples/demo/README.md) and
+[examples/demo/DEMO.md](examples/demo/DEMO.md).
+
+Want to see the output before installing anything? [valor.sh/demo](https://valor.sh/demo)
+replays a recorded transcript of every workflow from that same profile, and
+embeds a real, fully interactive PR review console you can click through.
+
 ## First-Time Setup
 
 After install, open your agent and run `/valor-setup` (or say "set up valor").
@@ -253,6 +273,7 @@ Commands:
 
 - `/valor-briefing`
 - `/valor-pr-review`
+- `/valor-pr-console`
 - `/valor-design-doc`
 - `/valor-weekly`
 - `/valor-wrapup`
@@ -266,6 +287,7 @@ Natural language also works:
 
 - "start my day"
 - "review PR #892"
+- "build a review console for #892"
 - "design doc for PROJ-123"
 - "what did I do this week"
 - "wrap up"
@@ -310,7 +332,7 @@ valor/
 ├── .codex-plugin/          # Codex CLI plugin manifest (discovery only)
 ├── bin/                    # CLI wrappers (valor-evidence)
 ├── commands/               # User-invoked assistant commands
-├── examples/               # Ready-made example career frameworks
+├── examples/               # Example career frameworks + the seeded demo profile
 ├── rules/                  # Always-applied Valor rule
 ├── skills/                 # Plugin skills (setup)
 ├── src/                    # Evidence CLI, career framework, utilities

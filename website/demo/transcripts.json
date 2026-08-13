@@ -1,0 +1,334 @@
+{
+  "generated_by": "examples/demo/build_transcripts.py",
+  "captured_from": "examples/demo — a seeded profile with fictional data",
+  "captured_on": "2026-08-13",
+  "valor_version": "0.17.0",
+  "acts": [
+    "A day",
+    "A week",
+    "A review cycle",
+    "Setup"
+  ],
+  "start": [
+    "briefing",
+    "wrapup",
+    "reflection",
+    "setup"
+  ],
+  "entries": [
+    {
+      "id": "briefing",
+      "command": "/valor-briefing",
+      "phrase": "start my day",
+      "label": "Morning briefing",
+      "act": "A day",
+      "blurb": "Ranks the day against this week's goals and your dependency rules, then fits it to the calendar's real gaps.",
+      "output": "## Valor Morning Briefing -- Thursday, 2026-08-13\n\n*Project focus: Checkout reliability — its sync is today at 14:00. Off-focus work hidden.*\n\n### Work Context\n- PROJ-244: Retry storm against the payments provider under partial outage -- *In Review* (updated today)\n  PR #418 carries it. Per your standing rules this sits ahead of new work: PROJ-248 is blocked until it lands.\n- PROJ-231: Refunds can double-apply when the provider retries a webhook -- *In Progress* (updated yesterday)\n  Draft PR #419. This is week goal 1 — the one you wrote down as \"the one that matters\".\n- PROJ-259: Checkout latency p99 regressed after the address-validation rollout -- *To Do* (updated 3 days ago)\n  Held: Riley owes profiling results, per yesterday's sync notes.\n\nWatching: PROJ-248 (Jordan) -- blocked until #418 merges.\n\n### PR Situation\n**Awaiting your review:**\n- #421: deps: bump httpx 0.27 -> 0.28 (from jordan, today) -- 2 files, CI passing\n- #424: checkout: cache address validation results per session (from riley, 1 day) -- 9 files, CI failing\n  Touches the same code path as PROJ-259. This one needs a real slot, not a gap between meetings.\n\n**Your open PRs:**\n- #418: payments: jittered exponential backoff for provider retries -- 1 review round answered, CI passing\n  Riley's two questions are answered. Still missing the rollback note — you started it yesterday\n  (docs/retry-rollback.md, uncommitted) and the team's own checklist asks for it.\n- #419: payments: idempotency key on the refund path -- *draft*, CI pending\n\n### Today's Calendar\n- 09:15-09:30 -- Checkout standup (15m) -- *accepted*\n- 09:45-10:15 -- Alex / Sam 1:1 (30m) -- *accepted*\n- 14:00-15:00 -- Checkout weekly sync (1h) -- *accepted*\n  Prep reserved 13:30-14:00. Auto sync-prep is on, so talk points will be ready in that block.\n- 16:30-17:00 -- Payments provider integration call (30m) -- *accepted*\n  Prep reserved 16:00-16:30. They asked for a rate-limit date yesterday; nothing has gone back yet.\n\n### News\n\n**AI/ML**\n- Open-weights model release claims parity with last year's frontier models on coding benchmarks\n  https://example.com/news/open-weights-coding-parity\n- Survey: most engineering orgs still have no policy on AI-assisted code review\n  https://example.com/news/ai-review-policy-survey\n\n**Tech Industry**\n- Payments provider announces stricter per-tenant rate limits next quarter -- read this before the 16:30 call\n  https://example.com/news/provider-rate-limits\n- Postmortem roundup: three outages last month traced to synchronised retries -- precedent worth citing in the #418 rollback note\n  https://example.com/news/retry-storm-postmortems\n\n**World**\n- Regulators publish draft guidance on automated decision disclosure\n  https://example.com/news/automated-decision-guidance\n\n**Markets** *(sample feed — this profile carries no live market data)*\n- Sample market pulse: broad indices flat, semis up modestly, rates unchanged\n  https://example.com/news/market-pulse\n\n### Career Focus\n- Strongest areas: Internal Collaboration (15 entries), Subject Matter Expertise (15)\n- Gap: Industry Knowledge (2 of 51 entries this cycle)\n- Today's opportunities:\n  1. The 16:30 partner call is the Industry Knowledge opening — go in having read their rate-limit\n     change, not just ready to explain our retry behaviour.\n  2. #424 sits outside your own tickets and touches the p99 regression. Reviewing it is exactly the\n     L4 line about participating in reviews beyond your own work.\n\n### Suggested Priorities\n1. Finish the refund idempotency key (PROJ-231 / #419) -- advances week goal 1\n2. Write the rollback note, then take #418 out of review -- unblocks PROJ-248; your standing rule\n   puts it ahead of anything new\n3. Review #421 -- small and green, and Jordan is waiting on it\n4. Send the provider a rate-limit date -- carried from yesterday, and the call is at 16:30\n\n**Held (blocked):** PROJ-259 profiling — behind Riley's results. Not surfaced as actionable today.\n\n**Needs confirmation:** the #checkout message asking the provider for a rate-limit date is carried\nas \"not sent\" since yesterday and can't be verified from here — confirm or drop?\n\n*Gate: 2 claims -- 0 resolved · 1 unresolved · 1 unverified*\n\n### Day Plan\n- 10:30-13:30 -- Refund idempotency key (PROJ-231) *(deep)*\n- 13:30-14:00 -- Prep: Checkout weekly sync *(reserved)*\n- 15:15-16:00 -- Rollback note on #418, then review #421 *(fragmented)*\n- 16:00-16:30 -- Prep: provider integration call *(reserved)*\n- 17:15-18:00 -- Reply on the provider thread, overflow *(fragmented)*\n\nNothing before 10:30: standup, your 1:1, and a 15-minute breather own that stretch. Today has exactly\none deep block — the refund fix gets all of it.\n\n*Calendar: plan shown only. `calendar_auto_write` is off in this profile.*",
+      "tools": [
+        "python3 ~/.valor/evidence_cli.py context",
+        "python3 ~/.valor/verify.py reconcile",
+        "python3 ~/.valor/focus.py resolve",
+        "python3 ~/.valor/plan.py fit",
+        "fixture: jira.json · github.json · calendar.json · news.json"
+      ],
+      "suggests": [
+        "why-first",
+        "ambient",
+        "pr-review",
+        "wrapup"
+      ]
+    },
+    {
+      "id": "ambient",
+      "command": "(no command — always on)",
+      "phrase": "the retry cap should be configurable, not hardcoded at 30s",
+      "label": "Ambient coaching",
+      "act": "A day",
+      "blurb": "You didn't ask for coaching. It classifies the work, ties it to your target level, and records the evidence.",
+      "output": "Done — `MAX_DELAY` now reads from the environment with 30s as the default:\n\n    -MAX_DELAY = 30.0\n    +MAX_DELAY = float(os.environ.get(\"PAYMENTS_MAX_RETRY_DELAY\", \"30\"))\n\nTwo things worth knowing about the change:\n\n- `retry_with_jitter()` already clamps `Retry-After` to `MAX_DELAY`, so raising the ceiling raises\n  how long a provider can hold you. That's the intended lever, but it's now a lever anyone with\n  deploy access can pull without a review.\n- It's read at import time, like `RETRY_JITTER` above it. Changing either needs a restart, not just\n  a config push. Worth a line in the rollback note so nobody expects a live flip.\n\nI left the 30s default in place, so current behaviour is unchanged.\n\n#### 🦅 Valor | Subject Matter Expertise · Craftsmanship\n\n✅ *What you did:* Turned a hardcoded constant into a bounded, defaulted config value and named the\nblast radius of the knob rather than just shipping it — that's the L4 \"sound trade-offs\" line.\n\n🎯 *L4 would also:* Say where the value should live long-term. An env var read at import is fine for\none operator; a retry budget that two teams tune is a config surface, and you already have the\nplatform conversation open for it (PROJ-248).\n\n✓ Logged as evidence · code_written · subject_matter · role: built",
+      "tools": [
+        "python3 ~/.valor/evidence_cli.py add --activity code_written"
+      ],
+      "suggests": [
+        "pr-review",
+        "evidence-stats",
+        "quiet"
+      ]
+    },
+    {
+      "id": "pr-review",
+      "command": "/valor-pr-review",
+      "phrase": "help me review PR #418",
+      "label": "PR review coach",
+      "act": "A day",
+      "blurb": "Architecture, blast radius, test gaps — and the tone of your own review comments.",
+      "output": "## Review — #418 payments: jittered exponential backoff for provider retries\n\n3 files, +96/−21. PROJ-244. Your own PR, so this is the pass before Riley's second round.\n\n### Architecture\n\nMoving retry policy from `api/payments_client.py` into `net/transport.py` is the right call, and the\nverb check belongs there for exactly the reason your description gives: a future caller can't opt\nitself into retrying a POST by accident. The platform team's PROJ-248 needs it in this layer too.\n\n### Behaviour changes the description doesn't mention\n\n- **`api/payments_client.py:12`** — `capture()` now routes through the transport as a `POST`.\n  - *Issue:* `_is_retryable()` returns `False` for any non-idempotent verb, so captures no longer\n    retry at all. The old `_post_with_retry` gave them 3 attempts on 5xx.\n  - *Why:* Captures are the call that most needs a story on provider 5xx. Silently dropping their\n    retries during an outage is the opposite of this PR's goal, and it won't show up in tests that\n    only exercise `GET`.\n  - *Suggestion:* Either give captures an idempotency key and let the transport retry them (you're\n    building exactly that on the refund path in #419), or say plainly in the description that\n    captures are now fail-fast and confirm that's what you want.\n\n- **`api/payments_client.py:20`** — `fetch_charge()` switched from `POST {}` to `GET`.\n  - *Issue:* Right shape, but it's a wire-level change to the provider contract riding along in a\n    retry PR.\n  - *Suggestion:* Worth its own line in the description, or its own commit — reviewers reading the\n    title won't be looking for it.\n\n- **`net/transport.py:14`** — `RETRY_JITTER` is read at import time and only changes the attempt\n  count.\n  - *Issue:* `retry_with_jitter()` is used whether the flag is on or off, so the flag gates 5-vs-3\n    attempts, not jitter. \"Behind `PAYMENTS_RETRY_JITTER`, default on in staging only\" reads like a\n    kill switch it isn't.\n  - *Suggestion:* Either branch the delay function on the flag, or rename it to what it controls.\n\n- **`net/transport.py:96`** — `float(retry_after)`.\n  - *Issue:* `Retry-After` is allowed to be an HTTP date. A date raises `ValueError` inside the retry\n    path, turning a throttle into a crash.\n  - *Suggestion:* Parse both forms, or ignore non-numeric values and fall back to the computed delay.\n\n### Test gaps\n\n- No coverage for the case above: a 5xx on a `POST` should not retry, and *that* is the behaviour\n  change most likely to surprise someone at 3am. `test_post_is_not_retried` covers a timeout, not a 5xx.\n- `test_backoff_is_capped` asserts the cap but not the floor — `random.uniform(0, ceiling)` can return\n  ~0, so a \"backoff\" can be no wait at all. If that's intended, assert it so the next reader knows.\n- Nothing exercises `Retry-After` winning over a longer computed delay, which is the interop claim\n  in the description.\n\n### Tone check\n\nYour reply to Riley's jitter question (\"full jitter, because decorrelated buys nothing when the\nretriers aren't correlated to begin with\") is correct and reads slightly clipped. Consider giving the\nreasoning first and the conclusion second — same content, easier to agree with.\n\n### Before you re-request review\n\nThe rollback note is still missing, and your team's checklist asks for one on anything touching the\npayments provider. The postmortem roundup in today's briefing is a good citation for why the cap\nmatters more than the base delay.\n\n✓ Logged as evidence · pr_review_own_scope · subject_matter",
+      "tools": [
+        "python3 ~/.valor/evidence_cli.py add --activity pr_review_own_scope",
+        "fixture: pr_meta.json · pr_diff.diff"
+      ],
+      "suggests": [
+        "pr-console",
+        "design-doc",
+        "wrapup"
+      ]
+    },
+    {
+      "id": "pr-console",
+      "command": "/valor-pr-console",
+      "phrase": "build a review console for #418",
+      "label": "PR review console",
+      "act": "A week",
+      "blurb": "Turns the diff into a zoomable C4 walkthrough plus a quiz whose answers are verified against the diff.",
+      "console": "pr-console.html",
+      "output": "Building the review console for #418 (example-org/checkout-service).\n\n    Fetch      3 changed files, 1 excluded as tests\n    Analyze    net/transport.py, api/payments_client.py\n    Graph      3 actors · 3 containers · 8 components\n    Quiz       6 questions, each answer checked against the diff\n    Assemble   layout deterministic, 2 diffs inlined\n\nA note on the quiz, because it's the part that decides whether this is useful: every\nquestion is written from the diff and then checked back against it independently. A\ncandidate only survives if that second pass can defend one single answer from the code.\nAnything ambiguous gets dropped rather than softened — so on a messier PR you get fewer\nquestions, not worse ones, and the count always follows the change instead of padding to\na round number.\n\nTwo examples of what does not survive here: \"how many attempts does the client make?\"\n(it depends on the env flag, so both 3 and 5 are defensible) and anything about timeout\nownership (this diff doesn't change it, so there's nothing to test).\n\nConsole ready. It opens at System Context, and you can zoom Context → Inside →\nComponents → the real diff lines, flip Before ⇄ After, or play a request through the\nsystem.\n\nCaveats worth passing on: the box labels are generated, so on an unfamiliar PR they\nsometimes want a wording tweak — say the word and I'll adjust them. And the gate is a\nself-check, not a GitHub approval; the actual approval still happens in GitHub.\n\n✓ Logged as evidence · pr_review_console · leadership",
+      "tools": [
+        "Workflow: generate.js — analyze → graph → quiz → verify",
+        "python3 ~/.valor/pr-console/assemble.py",
+        "Artifact: publish",
+        "fixture: pr_meta.json · pr_diff.diff"
+      ],
+      "suggests": [
+        "console-gate",
+        "design-doc",
+        "sync-prep"
+      ]
+    },
+    {
+      "id": "design-doc",
+      "command": "/valor-design-doc",
+      "phrase": "design doc for PROJ-231",
+      "label": "Design doc coach",
+      "act": "A day",
+      "blurb": "Options with trade-offs, a recommendation, and an explicit list of what you're not doing.",
+      "output": "## Refund idempotency — PROJ-231\n\n### Problem statement\n\nThe provider redelivers refund webhooks when our response is slow. We apply the refund per delivery,\nso a slow response can refund a customer twice. Two deliveries of the same event must produce one\nrefund.\n\n### Background\n\nWe ack the webhook *after* applying the refund. To the provider a slow apply looks like a failed\ndelivery, so it redelivers — and the second delivery finds no record that the first one succeeded.\nThe charge path already solved a version of this in PROJ-186 with idempotency keys at the provider\nboundary.\n\n### Goals\n\n- Two deliveries of the same refund event result in one refund, including when our own write succeeded\n  but the ack never landed\n- No change to the provider's retry behaviour required — we can't control it\n- Safe to replay historical events without refunding again\n\n### Non-goals\n\n- Deduplicating *all* webhook types. Refunds first; the pattern can spread later.\n- Multi-provider support. One provider, one contract, until there's a second.\n- Reordering the ack. Acking before applying trades double-refunds for lost refunds; that's a worse\n  failure, and it's out of scope here.\n\n### Option A — Idempotency key at the provider boundary\n\nDerive a key from the provider's event id and send it on the refund call. The provider collapses\nduplicates for us.\n\n- **For:** matches PROJ-186, so one pattern covers charges and refunds. Safe even if our write\n  succeeded and the ack didn't — the provider is the arbiter, not our database.\n- **Against:** depends on the provider honouring keys for refunds (documented, unverified by us).\n  Their key retention window bounds how long a replay stays safe.\n\n### Option B — Dedupe table keyed by event id\n\nInsert the event id before applying; a duplicate insert means we've seen it and can ack immediately.\n\n- **For:** entirely ours, testable offline, no provider assumptions.\n- **Against:** the write and the refund aren't atomic. Crash between them and the event looks handled\n  when it isn't — trading a double refund for a silently dropped one. Needs a reconciliation job to\n  be honest, which is a second moving part.\n\n### Option C — Queue with an at-least-once worker\n\nAck immediately, enqueue, let a worker apply with its own dedupe.\n\n- **For:** decouples our latency from the provider's redelivery clock, which removes the trigger.\n- **Against:** the largest change, and it needs the dedupe from B anyway. Solves latency, not identity.\n\n### Recommendation\n\n**Option A**, with the event id as the key source. It reuses a pattern the team already reviewed,\nputs the arbiter outside our failure domain, and is a two-file change. Verify the provider's key\nretention against their docs before committing, and if refunds turn out not to honour keys, fall back\nto B plus reconciliation rather than C.\n\n### Testing strategy\n\n- Replay the same webhook twice end to end; assert one refund and two 200s\n- Crash-inject between our write and the ack; assert replay still nets one refund\n- Assert a distinct event id for the same charge still refunds (guard against over-collapsing)\n- The integration test from PROJ-262 is the natural home for the first case; it's unassigned and\n  adjacent to this work\n\n### Open questions\n\n1. Does the provider honour idempotency keys on refunds, and for how long? (Blocking — ask on today's\n   16:30 call.)\n2. Should the key be the raw event id or a hash including the amount? Raw is simpler; a hash catches\n   a provider replaying an event id with different contents.\n3. Who owns the reconciliation report if we ever fall back to B?\n\n#### 🦅 Valor | Autonomy & Scope · Craftsmanship\n\n✅ *What you did:* Framed a correctness problem as options with a recommendation and wrote down what\nyou're deliberately not doing — the non-goals are the part most people skip.\n\n🎯 *L4 would also:* Land question 1 before the code. You have the provider on a call today; a design\nwhose blocking unknown gets answered by the author's own meeting is a design that doesn't need a\nsecond review round.\n\n✓ Logged as evidence · design_doc_written · autonomy_scope · role: led",
+      "tools": [
+        "python3 ~/.valor/evidence_cli.py add --activity design_doc_written"
+      ],
+      "suggests": [
+        "wrapup",
+        "sync-prep"
+      ]
+    },
+    {
+      "id": "wrapup",
+      "command": "/valor-wrapup",
+      "phrase": "wrap up",
+      "label": "Evening wrap-up",
+      "act": "A day",
+      "blurb": "Reconstructs the day, verifies every carried item against its source, and captures what happened in meetings.",
+      "output": "## Valor Evening Wrap-up — Thursday, 2026-08-13\n\n### Accomplished Today\n- ✓ Refund idempotency key threaded through `payments/refunds.py` — draft #419, 4 commits\n- ✓ Rollback note written and #418 re-requested for review (`docs/retry-rollback.md`)\n- ✓ Reviewed and approved #421 (httpx bump) — Jordan unblocked\n- ✓ Retry cap made configurable with a 30s default\n- ✓ Provider call: they confirmed idempotency keys are honoured on refunds, 24-hour retention\n\n### Meeting notes captured\n- Checkout weekly sync (14:00) → recorded as `meeting_notes` evidence\n  Decisions: #418 stays the week's critical path; PROJ-259 gets an owner next week\n- Alex / Sam 1:1 (09:45) → recorded\n  Sam has still not shared the written L4 expectations — third week carried\n\n### Tomorrow's Pickup\n- → Finish #419 and take it out of draft. The provider's 24-hour retention answers design\n  question 1, so Option A is now unblocked.\n- → Add the retention window to the design doc's non-goals: replays older than 24h are not safe,\n  and nothing in the code says so yet.\n- → Review #424. It's been waiting two days, CI is still red, and it touches the p99 regression.\n- → PROJ-262 (the webhook-replay integration test) is unassigned and is now the natural home for\n  #419's regression test.\n\n### Verification gate\n- #418 — verified open, review re-requested. Carried as still-open, not as \"needs a rollback note\":\n  that part is done.\n- The provider rate-limit message — **resolved.** It went out in #checkout at 15:52, so the\n  \"not sent\" claim is retired rather than carried into tomorrow.\n\n*Gate: 2 claims — 1 resolved · 1 unresolved · 0 unverified*\n\n### Career Note\nStrong execution day, and the partner call was the first Industry Knowledge entry in six weeks —\nyou went in with their rate-limit change read and came out with the answer that unblocked your own\ndesign. That's the gap the briefing named this morning, closed by lunchtime.\n\nThe honest counterweight: everything you shipped today was inside scope somebody else had already\ndecided. Sam's L4 note — owning a problem area where the scope isn't decided — hasn't moved. PROJ-259\nis the nearest candidate: no owner, a real regression, and you already have the trace.\n\n✓ Saved to ~/.valor/carry-forward/carry-forward-2026-08-13.md\n✓ Logged as evidence · wrapup_completed · meeting_notes ×2",
+      "tools": [
+        "git log --since=midnight",
+        "python3 ~/.valor/evidence_cli.py list --days 1",
+        "python3 ~/.valor/verify.py reconcile",
+        "python3 ~/.valor/verify.py carry-write",
+        "fixture: calendar.json · meeting_notes.md · git_activity.txt"
+      ],
+      "suggests": [
+        "carry-file",
+        "prep",
+        "weekly"
+      ]
+    },
+    {
+      "id": "sync-prep",
+      "command": "/valor-sync-prep",
+      "phrase": "sync prep",
+      "label": "Project sync prep",
+      "act": "A week",
+      "blurb": "Team-facing talk points for the sync the briefing already reserved time for. Plain text, pastes clean.",
+      "output": "Checkout weekly sync — Thursday 14:00. Talk points, plain text so it pastes into the shared notes.\n\nPROGRESS SINCE LAST SYNC\n\nRetry backoff (PROJ-244, #418) is in review with one round answered. Retries now back off with\njitter and stop synchronising across pods, capped at 30s. The cap is configurable as of today.\nThis is the item the group named as the critical path last week, and it is one review away.\n\nRefund double-apply (PROJ-231, #419) is a draft. The design is settled: idempotency key at the\nprovider boundary, same pattern as the charge path from PROJ-186.\n\nProvider error codes (PROJ-238) shipped Tuesday. It is what made the retry storm legible in the\nfirst place, so the debugging that follows gets easier.\n\nDECISIONS TO LAND\n\n1. Captures are fail-fast under this PR. Retries only apply to idempotent verbs, so a provider 5xx\n   on a capture now fails immediately instead of retrying three times. Either we accept that until\n   captures get idempotency keys, or #418 waits for them. Recommend accepting it and tracking the\n   keys as follow-up work.\n\n2. PROJ-259 needs an owner. The p99 regression has been open since the address-validation rollout,\n   there is a trace pointing at a synchronous call in the hot path, and it is still nobody's.\n\nOPEN QUESTIONS\n\n- Riley's profiling results on PROJ-259: still outstanding, and the ticket cannot be planned without\n  them.\n- The provider's new per-tenant rate limits land next quarter. Our retry budget was sized against\n  today's limits. Who owns re-checking that, and when?\n\nWHAT I NEED FROM THE ROOM\n\nJordan is blocked on PROJ-248 until #418 merges. If anyone can review it today, that unblocks a\nsecond person's week, not just mine.\n\n✓ Logged as evidence · sync_prep_completed · collaboration",
+      "tools": [
+        "python3 ~/.valor/focus.py resolve",
+        "python3 ~/.valor/evidence_cli.py list --days 7",
+        "fixture: jira.json · github.json · meeting_notes.md"
+      ],
+      "suggests": [
+        "prep",
+        "weekly"
+      ]
+    },
+    {
+      "id": "prep",
+      "command": "/valor-prep",
+      "phrase": "prep for 1:1",
+      "label": "1:1 prep",
+      "act": "A week",
+      "blurb": "Drafted in your own 1:1 doc's format, with anything chronically stuck escalated instead of re-listed.",
+      "output": "Your doc keeps a pinned block, then one dated entry per week: Goals this week, Progress, Blockers,\nAsks, Feedback — plain lines, no bold. Here is next week's entry in that shape, ready to paste.\n\n## 2026-08-17\n\nGoals this week\n- land #419 (refund idempotency) — the design is settled and the provider confirmed 24-hour key retention\n- take PROJ-259 from \"nobody's\" to owned, with a plan I wrote\n- review #424, which has been waiting since Tuesday\n\nProgress\n- retry backoff (#418) is in review with the rollback note attached; it unblocks Jordan's PROJ-248\n- refund design is done: idempotency key at the provider boundary, same pattern as the charge path\n- partner call answered the blocking design question — keys are honoured on refunds, 24-hour window\n- the retry cap is configurable now, with 30s as the default\n\nBlockers\n- Riley's profiling results on PROJ-259 — outstanding three weeks running\n\nAsks\n- I would like PROJ-259 as mine end to end: I have the trace and nobody owns it. That is the closest\n  thing on the board to the \"own a problem area where the scope isn't decided\" gap from our 1:1.\n- The written L4 expectations you mentioned three weeks ago would help me self-check between these.\n\nFeedback\n- The suggestion to check with platform before building the retry layer changed the design before it\n  was built, not after. More of that would be useful.\n\n---\n\nSupporting analysis, for you rather than the doc:\n\nEvidence this cycle: 51 entries. Collaboration 15, Subject Matter 15, Autonomy & Scope 11,\nLeadership 8, Industry Knowledge 2.\n\nTrend across the last three weekly summaries: execution is consistently strong, cross-team contact\ncomes in bursts around reviews, and Industry Knowledge was flat at zero until yesterday's partner\ncall.\n\nChronic item — escalating rather than re-listing: Riley's PROJ-259 profiling has been carried for\nthree weeks and is now past your escalation threshold. It is the third week in a row this appears\nunder Blockers, which is the pattern worth naming out loud rather than logging again.\n\nAlso carried three weeks: Sam's commitment to share the written L4 expectations. It is in the Asks\nabove phrased as a request, not a complaint — you asked me to keep that one visible.\n\nCapacity note: next week has no days off and no holidays, so three goals is a real week's work.\n\n✓ Logged as evidence · one_on_one_prep · collaboration",
+      "tools": [
+        "python3 ~/.valor/evidence_cli.py list --days 7",
+        "python3 ~/.valor/evidence_cli.py weekly-summary-list --limit 4",
+        "python3 ~/.valor/evidence_cli.py framework-slice",
+        "fixture: one_on_one_doc.md · calendar.json"
+      ],
+      "suggests": [
+        "weekly",
+        "reflection"
+      ]
+    },
+    {
+      "id": "weekly",
+      "command": "/valor-weekly",
+      "phrase": "reflect on my week",
+      "label": "Weekly reflection",
+      "act": "A week",
+      "blurb": "A competency breakdown that names the real gap instead of flattering you.",
+      "output": "## Valor Weekly Reflection — Week of 2026-08-10\n\n### What You Did\n- Retry backoff (PROJ-244 / #418): moved retry policy into the shared transport, jittered and capped;\n  in review with the rollback note attached\n- Refund double-apply (PROJ-231 / #419): design settled, key threaded through, draft open\n- Provider error codes (PROJ-238) merged — 2 reviews\n- Retry contract written down for the platform team (PROJ-241) — merged\n- Reviewed #421 (approved) and platform-core#415 (approved with comments, outside your team)\n- Partner call: confirmed idempotency-key retention, which unblocked your own design\n\n### Competency Breakdown\nThis week (11 entries):\n- Subject Matter Expertise ····· 4\n- Internal Collaboration ······· 4\n- Autonomy & Scope ············· 2\n- Industry Knowledge ··········· 1\n- Leadership ··················· 0\n\nVersus the last three weeks: Subject Matter steady at 5–7, Collaboration up from 2, Industry\nKnowledge off zero for the first time in six weeks, Leadership down from 3.\n\n### Gaps & Next Week Focus\n- **Leadership at zero this week.** The three weeks before had a runbook entry, a walkthrough, and a\n  process change. This week was heads-down delivery. Not a problem in one week; a pattern if it\n  repeats, since it's half of what L4 asks for.\n- **Industry Knowledge is still 2 of 51 this cycle.** Yesterday's call was the first entry in six\n  weeks. The provider's rate-limit change next quarter is a standing reason to keep reading their\n  release notes rather than only reacting to them.\n- **Everything you shipped was pre-scoped.** Five deliverables, all from tickets someone else framed.\n  PROJ-259 is unowned, has a real regression, and you have the trace — that's the one that moves the\n  gap Sam named.\n\n### For Your 1:1\n\"Shipped the retry work and settled the refund design; the partner call answered the blocking\nquestion, so #419 is unblocked. I'd like PROJ-259 as mine end to end — it's unowned, I have the trace,\nand it's the closest thing on the board to owning a problem where the scope isn't decided yet.\"\n\n✓ Saved to the weekly summary table (week of 2026-08-10)\n✓ Logged as evidence · weekly_reflection_completed · autonomy_scope",
+      "tools": [
+        "python3 ~/.valor/evidence_cli.py list --from 2026-08-10 --to 2026-08-14",
+        "python3 ~/.valor/evidence_cli.py weekly-summary-save",
+        "fixture: jira.json · github.json"
+      ],
+      "suggests": [
+        "reflection",
+        "prep"
+      ]
+    },
+    {
+      "id": "reflection",
+      "command": "/valor-reflection",
+      "phrase": "half-year reflection",
+      "label": "Performance reflection",
+      "act": "A review cycle",
+      "blurb": "Six months of captured evidence into a review draft — including the work you forgot to log.",
+      "output": "Cycle: 2026-02-12 → 2026-08-13. 51 evidence entries, 3 weekly summaries, 6 merged PRs, 5 completed\ntickets. Draft below; nothing is written anywhere until you say so.\n\n## Impact themes\n\n**1. Made the payments path survive a degraded provider** *(Subject Matter Expertise, Autonomy &\nScope · Ownership)*\n\nTook the checkout service from fixed-interval retries that amplified provider outages to a jittered,\ncapped, verb-aware retry policy in the shared transport layer — via an on-call incident where I drained\nthe retry queue, shipped a temporary cap, then filed the real fix rather than leaving the workaround in.\nProvider error codes (PROJ-238, deployed) made the failure mode legible first; the retry work (PROJ-244)\nis in review now.\n\n**2. Made duplicate provider events safe** *(Subject Matter Expertise · Craftsmanship)*\n\nIdempotency keys on the charge path (PROJ-186, validated in production), then the same pattern for\nrefunds after finding the double-apply window: we ack after applying, so a slow apply reads as a\nfailed delivery. The refund fix is in progress, not shipped.\n\n**3. Set the outbound-HTTP boundary with the platform team** *(Internal Collaboration · Collaboration)*\n\nReviewed platform-core#415 outside my own tickets and flagged that the retry layer sat one level too\nhigh — their design changed before it was built. Wrote the retry contract down for them (PROJ-241),\nand negotiated the checkout/platform boundary with two staff engineers, writing up the outcome the\nsame day.\n\n**4. Left the on-call rotation better than I found it** *(Leadership · Ownership)*\n\nWrote the provider-degradation runbook from scratch (PROJ-205), added the incident's exact queue-drain\ncommands after using them, and proposed the rollback-note requirement for provider-touching PRs, which\nthe team adopted as a checklist item.\n\n## Coverage check — work in git and sessions but not in your evidence log\n\n- **PR #397, \"payments: retry budget metrics\", merged 2026-06-18.** No evidence entry. It's the\n  instrumentation that makes retry amplification visible before customers see it — it belongs in\n  theme 1. Add it?\n- Two agent sessions in April show a settlement-report timezone investigation; the fix is logged, the\n  investigation that found it isn't. Minor, but it's the harder half.\n\n## Confirm before you submit\n\n- **The refund fix is recorded `in_progress`.** This draft says \"in progress\" everywhere, not\n  \"shipped\". If #419 merges before you submit, re-run this and the phrasing changes with it.\n- **The retry backoff is recorded `in_progress` too** — it's in review, not merged. Theme 1 currently\n  reads \"is in review now\". Keep it that way unless it lands.\n- **The transport-layer decision is recorded as `decided-by-other`.** Sam suggested checking with\n  platform; the direction came out of that conversation. Theme 3 credits you with the review and the\n  contract, not the decision — confirm that's how you'd tell it.\n- **The funnel instrumentation (2026-04-07) has no role recorded.** Did you lead that or co-build it?\n  It's in no theme until you say.\n- **Industry Knowledge has 2 entries in six months.** It's the thinnest axis by a wide margin. Worth\n  naming as a development area yourself rather than leaving it to be found.\n\n## What this draft does not claim\n\nNothing in the evidence supports \"owned a problem area end to end where the scope wasn't already\ndecided\" — the L4 line from your 1:1. Every deliverable this cycle came from a ticket someone else\nframed. That's the honest read, and it's also the shortest path to your next level.\n\n*Plain text, paste-ready. Not written anywhere yet.*",
+      "tools": [
+        "python3 ~/.valor/evidence_cli.py export --from 2026-02-12 --to 2026-08-13",
+        "python3 ~/.valor/collect_transcripts.py",
+        "git log --author=alex",
+        "fixture: github.json · jira.json"
+      ],
+      "suggests": [
+        "upward-feedback",
+        "evidence-stats"
+      ]
+    },
+    {
+      "id": "upward-feedback",
+      "command": "/valor-upward-feedback",
+      "phrase": "feedback about my manager",
+      "label": "Upward feedback",
+      "act": "A review cycle",
+      "blurb": "Grounded in behaviour from your meeting notes — and honest when the evidence is thin.",
+      "output": "Drawn from 1:1 and sync notes in this cycle's evidence. Plain text, nothing written anywhere.\n\nWHAT WORKS WELL\n\nYou redirect before the work happens, not after. When I brought the retry storm to our 1:1, I had\nalready decided the policy belonged in the payments client. You asked whether platform was about to\nbuild the same thing. That one question is why the retry layer ended up in the right place and why\ntheir design changed before it was built rather than after. It saved a rewrite.\n\nYou push on numbers instead of accepting shapes. \"As many attempts as it takes\" did not survive our\n1:1; we left with 5 attempts and a 30-second cap. The cap turned out to matter more than the base\ndelay, which is exactly what you were pointing at.\n\nYou name gaps plainly. Being told that I execute well on assigned work but have not owned a problem\nwhere the scope was not already decided was more useful than a softer version would have been. It is\nthe sentence I have been steering by since.\n\nWHAT WOULD HELP ME MORE\n\nThe written L4 expectations have not arrived. You offered to share them at our 1:1 on 2026-08-06,\nand they have come up in my notes for three weeks. I am asking again because I would rather\nself-check between our 1:1s than wait to hear how I am tracking.\n\nOwnership gets named but not assigned. PROJ-259 has been open since the address-validation rollout,\ncame up in a sync with no owner, and I have the trace for it. Twice the conversation ended with \"does\nthis need a dedicated owner?\" and no decision. If the answer is me, saying so would let me start.\n\nWHERE MY EVIDENCE IS THIN\n\nI only see you in our 1:1s and the checkout sync. I have nothing on how you handle disagreement with\nyour own peers, how you argue for the team's priorities upward, or how you support anyone else on the\nteam — so treat everything above as feedback on our working relationship specifically, not a\nrounded view of your management.\n\n---\n\nTwo notes before you send this:\n\nThe two requests are more actionable than the praise, and both are backed by dated notes rather than\nimpressions — that is what makes them hard to wave off. The L4 one has appeared three weeks running.\n\nI found nothing in your notes about how Sam handles pressure from above, and I have not invented any.\nIf you want that in the feedback, the honest way is to observe it first.",
+      "tools": [
+        "python3 ~/.valor/evidence_cli.py search \"meeting_notes\"",
+        "fixture: meeting_notes.md · one_on_one_doc.md"
+      ],
+      "suggests": [
+        "setup",
+        "evidence-stats"
+      ]
+    },
+    {
+      "id": "setup",
+      "command": "/valor-setup",
+      "phrase": "set up valor",
+      "label": "Setup",
+      "act": "Setup",
+      "blurb": "Paste your company's ladder, or start from one of the bundled examples. Runs once.",
+      "output": "Setting up Valor. Three things: your career framework, your levels, and which integrations you have.\n\n**1. Career framework**\n\nPaste your company's career ladder — a Google Doc, a Confluence page, a wiki dump, whatever you have.\nFormatting doesn't matter; I'll structure it into levels, competencies, and values.\n\nNo ladder handy? Four options:\n\n    a) A generic software-engineering IC ladder (L3 -> L6)\n    b) An engineering-manager ladder\n    c) A growth framework with no formal levels, for companies that don't use them\n    d) Generate one from your job title\n\n    > b\n\nCopied the engineering-manager ladder into `~/.valor/career_framework.md`. It's a starting point with\nplaceholder company values — edit it whenever, and re-run setup to reload.\n\n    ✓ 4 levels found: M1, M2, M3, M4\n    ✓ 5 competency axes\n    ✓ 3 company values (placeholders — worth replacing with your real ones)\n\n**2. Your levels**\n\nWhich are you now, and which are you working toward? The gap is what coaching aims at. The ceiling is\nthe level where I'll acknowledge behaviour without treating it as an expectation.\n\n    > current M2, target M3\n\n    ✓ current: M2 — Engineering Manager\n    ✓ target:  M3 — Senior Engineering Manager\n    ✓ ceiling: M4 — Director (inferred; say so if you'd rather it were M3)\n\n**3. Integrations**\n\nChecking what's already available in your environment:\n\n    ✓ GitHub    — gh CLI authenticated\n    ✓ Jira      — Atlassian tools present\n    ✗ Calendar  — no connector found\n    ✓ News      — web search available\n\n    Which GitHub org should I watch? > example-org\n    Which Jira project keys? > PROJ\n\nCalendar is what powers the day plan and meeting-notes capture. Everything works without it; the\nbriefing just won't try to schedule your day. Enable it later by flipping one flag in `state.json`.\n\n**Done.** Working hours are 09:00–18:00, so the morning briefing offers itself before 11:00 and the\nwrap-up after 16:00 — say \"start my day\" or \"wrap up\" whenever you like instead.\n\nYour framework, levels, and evidence all live in `~/.valor/`. Nothing leaves this machine.",
+      "tools": [
+        "python3 ~/.valor/evidence_cli.py framework-validate",
+        "python3 ~/.valor/evidence_cli.py state-set current_level M2"
+      ],
+      "suggests": [
+        "no-integrations",
+        "briefing"
+      ]
+    },
+    {
+      "id": "why-first",
+      "command": "(follow-up)",
+      "phrase": "why is the refund fix first?",
+      "label": "Push back on the ranking",
+      "act": "A day",
+      "blurb": "The ranking is arguable, so it shows its reasoning and lets you overrule it.",
+      "output": "Three inputs put it there, in this order:\n\n**Your week's goals.** Your 1:1 doc for this week lists \"land the refund idempotency fix (PROJ-231) —\nthe one that matters\" as goal 1. I read that from the doc, not from the ticket's priority field, which\nstill says Medium.\n\n**Your standing rules.** One of them says #418 comes ahead of new work because PROJ-248 is blocked on\nit. That's why #418 is second rather than fourth — but it's *finishing* work, not new work, and it\nneeds 30 minutes plus a review, not a deep block.\n\n**The shape of the day.** You have exactly one deep gap (10:30–13:30). The refund fix is the only\nitem on the list that can't be done in fragments, so anything else in that slot wastes it.\n\nIf you'd rather clear #418 first — it is one review away and it unblocks another person's week —\nsay so and I'll reorder. The deep block would then go to the refund fix's second half after the sync,\nwhich is 45 minutes shorter.\n\nOne thing worth naming: PROJ-259 isn't on the list at all today. It's held behind Riley's profiling\nresults, and it's the only item on your board that isn't already scoped by someone else — which is\nthe L4 gap Sam named. Worth a nudge in your 1:1 rather than another week of waiting.",
+      "tools": [],
+      "suggests": [
+        "ambient",
+        "pr-review",
+        "evidence-stats"
+      ]
+    },
+    {
+      "id": "evidence-stats",
+      "command": "(evidence CLI)",
+      "phrase": "what does my evidence look like?",
+      "label": "Look at the local store",
+      "act": "A day",
+      "blurb": "The whole product surface is one SQLite file and some plain text under ~/.valor.",
+      "output": "    $ python3 ~/.valor/evidence_cli.py stats\n\n    {\n      \"total_entries\": 51,\n      \"by_competency\": {\n        \"collaboration\": 15,\n        \"subject_matter\": 15,\n        \"autonomy_scope\": 11,\n        \"leadership\": 8,\n        \"industry_knowledge\": 2\n      },\n      \"this_week\": {\n        \"subject_matter\": 4,\n        \"collaboration\": 4,\n        \"autonomy_scope\": 2\n      },\n      \"by_agent\": {\n        \"valor-ambient\": 44,\n        \"valor-wrapup\": 3,\n        \"valor-design-doc\": 2,\n        \"valor-briefing\": 1,\n        \"valor-weekly\": 1\n      }\n    }\n\n51 entries over six months, and 44 of them came from ambient coaching — work that got captured while\nyou were doing it rather than remembered afterwards. That ratio is the point: the reflection you'd\nwrite at review time is built mostly from moments nobody would have written down.\n\nThe 2 under `industry_knowledge` is the honest weak spot. It's why this morning's briefing suggested\ngoing into the partner call with their rate-limit change read.\n\nEverything here is local: `~/.valor/evidence.sqlite` for the entries, `career_framework.md` for the\nladder they're scored against, plain Markdown in `carry-forward/`. No telemetry, no sync, no server —\nyou can read the whole store with `sqlite3` or delete it with `rm`.",
+      "tools": [
+        "python3 ~/.valor/evidence_cli.py stats"
+      ],
+      "suggests": [
+        "reflection",
+        "briefing",
+        "quiet"
+      ]
+    },
+    {
+      "id": "carry-file",
+      "command": "(local file)",
+      "phrase": "show me the carry-forward file",
+      "label": "Read the handoff it wrote",
+      "act": "A day",
+      "blurb": "Tomorrow-you gets a file that can be picked up cold, not a memory of today.",
+      "output": "    $ cat ~/.valor/carry-forward/carry-forward-2026-08-13.md\n\n    # Carry-forward — 2026-08-13\n\n    ## Shipped today\n    - Refund idempotency key threaded through payments/refunds.py (draft #419, 4 commits)\n    - Rollback note written; #418 re-requested for review\n    - Reviewed and approved #421 — Jordan unblocked\n    - Retry cap made configurable, 30s default\n    - Provider confirmed idempotency keys are honoured on refunds, 24-hour retention\n\n    ## Pick up tomorrow\n    - Finish #419 and take it out of draft. Option A is unblocked now that\n      retention is confirmed.\n    - Add the 24-hour retention limit to the design doc's non-goals: replays older\n      than that are not safe, and nothing in the code says so yet.\n    - Review #424 — waiting two days, CI still red, touches the p99 regression.\n    - PROJ-262 (webhook-replay integration test) is unassigned and is now the\n      natural home for #419's regression test.\n\n    ## Verified before writing\n    - #418 — open, review re-requested. Carried as open, NOT as \"needs a rollback\n      note\": that part is done.\n    - Provider rate-limit message — sent 15:52 in #checkout. Claim retired.\n\n    ## Open question\n    - Should the refund key be the raw event id or a hash including the amount?\n      Raw is simpler; a hash catches a replayed id with different contents.\n\nThat's the whole file — plain Markdown, on your disk. Tomorrow's briefing reads it back, re-checks each\ncarried item against its source before re-raising it, and drops whatever turned out to be done.\n\nThe detail that matters: the third line under \"Verified before writing\" would have said \"not sent\" if\nnothing had checked. It got checked, so tomorrow doesn't start with a stale worry.",
+      "tools": [
+        "cat ~/.valor/carry-forward/carry-forward-2026-08-13.md"
+      ],
+      "suggests": [
+        "prep",
+        "weekly",
+        "reflection"
+      ]
+    },
+    {
+      "id": "console-gate",
+      "command": "(follow-up)",
+      "phrase": "what happens if the reviewer gets one wrong?",
+      "label": "Ask about the gate",
+      "act": "A week",
+      "blurb": "The quiz is all-or-nothing on purpose — and it can't approve anything for you.",
+      "output": "They don't pass. The gate wants all six, not a majority.\n\nWhen they miss one, the console shows every question they got wrong, what they answered, the correct\nanswer, and why the tempting wrong answer is wrong — then sends them back into the diagram to dig into\nthat specific piece. They can retake it as many times as they like.\n\nThat sounds harsh for a quiz, and it's deliberate. A 4-of-6 reviewer is someone who understood the\nbackoff curve and missed that captures silently stopped retrying — which is exactly the finding that\nshould block this PR. Partial credit would let the most important question be the one they skipped.\n\nTwo honest limits worth repeating to anyone you hand this to:\n\n**It is a self-check, not an approval.** Acing it flips a label in the page. The real approval still\nhappens in GitHub, by a human who chooses to give it.\n\n**The questions come from the diff, not from a rulebook.** Six exist here because an independent pass\ncould defend a single answer from the code for each one; anything it couldn't defend was dropped\nrather than reworded. On a PR with more ambiguity you'd get fewer questions, not worse ones — the\ncount follows the change, and it never pads to a round number.\n\nThe console for this PR is embedded further down this page. Try the gate yourself: get one wrong on\npurpose and see what it hands back.",
+      "tools": [],
+      "suggests": [
+        "sync-prep",
+        "wrapup"
+      ]
+    },
+    {
+      "id": "no-integrations",
+      "command": "(question)",
+      "phrase": "what if I don't have Jira?",
+      "label": "Ask what's required",
+      "act": "Setup",
+      "blurb": "Every integration is optional and independently switchable. Sections skip; nothing breaks.",
+      "output": "Then the briefing skips the ticket section and works from everything else — your PR queue, your\ncalendar, yesterday's carry-forward, and your evidence history. Nothing errors, and nothing nags you\nabout the missing one.\n\nThat's how all four work. They're independent flags in `~/.valor/state.json`:\n\n    \"integrations\": {\n      \"github\": true,\n      \"jira\": false,\n      \"calendar\": true,\n      \"news\": true\n    }\n\nWhat you lose per integration, concretely:\n\n- **No GitHub** — no review queue and no PR state, so the wrap-up leans on git history instead. The PR\n  review coach and the review console need it; they'll tell you so and stop rather than guess.\n- **No Jira** — no ticket context and no backlog pickups. If your team tracks work somewhere else,\n  paste a list and it'll rank that instead.\n- **No calendar** — no day plan, no prep blocks, no meeting-notes capture. Priorities still come out\n  ranked; they just aren't fitted to a schedule.\n- **No news** — the briefing loses its industry section. That one is genuinely cosmetic.\n\nWhat never depends on an integration: the career framework, the evidence store, ambient coaching, the\nweekly reflection, the performance reflection, and the upward feedback. Those read your local history,\nso they work on a laptop with nothing connected at all.\n\nWorth knowing for the opposite reason: this demo profile runs with **all four off**. Everything you've\nseen in this session came from local state and fixture files.",
+      "tools": [],
+      "suggests": [
+        "briefing",
+        "quiet"
+      ]
+    },
+    {
+      "id": "quiet",
+      "command": "(ambient control)",
+      "phrase": "valor quiet",
+      "label": "Turn the coaching off",
+      "act": "Setup",
+      "blurb": "Three words to silence it. The point is that it's easy to refuse.",
+      "output": "Coaching off for this conversation. I'll keep working normally and stop adding footers.\n\nThe three controls, so you know what you're agreeing to:\n\n- **`valor quiet`** — silences coaching for this conversation only. The next session starts normal.\n- **`valor off`** — silences it until you say `valor on`. Persisted in `state.json`, so it survives\n  restarts.\n- **`valor on`** — back to normal.\n\nThe ambient evidence entries go quiet with the footers — they're recorded as part of the same pass, so\nif I'm not coaching, I'm not writing them either. Commands you invoke on purpose still record their\nown evidence: a briefing or a wrap-up logs what it did regardless.\n\nWorth being blunt about why this exists: a coach that can't be told to be quiet turns into a nag, and a\nnag gets uninstalled. The commands you invoke on purpose — the briefing, the reviews, the reflections —\nstill work while quiet. It's only the unrequested footers that stop.",
+      "tools": [],
+      "suggests": [
+        "briefing",
+        "reflection"
+      ]
+    }
+  ]
+}

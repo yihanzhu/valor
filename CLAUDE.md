@@ -39,7 +39,7 @@ comment on that line. Never bypass the hook with `--no-verify` for real terms.
 - Runtime code stays Python stdlib-only where practical; keep changes
   local-first and privacy-first.
 - Before a PR: `python3 -m pytest -q` and
-  `python3 -m compileall src tests scripts`.
+  `python3 -m compileall src tests scripts examples`.
 - When bumping `VERSION`, also run `python3 scripts/check_version_sync.py` — it
   asserts the plugin manifests and website badges match `VERSION` (CI enforces
   it). Don't hand-edit one without the others.

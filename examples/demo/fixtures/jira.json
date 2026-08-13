@@ -1,0 +1,155 @@
+{
+  "_comment": "Fictional Jira data for the Valor demo profile. Stands in for the Atlassian MCP tools while integrations.jira is false. Persona: Alex, L3 software engineer on a checkout/payments team.",
+  "project": "PROJ",
+  "me": "alex@example.com",
+  "active": [
+    {
+      "key": "PROJ-231",
+      "summary": "Refunds can double-apply when the provider retries a webhook",
+      "status": "In Progress",
+      "priority": "High",
+      "assignee": "Alex",
+      "reporter": "Dana",
+      "updated": "{{TODAY-1}}",
+      "url": "https://example.atlassian.net/browse/PROJ-231",
+      "labels": ["payments", "reliability"],
+      "description": "Provider redelivers refund webhooks on timeout. We apply the refund per delivery, so a slow response can refund twice. Needs an idempotency key on the refund path.",
+      "comments": 4
+    },
+    {
+      "key": "PROJ-244",
+      "summary": "Retry storm against the payments provider under partial outage",
+      "status": "In Review",
+      "priority": "High",
+      "assignee": "Alex",
+      "reporter": "Riley",
+      "updated": "{{TODAY}}",
+      "url": "https://example.atlassian.net/browse/PROJ-244",
+      "labels": ["payments", "reliability"],
+      "description": "Fixed-interval retries synchronise across pods and hammer the provider. Add jittered exponential backoff with a cap. PR #418 open.",
+      "comments": 7
+    },
+    {
+      "key": "PROJ-259",
+      "summary": "Checkout latency p99 regressed after the address-validation rollout",
+      "status": "To Do",
+      "priority": "Medium",
+      "assignee": "Alex",
+      "reporter": "Sam",
+      "updated": "{{TODAY-3}}",
+      "url": "https://example.atlassian.net/browse/PROJ-259",
+      "labels": ["checkout", "performance"],
+      "description": "p99 up ~180ms since the address-validation service went live. Suspect a synchronous call in the hot path.",
+      "comments": 2
+    }
+  ],
+  "watched": [
+    {
+      "key": "PROJ-248",
+      "summary": "Move the payments client onto the shared transport layer",
+      "status": "In Progress",
+      "priority": "Medium",
+      "assignee": "Jordan",
+      "updated": "{{TODAY-2}}",
+      "url": "https://example.atlassian.net/browse/PROJ-248",
+      "labels": ["payments", "platform"],
+      "description": "Depends on the retry policy landing in net/transport first (PROJ-244).",
+      "comments": 3
+    }
+  ],
+  "backlog_candidates": [
+    {
+      "key": "PROJ-262",
+      "summary": "Refund path has no integration test for the webhook replay case",
+      "status": "To Do",
+      "priority": "Medium",
+      "assignee": null,
+      "updated": "{{TODAY-12}}",
+      "url": "https://example.atlassian.net/browse/PROJ-262",
+      "labels": ["payments", "test-gap"],
+      "description": "Unassigned. Directly adjacent to PROJ-231 — cheap to pick up while that context is loaded.",
+      "comments": 0
+    },
+    {
+      "key": "PROJ-201",
+      "summary": "Provider timeout values are duplicated in four config files",
+      "status": "To Do",
+      "priority": "Low",
+      "assignee": null,
+      "updated": "{{TODAY-31}}",
+      "url": "https://example.atlassian.net/browse/PROJ-201",
+      "labels": ["cleanup"],
+      "description": "Stale, unassigned, low priority. Good spare-capacity pickup, not a priority driver.",
+      "comments": 1
+    }
+  ],
+  "completed_this_week": [
+    {
+      "key": "PROJ-238",
+      "summary": "Surface provider error codes in the checkout failure log",
+      "status": "Done",
+      "priority": "Medium",
+      "assignee": "Alex",
+      "resolved": "{{TODAY-2}}",
+      "url": "https://example.atlassian.net/browse/PROJ-238",
+      "labels": ["observability"]
+    },
+    {
+      "key": "PROJ-241",
+      "summary": "Document the payments retry contract for the platform team",
+      "status": "Done",
+      "priority": "Low",
+      "assignee": "Alex",
+      "resolved": "{{TODAY-4}}",
+      "url": "https://example.atlassian.net/browse/PROJ-241",
+      "labels": ["docs"]
+    }
+  ],
+  "completed_this_cycle": [
+    {
+      "key": "PROJ-186",
+      "summary": "Idempotency keys on the charge path",
+      "status": "Done",
+      "assignee": "Alex",
+      "resolved": "{{CYCLE_START+34}}",
+      "url": "https://example.atlassian.net/browse/PROJ-186",
+      "labels": ["payments", "reliability"]
+    },
+    {
+      "key": "PROJ-192",
+      "summary": "Split the checkout service's provider adapters behind an interface",
+      "status": "Done",
+      "assignee": "Alex",
+      "resolved": "{{CYCLE_START+52}}",
+      "url": "https://example.atlassian.net/browse/PROJ-192",
+      "labels": ["payments", "design"]
+    },
+    {
+      "key": "PROJ-205",
+      "summary": "On-call runbook for provider degradation",
+      "status": "Done",
+      "assignee": "Alex",
+      "resolved": "{{CYCLE_START+78}}",
+      "url": "https://example.atlassian.net/browse/PROJ-205",
+      "labels": ["ops", "docs"]
+    },
+    {
+      "key": "PROJ-219",
+      "summary": "Migrate checkout webhooks off the deprecated queue client",
+      "status": "Done",
+      "assignee": "Alex",
+      "resolved": "{{CYCLE_START+109}}",
+      "url": "https://example.atlassian.net/browse/PROJ-219",
+      "labels": ["migration"]
+    },
+    {
+      "key": "PROJ-238",
+      "summary": "Surface provider error codes in the checkout failure log",
+      "status": "Done",
+      "assignee": "Alex",
+      "resolved": "{{TODAY-2}}",
+      "url": "https://example.atlassian.net/browse/PROJ-238",
+      "labels": ["observability"]
+    }
+  ]
+}

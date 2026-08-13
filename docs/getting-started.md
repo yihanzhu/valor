@@ -46,8 +46,11 @@ setup walks you through:
 3. **Integrations** -- configure GitHub org, Jira projects, and disable
    tools you don't use
 
-If you don't have your career ladder handy, the setup can generate a generic
-engineering ladder to start with. You can always re-run `/valor-setup` later.
+No career ladder handy? Setup offers the ready-made, fully generic frameworks in
+[`examples/frameworks/`](../examples/frameworks/) — a software-engineering IC
+ladder, an engineering-manager ladder, and a no-formal-levels growth framework —
+or it can generate one from your job title. Pick one, then customize. You can
+always re-run `/valor-setup` later.
 
 ### Manual setup (alternative)
 
@@ -119,6 +122,9 @@ career coaching loop.
 ## What's Next
 
 - Run a few briefings and wrap-ups to build evidence
+- Say "build a review console for #123" or use `/valor-pr-console` on a PR that's
+  hard to review cold — you get an interactive C4 walkthrough plus a
+  diff-verified mastery quiz (needs GitHub)
 - Try `/valor-weekly` at the end of the week for a weekly reflection
 - Say "prep for 1:1" or use `/valor-prep` before your manager sync
 - Say "sync prep" or use `/valor-sync-prep` ~30 min before a project sync
@@ -127,3 +133,6 @@ career coaching loop.
 - Say "feedback about my manager" or use `/valor-upward-feedback` at review time
   for a manager upward-feedback draft grounded in your meeting notes + 1:1 evidence
 - Say "valor quiet" to suppress coaching for a conversation
+- Showing Valor to your team? [`examples/demo/`](../examples/demo/) seeds a
+  fictional profile into a throwaway `HOME` so you can demo every workflow
+  without exposing your own work

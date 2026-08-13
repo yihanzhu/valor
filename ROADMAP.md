@@ -19,7 +19,7 @@ What shipped:
 
 - local evidence store and CLI
 - configurable career framework template
-- six assistant workflows (expanded over later phases to the current ten)
+- six assistant workflows (expanded over later phases to the current eleven)
 - ambient coaching rules
 - install flow for Claude Code, with Cursor kept as a legacy target
 
@@ -256,6 +256,65 @@ What shipped:
   thin evidence rather than fabricating.
 - evidence DB schema v3 → v5.
 - version bump to 0.16.0
+
+## Phase 14: Reviewer Onboarding + Launch Hygiene
+
+**Status:** Complete
+
+What shipped:
+
+- **`/valor-pr-console`**: turns a pull request into an interactive C4 review
+  console — plain-English, zoomable (system context → containers → components →
+  the real diff) with a Before ⇄ After toggle and a request-flow animation —
+  plus a coverage-driven **mastery quiz** whose answers are independently
+  verified against the diff (ambiguous candidates are dropped). Acing it marks
+  the reviewer "approval-ready"; the approval itself still happens in GitHub.
+  Layout is deterministic (`assemble.py`), so only the labels/quiz are
+  LLM-generated. Requires GitHub; published as a private Artifact.
+- **Example career frameworks**: three fully generic starting points ship in
+  `examples/frameworks/` (software-engineering IC ladder, engineering-manager
+  ladder, no-formal-levels growth framework) and `/valor-setup` offers them when
+  the user has no ladder to paste — previously the only fallback was generating
+  one from the job title.
+- **Release-tracked updates**: the update check resolves the latest **release
+  tag** (`vX.Y.Z`, semver-aware, pre-releases skipped) instead of `main`, and is
+  **notify-only** — it never pulls, checks out, or re-installs. `--upgrade` and
+  `--auto-update` are locked to that behavior by tests.
+- **Doc/site sync contract**: the command-set tests now also assert that
+  `README.md`, `docs/architecture.md`, and the website's workflow count stay in
+  step with `commands/` — the drift that let this command ship undocumented on
+  three surfaces at once now fails CI.
+- **Seeded demo profile** (`examples/demo/`): a fictional persona, a six-month
+  evidence history, and fixtures for Jira / GitHub / calendar / notes / news,
+  seeded into a throwaway `HOME` so all eleven workflows can be demonstrated
+  without touching the presenter's own work. The mock is in the *inputs* — every
+  briefing, review, and reflection shown is real output over invented data.
+  Integrations are forced off and calendar writes disabled, so nothing in a demo
+  can reach an external system. Ships with a ~20-minute run-book and its own
+  test suite (fixtures parse, dates resolve, demo-safety settings hold, the
+  run-book covers every command).
+- **Website restructured around two surfaces**: the landing page states the
+  product (hero → what it does, as three moments → how it works → local-first →
+  install) and nothing else — down from seven stacked bands, three install cards
+  and 1,586 words of copy to five sections, one install card and 619. The
+  vanity-stat cards and the duplicate CTA band are gone; the long output panels
+  moved to where you can drive them.
+- **`/demo` is that place**: one full-screen app that never scrolls the document.
+  Two views — a recorded **session** (type or take a suggestion; replies stream
+  into a chat thread that scrolls internally) and the **review console**, loaded
+  on first use. The explanation lives in an About dialog, so the screen itself
+  carries under 120 words. Type something it hasn't heard and it says so instead
+  of improvising. Eighteen transcripts (every command, ambient coaching, and
+  follow-ups like "why is the refund fix first?") are captured from the demo
+  profile and generated into the site from `examples/demo/captures/`. The console
+  is a **real artifact** — built with the command's own renderer and assembler from
+  the fixture PR's diff,
+  self-contained and fully interactive, built from the profile's fixture PR. Ten
+  of the eleven workflows need a model at runtime and the site has no backend, so
+  those are honestly labelled as recordings; the console is the genuine thing.
+  Tests hold the generated JSON in sync with the captures, require a transcript
+  per command, and assert the console makes no network calls.
+- version stays at 0.17.0
 
 ## Future Considerations
 

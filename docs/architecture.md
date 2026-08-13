@@ -58,6 +58,7 @@ version control. Upgrades overwrite the installer-managed runtime files
 | `career_framework.md` | User's career ladder (not overwritten)        | User                 |
 | `utilities.md`        | Tool discovery reference for agents           | `install.sh`         |
 | `coaching-ref.md`     | Coaching specs loaded on-demand (see below)   | `install.sh`         |
+| `pr-console/`         | Review-console renderer: `template.html`, `generate.js`, `assemble.py` | `install.sh` |
 | `carry-forward/`      | Wrap-up notes for cross-day continuity        | `wrapup` agent       |
 | `backups/`            | Auto-rotated SQLite backups (max 10)          | `evidence_cli.py`    |
 | `repo/`               | Git clone of the Valor source repo            | `install.sh --clone` |
@@ -109,7 +110,7 @@ dict maps version numbers to SQL statements.
 
 ## Agent Architecture
 
-Valor has 10 discrete agents (invoked via slash commands) plus an ambient
+Valor has 11 discrete agents (invoked via slash commands) plus an ambient
 coaching layer:
 
 
@@ -117,6 +118,7 @@ coaching layer:
 | ---------- | ------------------- | ---------------------------- | -------------------------------- |
 | Briefing   | `/valor-briefing`   | GitHub, Jira, Calendar, News | Morning planning                 |
 | PR Review  | `/valor-pr-review`  | GitHub                       | Coached code review              |
+| PR Console | `/valor-pr-console` | GitHub (required)            | Interactive C4 review console + verified mastery quiz |
 | Design Doc | `/valor-design-doc` | None                         | Design document coaching         |
 | Weekly     | `/valor-weekly`     | GitHub, Jira                 | Weekly reflection                |
 | Wrap-up    | `/valor-wrapup`     | Calendar (optional)          | End-of-day summary               |

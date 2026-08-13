@@ -19,13 +19,15 @@ jobs:
       - name: Install dev dependencies
         run: python -m pip install -r requirements-dev.txt
       - name: Lint
-        run: ruff check src tests scripts
+        run: ruff check src tests scripts examples
       - name: Run tests
         run: python -m pytest -q
       - name: Compile sources
-        run: python -m compileall src tests scripts
+        run: python -m compileall src tests scripts examples
       - name: Check version sync
         run: python scripts/check_version_sync.py
+      - name: Check the demo page's chat actually answers
+        run: node scripts/check_demo_page.mjs
 
   hygiene:
     # Company-info guard: fails if any committed file contains an employer name,

@@ -21,6 +21,7 @@ codeNode adds: "code":true,"sym","anchor","file","detail":{text,before?,after?}
 edge:  {"from","to","kind":"flow|ref","phase":"both|after"?}
 """
 import argparse
+import html
 import json
 import os
 import re
@@ -145,6 +146,23 @@ def collect_diffs(scenes, diffdir):
     return diffs
 
 
+def set_text(template, elem_id, text):
+    """Replace the inner text of the element carrying `id="<elem_id>"`.
+
+    The header (PR heading + one-line summary) is per-PR, so it has to come from
+    the generator output — template text left in place would label every console
+    with whatever PR the template was written against.
+    """
+    pattern = re.compile(r'(id="%s"[^>]*>)(.*?)(</)' % re.escape(elem_id), re.S)
+    if not pattern.search(template):
+        print("WARNING: header slot id=%s not found in template" % elem_id, file=sys.stderr)
+        return template
+    return pattern.sub(
+        lambda m: m.group(1) + html.escape(text, quote=False) + m.group(3),
+        template, count=1,
+    )
+
+
 def inject(template, key, value):
     marker = "/*__%s__*/" % key
     payload = json.dumps(value, ensure_ascii=False).replace("</", "<\\/")
@@ -172,10 +190,17 @@ def main():
     tpl = inject(tpl, "DIFFS", diffs)
     tpl = inject(tpl, "CTXCODE", ctxcode)
 
-    # title
-    if g.get("title"):
+    # header: tab title, on-page heading, and the one-line summary for a cold
+    # reviewer — all per-PR, from the generator output
+    title = (g.get("title") or "").strip()
+    number = g.get("number")
+    if title:
+        heading = "PR #%s — %s" % (number, title) if number else title
         tpl = re.sub(r"<title>.*?</title>",
-                     "<title>%s</title>" % re.sub(r"[<>]", "", g["title"]), tpl, count=1)
+                     "<title>%s</title>" % re.sub(r"[<>]", "", heading), tpl, count=1)
+        tpl = set_text(tpl, "prtitle", heading)
+    if g.get("subtitle"):
+        tpl = set_text(tpl, "prsub", g["subtitle"].strip())
 
     for leftover in ("/*__SCENES__*/", "/*__QUIZ__*/", "/*__DIFFS__*/", "/*__CTXCODE__*/"):
         if leftover in tpl:

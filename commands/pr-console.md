@@ -20,7 +20,7 @@ Use `context.integrations` from the session-start context. This command
 
 ## Prerequisites
 
-- User provides a PR (number or URL), e.g. "build a review console for #2382".
+- User provides a PR (number or URL), e.g. "build a review console for #123".
 - `gh` CLI authenticated.
 - The **Workflow** tool and the **Artifact** tool must be available in this
   session (this command orchestrates a generator workflow and publishes an
