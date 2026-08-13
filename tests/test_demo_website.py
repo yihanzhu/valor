@@ -104,6 +104,22 @@ def test_page_is_an_interactive_session_not_a_menu():
     assert 'id="restart"' in text
 
 
+def test_chat_window_is_a_fixed_height_scroll_box():
+    """A chat window, not a page that grows: the thread has its own height and
+    scrolls internally, and the code scrolls that box rather than the page."""
+    text = PAGE.read_text()
+    thread_css = re.search(r"\.thread\s*\{(.*?)\}", text, re.S)
+    assert thread_css, "no .thread rule on the page"
+    assert "height:" in thread_css.group(1)
+    assert "overflow-y: auto" in thread_css.group(1)
+    assert "thread.scrollTop = thread.scrollHeight" in text, (
+        "the thread should be pinned to its own bottom"
+    )
+    assert "scrollIntoView" not in text, (
+        "scrollIntoView moves the page; inside a fixed chat box, set scrollTop instead"
+    )
+
+
 def test_page_answers_honestly_when_it_has_no_recording():
     """Typing something unrecorded must say so, not improvise."""
     text = PAGE.read_text()

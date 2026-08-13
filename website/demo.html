@@ -38,7 +38,21 @@
       .demo-note strong { color: var(--text); font-weight: 600; }
 
       .session { max-width: 860px; margin: 0 auto; }
-      .thread { min-height: 300px; }
+      /* A chat window: fixed box, scrolls inside itself, composer always in view. */
+      .thread {
+        height: clamp(340px, 58vh, 560px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+        scrollbar-color: var(--line-strong) transparent;
+      }
+      .thread::-webkit-scrollbar { width: 10px; }
+      .thread::-webkit-scrollbar-track { background: transparent; }
+      .thread::-webkit-scrollbar-thumb {
+        background: var(--line-2); border-radius: 999px;
+        border: 3px solid transparent; background-clip: content-box;
+      }
+      .thread::-webkit-scrollbar-thumb:hover { background: var(--line-strong); background-clip: content-box; }
       .thread .chat-user:first-child { padding-top: 0; }
       .sys { margin: 0 0 4px; color: var(--text-dim); font-size: 0.85rem; line-height: 1.6; }
       .sys code { font-family: var(--font-mono); color: var(--text-soft); }
@@ -376,15 +390,27 @@
           stream.host.innerHTML = stream.items.join("");
           stopStream();
         }
+        /* Standard chat behaviour: follow the conversation down, unless the reader
+           has scrolled up to re-read something. */
+        function atBottom() {
+          var slack = thread.scrollHeight - thread.scrollTop - thread.clientHeight;
+          return !(slack > 90);
+        }
+        function pin() {
+          if (typeof thread.scrollHeight === "number") thread.scrollTop = thread.scrollHeight;
+        }
+
         function startStream(host, items) {
           stopStream();
-          if (calm) { host.innerHTML = items.join(""); return; }
+          if (calm) { host.innerHTML = items.join(""); pin(); return; }
           stream = { host: host, items: items, i: 0, timer: null };
           function tick() {
             if (!stream) return;
+            var follow = atBottom();
             stream.i += 1;
             stream.host.innerHTML = stream.items.slice(0, stream.i).join("") +
               (stream.i < stream.items.length ? '<span class="cursor" aria-hidden="true"></span>' : "");
+            if (follow) pin();
             if (stream.i < stream.items.length) stream.timer = window.setTimeout(tick, 85);
             else stream = null;
           }
@@ -406,10 +432,6 @@
           row.appendChild(body);
           thread.appendChild(row);
           return body;
-        }
-        function reveal(el) {
-          if (calm || !el.scrollIntoView) return;
-          el.scrollIntoView({ behavior: "smooth", block: "center" });
         }
 
         function renderChips() {
@@ -436,7 +458,7 @@
           renderChips();
           input.value = "";
           if (suggestions.length && byId[suggestions[0]]) input.placeholder = byId[suggestions[0]].phrase;
-          reveal(body);
+          pin();
 
           var items = blocks(entry.output);
           if (calm) { body.innerHTML = items.join(""); return; }
@@ -480,7 +502,7 @@
             "<p>For a session that answers anything, run the profile locally — the two commands are at " +
             "the bottom of this page.</p>";
           input.value = "";
-          reveal(body);
+          pin();
         }
 
         function start() {

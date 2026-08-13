@@ -48,6 +48,11 @@ function makeEl(tag = "div") {
     placeholder: "",
     title: "",
     type: "",
+    /* Enough geometry for the chat's follow-the-bottom logic: the box is a fixed
+       400px viewport over content that grows with each message. */
+    scrollTop: 0,
+    clientHeight: 400,
+    get scrollHeight() { return 200 + el.children.length * 260; },
     classList: { add() {}, remove() {} },
     get innerHTML() { return el._html; },
     set innerHTML(v) { el._html = String(v); el.children = []; },
@@ -205,6 +210,17 @@ if (!thread.texts().includes("only have the replies that were captured")) {
 } else {
   ok("unrecorded input answered honestly");
 }
+
+/* The chat window scrolls itself rather than growing the page. */
+if (!/overflow-y:\s*auto/.test(html) || !/\.thread\s*\{[^}]*height:/.test(html)) {
+  fail("the thread is not a fixed-height scroll container");
+} else {
+  ok("thread is a fixed-height scroll container");
+}
+if (thread.scrollTop <= 0) fail("the thread never scrolled to follow the conversation");
+else ok(`thread follows the conversation (scrollTop ${thread.scrollTop})`);
+if (sandbox.__scrolledWith) fail("the page window was scrolled; only the thread should scroll");
+else ok("the page itself was not scrolled");
 
 /* Restart clears the thread back to the opening state. */
 ids.restart.fire("click");
