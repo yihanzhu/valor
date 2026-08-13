@@ -307,7 +307,8 @@ What shipped:
   of improvising. Eighteen transcripts (every command, ambient coaching, and
   follow-ups like "why is the refund fix first?") are captured from the demo
   profile and generated into the site from `examples/demo/captures/`. The console
-  is a **real** `/valor-pr-console` artifact,
+  is a **real artifact** — built with the command's own renderer and assembler from
+  the fixture PR's diff,
   self-contained and fully interactive, built from the profile's fixture PR. Ten
   of the eleven workflows need a model at runtime and the site has no backend, so
   those are honestly labelled as recordings; the console is the genuine thing.

@@ -14,8 +14,9 @@ The three controls, so you know what you're agreeing to:
   restarts.
 - **`valor on`** — back to normal.
 
-Evidence recording follows the same switch. With coaching off, nothing gets written to the store, so a
-quiet session leaves no trace in your history either.
+The ambient evidence entries go quiet with the footers — they're recorded as part of the same pass, so
+if I'm not coaching, I'm not writing them either. Commands you invoke on purpose still record their
+own evidence: a briefing or a wrap-up logs what it did regardless.
 
 Worth being blunt about why this exists: a coach that can't be told to be quiet turns into a nag, and a
 nag gets uninstalled. The commands you invoke on purpose — the briefing, the reviews, the reflections —

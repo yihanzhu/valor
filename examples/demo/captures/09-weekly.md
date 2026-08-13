@@ -17,7 +17,7 @@ blurb: A competency breakdown that names the real gap instead of flattering you.
 - Partner call: confirmed idempotency-key retention, which unblocked your own design
 
 ### Competency Breakdown
-This week (10 entries):
+This week (11 entries):
 - Subject Matter Expertise ····· 4
 - Internal Collaboration ······· 4
 - Autonomy & Scope ············· 2

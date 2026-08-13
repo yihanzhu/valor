@@ -88,7 +88,7 @@
             <ul class="hero-meta" aria-label="Quick facts">
               <li><span class="meta-num">0</span><span class="meta-label">runtime deps</span></li>
               <li><span class="meta-num">3</span><span class="meta-label">agents supported</span></li>
-              <li><span class="meta-num">100%</span><span class="meta-label">local data</span></li>
+              <li><span class="meta-num">100%</span><span class="meta-label">local storage</span></li>
             </ul>
           </div>
 
@@ -175,10 +175,10 @@
             <div class="does-card">
               <h3>At review time</h3>
               <p>
-                Six months of captured evidence becomes a self-reflection draft
-                mapped to your competencies — phrased from what actually shipped,
-                with the work you forgot to log surfaced and a confirm-before-you-
-                submit list instead of overclaiming.
+                A review cycle's captured evidence becomes a self-reflection draft
+                mapped to your competencies — phrased from the recorded status of
+                each item, with work you forgot to log surfaced and a list to
+                confirm before you submit instead of overclaiming.
               </p>
               <div class="does-phrases">
                 <span class="rail-phrase-pill">prep for 1:1</span>
@@ -259,7 +259,6 @@
               <div class="badges">
                 <span class="chip">macOS</span>
                 <span class="chip">Linux</span>
-                <span class="chip">Windows · WSL</span>
                 <span class="chip">Python 3</span>
                 <span class="chip">stdlib only</span>
               </div>
@@ -268,9 +267,9 @@
               <p class="compat-label">Your data</p>
               <div class="badges">
                 <span class="chip">~/.valor</span>
-                <span class="chip">one SQLite file</span>
+                <span class="chip">SQLite + plain text</span>
                 <span class="chip">no telemetry</span>
-                <span class="chip">no cloud</span>
+                <span class="chip">no backend</span>
               </div>
             </div>
           </div>
@@ -319,7 +318,10 @@
             <li>
               <span class="setup-note-label">Local state</span>
               Career framework, evidence, and carry-forward notes live in
-              <code>~/.valor/</code>. Nothing leaves your machine.
+              <code>~/.valor/</code>. Valor never sends them anywhere; what your
+              host assistant does with your prompts is governed by it, not by
+              Valor — <a href="https://github.com/yihanzhu/valor/blob/main/PRIVACY.md" rel="noreferrer">PRIVACY.md</a>
+              is explicit about that line.
             </li>
           </ul>
         </div>

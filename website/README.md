@@ -45,10 +45,12 @@ The content is real Valor output rather than mock-ups, from two sources:
   refuses to generate a graph with unknown ids, dead ends, or transcripts nothing
   can reach.
 
-- **`demo/pr-console.html`** — an actual `/valor-pr-console` artifact built from
+- **`demo/pr-console.html`** — a real console artifact, built with the command's
+  own renderer (`src/pr-console/template.html`) and assembler (`assemble.py`) from
   the demo profile's fixture PR. Not a recording: it's the real page, embedded in
   an iframe and self-contained (no network calls), so visitors can drive the
-  diagram and take the quiz.
+  diagram and take the quiz. Regenerate it by re-running `assemble.py` after any
+  template change.
 
 The landing page's feature panels are trimmed excerpts of the same transcripts.
 If you re-capture, re-check those excerpts too — nothing enforces the trim.

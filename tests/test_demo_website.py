@@ -244,6 +244,51 @@ def test_sitemap_lists_the_demo_page():
     assert "https://valor.sh/demo" in (SITE / "sitemap.xml").read_text()
 
 
+# --- claim accuracy ------------------------------------------------------
+#
+# The site makes factual claims about the product. These keep each one tied to
+# the thing that makes it true, so a claim can't outlive the behaviour.
+
+
+def test_site_install_command_matches_the_readme():
+    site = re.search(r"data-install-source>([^<]+)<", (SITE / "index.html").read_text())
+    assert site, "the landing page lost its install command"
+    command = site.group(1).replace("&amp;", "&")
+    assert command in (REPO / "README.md").read_text().replace("&amp;", "&"), (
+        f"the site's install command is not the documented one: {command}"
+    )
+
+
+def test_every_phrase_the_site_suggests_is_a_real_trigger():
+    """The landing page tells you what to say. Each phrase must appear in the
+    always-injected agent rule, or the site is teaching a command that isn't."""
+    rule = (REPO / "rules" / "valor-agent.md").read_text()
+    index = (SITE / "index.html").read_text()
+    phrases = re.findall(r'<span class="rail-phrase-pill">([^<]+)</span>', index)
+    assert len(phrases) >= 5, "expected the site to suggest several phrases"
+    for phrase in phrases:
+        stem = phrase.split("#")[0].split("for ")[0].strip()
+        assert stem in rule, f'the site suggests "{phrase}" but the agent rule has no such trigger'
+
+
+def test_site_makes_no_absolutist_privacy_claim():
+    """PRIVACY.md opens by saying local-first is *not* "nothing ever leaves your
+    machine". The site must not contradict its own trust document."""
+    for page in ("index.html", "demo.html"):
+        text = (SITE / page).read_text()
+        for phrase in ("Nothing leaves your machine", "nothing ever leaves", "100% local data"):
+            assert phrase not in text, f"{page} claims {phrase!r}, which PRIVACY.md disclaims"
+
+
+def test_site_claims_no_undocumented_platform():
+    """Windows/WSL support is claimed nowhere in the installer or docs, so the
+    site shouldn't be the only place it appears."""
+    index = (SITE / "index.html").read_text()
+    documented = (REPO / "install.sh").read_text() + (REPO / "README.md").read_text()
+    if "Windows" in index:
+        assert "Windows" in documented, "the site claims Windows support that nothing documents"
+
+
 # --- the embedded console ------------------------------------------------
 
 
