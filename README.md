@@ -179,6 +179,21 @@ configuration, and integration options, see
 - [Privacy Model](PRIVACY.md)
 - [Roadmap](ROADMAP.md)
 
+## Showing Valor to someone else
+
+`examples/demo/` is a seeded, entirely fictional profile for demoing all eleven
+workflows without exposing your own work. It installs into a throwaway `HOME`, so
+your real `~/.valor` is unreachable from the demo — the mock is in the *inputs*
+(invented tickets, PRs, calendar, evidence), while every briefing, review and
+reflection you show is real Valor output. Ships with a ~20-minute run-book.
+
+```bash
+HOME=~/valor-demo bash install.sh && python3 examples/demo/seed.py ~/valor-demo
+```
+
+See [examples/demo/README.md](examples/demo/README.md) and
+[examples/demo/DEMO.md](examples/demo/DEMO.md).
+
 ## First-Time Setup
 
 After install, open your agent and run `/valor-setup` (or say "set up valor").
@@ -313,7 +328,7 @@ valor/
 ├── .codex-plugin/          # Codex CLI plugin manifest (discovery only)
 ├── bin/                    # CLI wrappers (valor-evidence)
 ├── commands/               # User-invoked assistant commands
-├── examples/               # Ready-made example career frameworks
+├── examples/               # Example career frameworks + the seeded demo profile
 ├── rules/                  # Always-applied Valor rule
 ├── skills/                 # Plugin skills (setup)
 ├── src/                    # Evidence CLI, career framework, utilities

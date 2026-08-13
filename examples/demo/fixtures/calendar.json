@@ -1,0 +1,90 @@
+{
+  "_comment": "Fictional calendar for the Valor demo profile — stands in for the calendar connector while integrations.calendar is false. Gaps are deliberate: one deep block, one fragmented slot, one post-meeting stretch.",
+  "timezone": "{{TZ}}",
+  "working_hours": {"start": "09:00", "end": "18:00"},
+  "events": [
+    {
+      "id": "ev-standup",
+      "summary": "Checkout standup",
+      "start": "{{TODAY}}T09:15:00{{TZ}}",
+      "end": "{{TODAY}}T09:30:00{{TZ}}",
+      "recurring": "daily",
+      "organizer": "sam@example.com",
+      "attendees": ["alex@example.com", "sam@example.com", "riley@example.com", "jordan@example.com", "dana@example.com"],
+      "response_status": "accepted",
+      "category_hint": "standup"
+    },
+    {
+      "id": "ev-1on1",
+      "summary": "Alex / Sam 1:1",
+      "start": "{{TODAY}}T11:00:00{{TZ}}",
+      "end": "{{TODAY}}T11:30:00{{TZ}}",
+      "recurring": "weekly",
+      "organizer": "sam@example.com",
+      "attendees": ["alex@example.com", "sam@example.com"],
+      "response_status": "accepted",
+      "category_hint": "one_on_one",
+      "attachments": [
+        {"title": "Alex <> Sam 1:1", "kind": "doc", "path": "one_on_one_doc.md"}
+      ]
+    },
+    {
+      "id": "ev-sync",
+      "summary": "Checkout weekly sync",
+      "start": "{{TODAY}}T14:00:00{{TZ}}",
+      "end": "{{TODAY}}T15:00:00{{TZ}}",
+      "recurring": "weekly",
+      "organizer": "sam@example.com",
+      "attendees": ["alex@example.com", "sam@example.com", "riley@example.com", "jordan@example.com", "dana@example.com", "pm@example.com"],
+      "response_status": "accepted",
+      "category_hint": "project_sync",
+      "project": "Checkout reliability",
+      "attachments": [
+        {"title": "Checkout sync notes", "kind": "doc", "path": "meeting_notes.md"}
+      ]
+    },
+    {
+      "id": "ev-partner",
+      "summary": "Payments provider integration call",
+      "start": "{{TODAY}}T16:30:00{{TZ}}",
+      "end": "{{TODAY}}T17:00:00{{TZ}}",
+      "recurring": null,
+      "organizer": "integrations@partner.example.com",
+      "attendees": ["alex@example.com", "sam@example.com", "integrations@partner.example.com"],
+      "response_status": "accepted",
+      "category_hint": "external",
+      "description": "Walk through our retry behaviour ahead of their rate-limit change."
+    },
+    {
+      "id": "ev-yesterday-1on1-notes",
+      "summary": "Alex / Sam 1:1",
+      "start": "{{TODAY-7}}T11:00:00{{TZ}}",
+      "end": "{{TODAY-7}}T11:30:00{{TZ}}",
+      "recurring": "weekly",
+      "organizer": "sam@example.com",
+      "attendees": ["alex@example.com", "sam@example.com"],
+      "response_status": "accepted",
+      "category_hint": "one_on_one",
+      "attachments": [
+        {"title": "Notes — Alex <> Sam 1:1", "kind": "notes", "path": "meeting_notes.md", "section": "1:1"}
+      ]
+    },
+    {
+      "id": "ev-yesterday-sync",
+      "summary": "Checkout weekly sync",
+      "start": "{{TODAY-1}}T14:00:00{{TZ}}",
+      "end": "{{TODAY-1}}T15:00:00{{TZ}}",
+      "recurring": "weekly",
+      "organizer": "sam@example.com",
+      "attendees": ["alex@example.com", "sam@example.com", "riley@example.com", "jordan@example.com", "dana@example.com"],
+      "response_status": "accepted",
+      "category_hint": "project_sync",
+      "project": "Checkout reliability",
+      "attachments": [
+        {"title": "Notes — Checkout weekly sync", "kind": "notes", "path": "meeting_notes.md", "section": "sync"}
+      ]
+    }
+  ],
+  "out_of_office": [],
+  "gaps_note": "09:30-11:00 fragmented (1h30), 11:30-14:00 deep (2h30), 15:15-16:30 post-meeting (1h15 after the 15-min breather)."
+}

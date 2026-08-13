@@ -284,6 +284,15 @@ What shipped:
   `README.md`, `docs/architecture.md`, and the website's workflow count stay in
   step with `commands/` — the drift that let this command ship undocumented on
   three surfaces at once now fails CI.
+- **Seeded demo profile** (`examples/demo/`): a fictional persona, a six-month
+  evidence history, and fixtures for Jira / GitHub / calendar / notes / news,
+  seeded into a throwaway `HOME` so all eleven workflows can be demonstrated
+  without touching the presenter's own work. The mock is in the *inputs* — every
+  briefing, review, and reflection shown is real output over invented data.
+  Integrations are forced off and calendar writes disabled, so nothing in a demo
+  can reach an external system. Ships with a ~20-minute run-book and its own
+  test suite (fixtures parse, dates resolve, demo-safety settings hold, the
+  run-book covers every command).
 - version stays at 0.17.0
 
 ## Future Considerations

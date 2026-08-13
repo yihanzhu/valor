@@ -133,3 +133,6 @@ career coaching loop.
 - Say "feedback about my manager" or use `/valor-upward-feedback` at review time
   for a manager upward-feedback draft grounded in your meeting notes + 1:1 evidence
 - Say "valor quiet" to suppress coaching for a conversation
+- Showing Valor to your team? [`examples/demo/`](../examples/demo/) seeds a
+  fictional profile into a throwaway `HOME` so you can demo every workflow
+  without exposing your own work

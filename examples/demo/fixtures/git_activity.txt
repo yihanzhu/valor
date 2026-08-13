@@ -1,0 +1,24 @@
+# Fictional local git activity for the Valor demo profile.
+# Stands in for the wrap-up's `git log` / `git diff --stat` reconstruction of the
+# day, so the demo never runs git against a real working copy.
+#
+# --- git log --oneline --since=midnight --author=alex ---
+
+7d3f9c1 payments: answer Riley's backoff questions; cap is per-attempt
+b2e81a4 payments: idempotency key on the refund path (WIP, draft #419)
+4a9c02f test: cover the webhook-replay double-refund case
+e81b7d5 payments: never retry non-idempotent verbs in the transport
+
+# --- git diff --stat origin/main...HEAD ---
+
+ api/payments_client.py        |  27 +++++-------
+ net/transport.py              |  88 ++++++++++++++++++++++++++++++++++----
+ payments/refunds.py           |  47 ++++++++++++++++++--
+ tests/test_refunds.py         |  34 ++++++++++++++
+ tests/test_transport.py       |  16 +++++++
+ 5 files changed, 187 insertions(+), 25 deletions(-)
+
+# --- uncommitted at end of day ---
+
+ M payments/refunds.py     (idempotency key threading — half done)
+?? docs/retry-rollback.md  (started the rollback note for #418, not finished)
