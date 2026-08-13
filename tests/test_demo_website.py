@@ -107,8 +107,31 @@ def test_page_is_an_interactive_session_not_a_menu():
 def test_page_answers_honestly_when_it_has_no_recording():
     """Typing something unrecorded must say so, not improvise."""
     text = PAGE.read_text()
-    assert "function unmatched" in text
-    assert "only has the replies that were captured" in text
+    assert "function sayUnknown" in text
+    assert "only have the replies that were captured" in text
+
+
+def test_page_script_is_scoped():
+    """A top-level `function scrollTo(...)` in a classic script replaces
+    window.scrollTo — that shipped once and broke every reply. The script must
+    stay inside an IIFE so nothing reaches the global object."""
+    script = re.search(r"<script>(.*?)</script>", PAGE.read_text(), re.S)
+    assert script, "the page lost its script"
+    body = script.group(1).strip()
+    body = re.sub(r"^/\*.*?\*/\s*", "", body, flags=re.S)  # drop the leading comment
+    assert body.startswith("(function"), (
+        "the page script must be wrapped in an IIFE (see scripts/check_demo_page.mjs)"
+    )
+    assert body.rstrip().endswith("})();")
+
+
+def test_demo_page_harness_exists_and_runs_in_ci():
+    """The page's behaviour is checked by driving it in a fake DOM; keep that
+    wired into CI, since a unit check on the renderer alone missed the bug."""
+    harness = REPO / "scripts" / "check_demo_page.mjs"
+    assert harness.exists()
+    workflow = (REPO / ".github" / "workflows" / "tests.yml").read_text()
+    assert "node scripts/check_demo_page.mjs" in workflow
 
 
 def test_session_graph_is_navigable(transcripts):

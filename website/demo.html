@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Valor — demo session</title>
-    <meta name="description" content="Sit in a recorded Valor session: say something, watch what it actually replies. Plus a real, fully interactive PR review console you can click through.">
+    <meta name="description" content="A recorded Valor session you can talk to: say something, see what it actually replies. Plus a real, fully interactive PR review console.">
     <meta name="theme-color" content="#08090c">
     <link rel="canonical" href="https://valor.sh/demo">
     <link rel="icon" type="image/svg+xml" href="./favicon.svg">
@@ -13,13 +13,13 @@
 
     <meta property="og:type" content="website">
     <meta property="og:title" content="Valor — demo session">
-    <meta property="og:description" content="Say something, watch what Valor actually replies. Plus a live PR review console.">
+    <meta property="og:description" content="Say something, see what Valor actually replies. Plus a live PR review console.">
     <meta property="og:url" content="https://valor.sh/demo">
     <meta property="og:site_name" content="Valor">
     <meta property="og:image" content="./og.svg">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Valor — demo session">
-    <meta name="twitter:description" content="Say something, watch what Valor actually replies.">
+    <meta name="twitter:description" content="Say something, see what Valor actually replies.">
     <meta name="twitter:image" content="./og.svg">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,7 +28,7 @@
     <link rel="stylesheet" href="./styles.css">
 
     <style>
-      .demo-head { padding: 68px 0 6px; }
+      .demo-head { padding: 68px 0 8px; }
       .demo-note {
         margin: 18px 0 0; padding: 13px 16px; border: 1px solid var(--line-2);
         border-left: 3px solid var(--accent-dim); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
@@ -37,38 +37,12 @@
       }
       .demo-note strong { color: var(--text); font-weight: 600; }
 
-      .session { max-width: 940px; margin: 0 auto; }
-      .thread { padding: 4px 0 8px; }
-
-      .turn { padding: 20px 20px 4px; border-top: 1px solid var(--line); }
-      .turn:first-child { border-top: none; }
-      .turn-you {
-        display: flex; gap: 10px; align-items: baseline; font-family: var(--font-mono);
-        font-size: 0.92rem; color: var(--text); margin-bottom: 12px;
-      }
-      .turn-you .caret { color: var(--accent); flex: none; }
-
-      .turn-tools { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
-      .tool-chip {
-        font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
-        border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px;
-        background: var(--code-bg); white-space: nowrap; max-width: 100%; overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      .tool-chip::before { content: "▸ "; color: var(--ok); }
-      .tool-chip.fixture { border-style: dashed; }
-      .tool-chip.fixture::before { content: "◆ "; color: var(--accent-dim); }
-
-      .turn-out { font-size: 0.93rem; }
-      .turn-out h4 { font-size: 0.86rem; }
-      .turn-out h4.coach { color: var(--accent-bright); }
-      .turn-out pre {
-        margin: 10px 0 0; padding: 12px 14px; overflow-x: auto; background: var(--code-bg);
-        border: 1px solid var(--line); border-radius: var(--radius-sm);
-        font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.65; color: var(--text-soft);
-      }
-      .turn-out a { color: var(--azure); }
-      .thinking { color: var(--text-dim); font-size: 0.88rem; font-style: italic; }
+      .session { max-width: 860px; margin: 0 auto; }
+      .thread { min-height: 300px; }
+      .thread .chat-user:first-child { padding-top: 0; }
+      .sys { margin: 0 0 4px; color: var(--text-dim); font-size: 0.85rem; line-height: 1.6; }
+      .sys code { font-family: var(--font-mono); color: var(--text-soft); }
+      .thinking { color: var(--text-dim); font-style: italic; }
       .cursor {
         display: inline-block; width: 7px; height: 0.95em; background: var(--accent);
         vertical-align: -2px; animation: blink 1s steps(2) infinite;
@@ -76,51 +50,39 @@
       @keyframes blink { 50% { opacity: 0; } }
       @media (prefers-reduced-motion: reduce) { .cursor { animation: none; } }
 
-      .sys {
-        margin: 0; padding: 14px 20px; color: var(--text-dim); font-size: 0.86rem;
-        background: var(--code-bg-2); border-top: 1px solid var(--line);
+      .chat-out pre {
+        margin: 10px 0 0; padding: 12px 14px; overflow-x: auto; background: var(--code-bg);
+        border: 1px solid var(--line); border-radius: var(--radius-sm);
+        font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.65; color: var(--text-soft);
       }
-      .sys code { font-family: var(--font-mono); color: var(--text-soft); }
+      .chat-out a { color: var(--azure); }
+      .chat-out h4.coach { color: var(--accent-bright); }
 
-      .composer {
-        position: sticky; bottom: 0; z-index: 5; padding: 14px 18px 16px;
-        border-top: 1px solid var(--line-2);
-        background: color-mix(in srgb, var(--surface) 92%, transparent);
-        backdrop-filter: blur(8px);
-      }
+      .composer { padding: 14px 20px 16px; border-top: 1px solid var(--line-2); background: var(--code-bg-2); }
       .composer-row { display: flex; gap: 8px; align-items: center; }
-      .composer-row .caret { font-family: var(--font-mono); color: var(--accent); }
       .composer input {
         flex: 1; min-width: 0; background: var(--code-bg); color: var(--text);
         border: 1px solid var(--line-2); border-radius: var(--radius-sm);
-        padding: 10px 12px; font-family: var(--font-mono); font-size: 0.9rem;
+        padding: 11px 13px; font-family: var(--font-sans); font-size: 0.92rem;
       }
       .composer input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-      .composer .btn { padding: 9px 14px; font-size: 0.85rem; flex: none; }
-      .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; align-items: center; }
-      .chips-label {
-        font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
-        color: var(--text-faint); font-weight: 700; margin-right: 2px;
-      }
+      .composer .btn { padding: 10px 15px; font-size: 0.85rem; flex: none; }
+      .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
       .chip-suggest {
         appearance: none; cursor: pointer; font: inherit; font-size: 0.82rem;
         background: var(--surface-2); color: var(--text-soft);
         border: 1px solid var(--line-2); border-radius: 999px; padding: 6px 13px;
-        transition: border-color 0.15s, color 0.15s, background 0.15s;
+        transition: border-color 0.15s, color 0.15s;
       }
-      .chip-suggest:hover { border-color: var(--accent-dim); color: var(--text); background: var(--surface); }
+      .chip-suggest:hover { border-color: var(--accent-dim); color: var(--text); }
       .chip-suggest:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-      .chip-suggest[disabled] { opacity: 0.45; cursor: default; }
-      .session-foot {
-        display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
-        margin-top: 12px; font-size: 0.78rem; color: var(--text-faint);
-      }
-      .session-foot button {
+      .composer-note { margin: 12px 0 0; font-size: 0.78rem; color: var(--text-faint); }
+      .composer-note button {
         appearance: none; background: none; border: 0; padding: 0; cursor: pointer;
         color: var(--text-dim); font: inherit; text-decoration: underline;
         text-decoration-color: var(--line-strong); text-underline-offset: 3px;
       }
-      .session-foot button:hover { color: var(--text); }
+      .composer-note button:hover { color: var(--text); }
 
       .console-card { border: 1px solid var(--line-2); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
       .console-frame { width: 100%; height: 640px; border: 0; display: block; background: #fff; }
@@ -131,9 +93,8 @@
       .console-bar p { margin: 0; color: var(--text-dim); font-size: 0.84rem; }
 
       @media (max-width: 760px) {
-        .turn { padding: 16px 14px 4px; }
-        .composer { padding: 12px 14px 14px; }
-        .console-frame { height: 480px; }
+        .chat-user, .chat-agent { grid-template-columns: 1fr; gap: 4px; }
+        .console-frame { height: 460px; }
       }
     </style>
   </head>
@@ -163,51 +124,44 @@
 
     <main id="main">
       <section class="container demo-head">
-        <p class="eyebrow">Demo session</p>
+        <p class="eyebrow">Demo</p>
         <h2 style="font-size:clamp(1.9rem,4vw,2.7rem);line-height:1.1;margin:6px 0 14px">Say something. See what it says back.</h2>
         <p class="band-lede" style="margin:0">
-          A session in progress, the way it looks in your terminal. Type, or take
-          one of the suggestions — they change as the session moves through a day,
-          a week, a review cycle.
+          Talk to it the way you'd talk to your agent. Type, or take a suggestion.
         </p>
         <p class="demo-note">
           <strong>This session is recorded.</strong> A live agent needs a model at
           runtime and this site has no backend, so the replies were captured by
-          running Valor's own command specs against the
+          running Valor against the
           <a href="https://github.com/yihanzhu/valor/tree/main/examples/demo" rel="noreferrer">seeded demo profile</a>
           in the repo — fictional engineer, fictional tickets, invented
-          colleagues. Type something it hasn't heard and it will say so rather
-          than improvise. The <strong>review console below is not
+          colleagues, real output. Ask something it hasn't heard and it will say
+          so rather than improvise. The <strong>review console below is not
           recorded</strong>: that one is the real artifact, and you can drive it.
         </p>
       </section>
 
-      <section class="band" style="padding-top:36px" aria-labelledby="session-h">
+      <section class="band" style="padding-top:34px" aria-labelledby="session-h">
         <div class="container">
-          <h2 id="session-h" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Interactive session</h2>
+          <h2 id="session-h" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Demo session</h2>
           <div class="session chat">
             <div class="chat-head">
               <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
-              <span class="chat-title"><span class="dot"></span><span id="head-label">claude code · ~/projects/checkout-service</span></span>
+              <span class="chat-title"><span class="dot"></span>claude code · ~/projects/checkout-service</span>
             </div>
 
-            <div class="thread" id="thread" aria-live="polite" aria-atomic="false"></div>
+            <div class="chat-body thread" id="thread" aria-live="polite" aria-atomic="false"></div>
 
             <div class="composer">
               <form class="composer-row" id="form" autocomplete="off">
-                <span class="caret" aria-hidden="true">&gt;</span>
-                <label for="input" class="chips-label" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">What do you want to say to your agent?</label>
+                <label for="input" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Message your agent</label>
                 <input id="input" name="input" type="text" placeholder="start my day" spellcheck="false">
                 <button class="btn btn-primary" type="submit">Send</button>
               </form>
               <div class="chips" id="chips"></div>
-              <div class="session-foot">
-                <span id="foot-meta"></span>
-                <span style="display:flex;gap:16px">
-                  <button type="button" id="skip">Skip to the end</button>
-                  <button type="button" id="restart">Start over</button>
-                </span>
-              </div>
+              <p class="composer-note">
+                Recorded replies from the demo profile — <button type="button" id="restart">start over</button>
+              </p>
             </div>
           </div>
         </div>
@@ -221,11 +175,11 @@
             <p class="band-lede">
               This is what <code>/valor-pr-console</code> generated for the demo
               profile's pull request — a self-contained page with the diagram, the
-              diffs and the quiz embedded in it, so it runs here with no backend
-              at all. Zoom <em>Context → Inside → Components → the real code</em>,
-              flip <strong>Before ⇄ After</strong>, play a request through the
-              system, then take the quiz. Getting one wrong is the interesting
-              part: the gate wants all six.
+              diffs and the quiz embedded in it, so it runs here with no backend at
+              all. Zoom <em>Context → Inside → Components → the real code</em>, flip
+              <strong>Before ⇄ After</strong>, play a request through the system,
+              then take the quiz. Getting one wrong is the interesting part: the gate
+              wants all six.
             </p>
           </header>
 
@@ -246,9 +200,9 @@
         <div class="container cta-inner">
           <h2 id="run-h">Run the real session yourself.</h2>
           <p class="cta-lede">
-            The profile these replies came from ships in the repo. It installs into
-            a throwaway home, so your own work stays out of it — and every
-            integration is off, so nothing reaches a real system.
+            The profile these replies came from ships in the repo. It installs into a
+            throwaway home, so your own work stays out of it — and every integration
+            is off, so nothing reaches a real system.
           </p>
           <div class="install-card install-card-lg cta-install" data-install="demo">
             <code class="install-cmd" data-install-source>HOME=~/valor-demo bash install.sh &amp;&amp; python3 examples/demo/seed.py ~/valor-demo</code>
@@ -293,312 +247,283 @@
     </footer>
 
     <script>
-      document.getElementById("year").textContent = new Date().getFullYear();
+      /* Everything is scoped: a top-level `function scrollTo(...)` in a classic
+         script overwrites window.scrollTo, which is exactly how this page shipped
+         broken once. Nothing here touches the global object. */
+      (function () {
+        "use strict";
 
-      document.querySelectorAll("[data-copy-install]").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const card = document.querySelector(`[data-install="${btn.dataset.copyInstall}"]`);
-          const source = card && card.querySelector("[data-install-source]");
-          if (!source) return;
-          const label = btn.querySelector(".install-copy-label");
-          const original = label ? label.textContent : null;
-          try {
-            await navigator.clipboard.writeText(source.innerText.trim());
-            btn.classList.add("is-copied");
-            if (label) label.textContent = "Copied";
-          } catch {
-            btn.classList.add("is-failed");
-            if (label) label.textContent = "Failed";
-          }
-          setTimeout(() => {
-            btn.classList.remove("is-copied", "is-failed");
-            if (label && original) label.textContent = original;
-          }, 1600);
-        });
-      });
+        var yearEl = document.getElementById("year");
+        if (yearEl) yearEl.textContent = String(new Date().getFullYear());
 
-      const thread = document.getElementById("thread");
-      const chipsEl = document.getElementById("chips");
-      const form = document.getElementById("form");
-      const input = document.getElementById("input");
-      const headLabel = document.getElementById("head-label");
-      const footMeta = document.getElementById("foot-meta");
-      const skipBtn = document.getElementById("skip");
-      const restartBtn = document.getElementById("restart");
-      const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-      let data = null;
-      let byId = new Map();
-      let suggestions = [];
-      let played = new Set();
-      let queue = null;
-
-      const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      const norm = (s) => s.toLowerCase().replace(/[^a-z0-9#\s]/g, " ").replace(/\s+/g, " ").trim();
-
-      /* ---- markdown-lite: enough for what the commands actually emit ---- */
-      function inline(text) {
-        return esc(text)
-          .replace(/`([^`]+)`/g, "<code>$1</code>")
-          .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-          .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s.,);]|$)/g, '$1<em>$2</em>')
-          .replace(/(https?:\/\/[^\s<)]+)/g, '<a href="$1" rel="noreferrer">$1</a>');
-      }
-
-      function blocks(text) {
-        const lines = text.split("\n");
-        const out = [];
-        let list = null;   // open bullet list
-        let pre = null;    // open literal block (CLI output)
-        let para = null;   // open paragraph, accumulating wrapped lines
-
-        const flushList = () => {
-          if (!list) return;
-          out.push(`<ul>${list.join("")}</ul>`);
-          list = null;
-        };
-        const flushPre = () => {
-          if (!pre) return;
-          while (pre.length && pre[pre.length - 1] === "") pre.pop();
-          out.push(`<pre>${pre.map(esc).join("\n")}</pre>`);
-          pre = null;
-        };
-        const flushPara = () => {
-          if (!para) return;
-          const text = para.join(" ");
-          const tone = /^[✓✅]/.test(text) ? "ok" : /^[→🎯]/.test(text) ? "warn" : "";
-          out.push(`<p${tone ? ` class="${tone}"` : ""}>${inline(text)}</p>`);
-          para = null;
-        };
-
-        for (const raw of lines) {
-          const line = raw.replace(/\s+$/, "");
-          const indented = /^ {4}/.test(line);
-
-          // Inside a literal block, blank lines belong to it (CLI output has them).
-          if (pre) {
-            if (line === "" || indented) { pre.push(line.replace(/^ {4}/, "")); continue; }
-            flushPre();
-          }
-
-          if (line === "") { flushPara(); flushList(); continue; }
-
-          const heading = line.match(/^(#{2,4})\s+(.*)$/);
-          if (heading) {
-            flushPara(); flushList();
-            const cls = heading[1].length === 4 ? ' class="coach"' : "";
-            out.push(`<h4${cls}>${inline(heading[2])}</h4>`);
-            continue;
-          }
-
-          const item = line.match(/^\s*[-*]\s+(.*)$/);
-          if (item) {
-            flushPara();
-            (list = list || []).push(`<li>${inline(item[1])}</li>`);
-            continue;
-          }
-
-          // An indented line under an open bullet is that bullet wrapping, not a
-          // code block — the captures wrap continuations at 4 spaces.
-          if (list && /^\s+\S/.test(line)) {
-            list[list.length - 1] =
-              list[list.length - 1].replace(/<\/li>$/, " " + inline(line.trim()) + "</li>");
-            continue;
-          }
-
-          // Indented with no list open: literal CLI output.
-          if (indented && !para) { pre = [line.replace(/^ {4}/, "")]; continue; }
-
-          flushList();
-          (para = para || []).push(line.trim());
-        }
-        flushPara(); flushPre(); flushList();
-        return out;
-      }
-
-      /* ---- session ---- */
-      function stop() {
-        if (queue) { clearTimeout(queue.timer); queue = null; }
-        thread.querySelectorAll(".cursor").forEach((c) => c.remove());
-        thread.querySelectorAll(".thinking").forEach((t) => t.remove());
-      }
-
-      function finishNow() {
-        if (!queue) return;
-        const { host, items } = queue;
-        host.innerHTML = items.join("");
-        stop();
-      }
-
-      function stream(host, items) {
-        if (calm) { host.innerHTML = items.join(""); return; }
-        queue = { host, items, i: 0, timer: null };
-        const tick = () => {
-          if (!queue) return;
-          queue.i += 1;
-          host.innerHTML = items.slice(0, queue.i).join("") +
-            (queue.i < items.length ? '<span class="cursor" aria-hidden="true"></span>' : "");
-          if (queue.i < items.length) queue.timer = setTimeout(tick, 90);
-          else queue = null;
-        };
-        queue.timer = setTimeout(tick, 60);
-      }
-
-      function renderChips() {
-        chipsEl.innerHTML = "";
-        if (!suggestions.length) return;
-        const label = document.createElement("span");
-        label.className = "chips-label";
-        label.textContent = "try";
-        chipsEl.append(label);
-        suggestions.forEach((id) => {
-          const entry = byId.get(id);
-          if (!entry) return;
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "chip-suggest";
-          btn.textContent = entry.phrase;
-          btn.title = entry.label;
-          btn.addEventListener("click", () => say(entry));
-          chipsEl.append(btn);
-        });
-      }
-
-      function turnShell(text) {
-        const turn = document.createElement("div");
-        turn.className = "turn";
-        const you = document.createElement("div");
-        you.className = "turn-you";
-        you.innerHTML = `<span class="caret" aria-hidden="true">&gt;</span><span>${esc(text)}</span>`;
-        turn.append(you);
-        thread.append(turn);
-        return turn;
-      }
-
-      function scrollTo(el) {
-        if (calm) return;
-        const y = el.getBoundingClientRect().top + window.scrollY - 90;
-        window.scrollTo({ top: y, behavior: "smooth" });
-      }
-
-      function say(entry) {
-        stop();
-        const turn = turnShell(entry.phrase);
-
-        if (entry.tools.length) {
-          const strip = document.createElement("div");
-          strip.className = "turn-tools";
-          entry.tools.forEach((tool) => {
-            const chip = document.createElement("span");
-            const fixture = tool.startsWith("fixture:");
-            chip.className = "tool-chip" + (fixture ? " fixture" : "");
-            chip.textContent = fixture ? tool.replace(/^fixture:\s*/, "") : tool;
-            chip.title = fixture
-              ? "The demo profile standing in for an integration"
-              : "Ran locally during the capture";
-            strip.append(chip);
+        document.querySelectorAll("[data-copy-install]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var card = document.querySelector('[data-install="' + btn.dataset.copyInstall + '"]');
+            var source = card && card.querySelector("[data-install-source]");
+            if (!source) return;
+            var label = btn.querySelector(".install-copy-label");
+            var original = label ? label.textContent : null;
+            navigator.clipboard.writeText(source.innerText.trim()).then(function () {
+              btn.classList.add("is-copied");
+              if (label) label.textContent = "Copied";
+            }, function () {
+              btn.classList.add("is-failed");
+              if (label) label.textContent = "Failed";
+            });
+            window.setTimeout(function () {
+              btn.classList.remove("is-copied", "is-failed");
+              if (label && original) label.textContent = original;
+            }, 1600);
           });
-          turn.append(strip);
-        }
-
-        const out = document.createElement("div");
-        out.className = "turn-out chat-out";
-        turn.append(out);
-
-        played.add(entry.id);
-        suggestions = entry.suggests.filter((id) => id !== entry.id);
-        renderChips();
-        headLabel.textContent = `claude code · ~/projects/checkout-service · ${entry.act.toLowerCase()}`;
-        footMeta.textContent = `${entry.command} · recorded ${data.captured_on} · v${data.valor_version}`;
-        input.value = "";
-        input.placeholder = suggestions.length ? byId.get(suggestions[0]).phrase : "ask something";
-        scrollTo(turn);
-
-        if (calm) { out.innerHTML = blocks(entry.output).join(""); return; }
-        out.innerHTML = '<p class="thinking">working…</p>';
-        setTimeout(() => { out.innerHTML = ""; stream(out, blocks(entry.output)); }, 260);
-      }
-
-      function match(text) {
-        const q = norm(text);
-        if (!q) return null;
-        const slash = q.replace(/\s/g, "-");
-        let best = null;
-        let bestScore = 0;
-        for (const entry of data.entries) {
-          if (entry.command.startsWith("/valor-") && slash.startsWith(entry.command.slice(1))) return entry;
-          const hay = norm(`${entry.phrase} ${entry.label} ${entry.id}`);
-          const qs = new Set(q.split(" ").filter((w) => w.length > 2));
-          if (!qs.size) continue;
-          let hits = 0;
-          qs.forEach((w) => { if (hay.includes(w)) hits += 1; });
-          const score = hits / qs.size;
-          if (score > bestScore) { bestScore = score; best = entry; }
-        }
-        return bestScore >= 0.5 ? best : null;
-      }
-
-      function unmatched(text) {
-        stop();
-        const turn = turnShell(text);
-        const note = document.createElement("div");
-        note.className = "turn-out chat-out";
-        const options = suggestions.map((id) => `<code>${esc(byId.get(id).phrase)}</code>`).join(", ");
-        note.innerHTML =
-          `<p>This session is a recording, so it only has the replies that were captured against the demo profile — I can't answer something new here without a model behind the page.</p>` +
-          (options ? `<p>What it does have from here: ${options}.</p>` : "") +
-          `<p>For a session that answers anything, run the profile locally — the two commands are at the bottom of this page.</p>`;
-        turn.append(note);
-        input.value = "";
-        scrollTo(turn);
-      }
-
-      form.addEventListener("submit", (event) => {
-        event.preventDefault();
-        const text = input.value.trim();
-        if (!text) return;
-        const entry = match(text);
-        if (entry) say(entry);
-        else unmatched(text);
-      });
-
-      skipBtn.addEventListener("click", finishNow);
-      thread.addEventListener("click", () => { if (queue) finishNow(); });
-
-      function intro() {
-        stop();
-        thread.innerHTML = "";
-        played = new Set();
-        const note = document.createElement("p");
-        note.className = "sys";
-        note.innerHTML =
-          `Recorded session · seeded demo profile · Valor v${data.valor_version} · ` +
-          `levels <code>L3 → L4</code> · all four integrations off. ` +
-          `Say something below, or take a suggestion.`;
-        thread.append(note);
-        suggestions = data.start.slice();
-        renderChips();
-        footMeta.textContent = `${data.entries.length} recorded exchanges`;
-        headLabel.textContent = "claude code · ~/projects/checkout-service";
-        input.placeholder = byId.get(data.start[0]).phrase;
-      }
-
-      restartBtn.addEventListener("click", () => { intro(); scrollTo(thread); input.focus(); });
-
-      fetch("./demo/transcripts.json")
-        .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
-        .then((payload) => {
-          data = payload;
-          byId = new Map(data.entries.map((e) => [e.id, e]));
-          intro();
-        })
-        .catch(() => {
-          thread.innerHTML =
-            '<p class="sys">The session loads its transcripts over HTTP, so this page needs to be served rather than opened from disk. ' +
-            'They are plain text in the repo: <code>examples/demo/captures/</code>.</p>';
-          form.querySelector("button").disabled = true;
-          input.disabled = true;
         });
+
+        var thread = document.getElementById("thread");
+        var chipsEl = document.getElementById("chips");
+        var form = document.getElementById("form");
+        var input = document.getElementById("input");
+        var restartBtn = document.getElementById("restart");
+        var calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        var data = null;
+        var byId = null;
+        var suggestions = [];
+        var stream = null;
+
+        function esc(s) {
+          return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+        function normalize(s) {
+          return String(s).toLowerCase().replace(/[^a-z0-9#\s]/g, " ").replace(/\s+/g, " ").trim();
+        }
+
+        /* ---- markdown-lite: only what the commands actually emit ---- */
+        function inline(text) {
+          return esc(text)
+            .replace(/`([^`]+)`/g, "<code>$1</code>")
+            .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+            .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s.,);]|$)/g, "$1<em>$2</em>")
+            .replace(/(https?:\/\/[^\s<)]+)/g, '<a href="$1" rel="noreferrer">$1</a>');
+        }
+
+        function blocks(text) {
+          var lines = String(text).split("\n");
+          var out = [];
+          var list = null;
+          var pre = null;
+          var para = null;
+
+          function flushList() {
+            if (!list) return;
+            out.push("<ul>" + list.join("") + "</ul>");
+            list = null;
+          }
+          function flushPre() {
+            if (!pre) return;
+            while (pre.length && pre[pre.length - 1] === "") pre.pop();
+            out.push("<pre>" + pre.map(esc).join("\n") + "</pre>");
+            pre = null;
+          }
+          function flushPara() {
+            if (!para) return;
+            var joined = para.join(" ");
+            var tone = /^[✓✅]/.test(joined) ? "ok" : /^[→]/.test(joined) ? "warn" : "";
+            out.push("<p" + (tone ? ' class="' + tone + '"' : "") + ">" + inline(joined) + "</p>");
+            para = null;
+          }
+
+          for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].replace(/\s+$/, "");
+            var indented = /^ {4}/.test(line);
+
+            if (pre) {
+              if (line === "" || indented) { pre.push(line.replace(/^ {4}/, "")); continue; }
+              flushPre();
+            }
+            if (line === "") { flushPara(); flushList(); continue; }
+
+            var heading = line.match(/^(#{2,4})\s+(.*)$/);
+            if (heading) {
+              flushPara(); flushList();
+              out.push("<h4" + (heading[1].length === 4 ? ' class="coach"' : "") + ">" +
+                inline(heading[2]) + "</h4>");
+              continue;
+            }
+
+            var item = line.match(/^\s*[-*]\s+(.*)$/);
+            if (item) { flushPara(); (list = list || []).push("<li>" + inline(item[1]) + "</li>"); continue; }
+
+            /* An indented line under an open bullet is that bullet wrapping. */
+            if (list && /^\s+\S/.test(line)) {
+              list[list.length - 1] = list[list.length - 1]
+                .replace(/<\/li>$/, " " + inline(line.trim()) + "</li>");
+              continue;
+            }
+            if (indented && !para) { pre = [line.replace(/^ {4}/, "")]; continue; }
+
+            flushList();
+            (para = para || []).push(line.trim());
+          }
+          flushPara(); flushPre(); flushList();
+          return out;
+        }
+
+        /* ---- chat ---- */
+        function stopStream() {
+          if (stream) { window.clearTimeout(stream.timer); stream = null; }
+        }
+        function finishStream() {
+          if (!stream) return;
+          stream.host.innerHTML = stream.items.join("");
+          stopStream();
+        }
+        function startStream(host, items) {
+          stopStream();
+          if (calm) { host.innerHTML = items.join(""); return; }
+          stream = { host: host, items: items, i: 0, timer: null };
+          function tick() {
+            if (!stream) return;
+            stream.i += 1;
+            stream.host.innerHTML = stream.items.slice(0, stream.i).join("") +
+              (stream.i < stream.items.length ? '<span class="cursor" aria-hidden="true"></span>' : "");
+            if (stream.i < stream.items.length) stream.timer = window.setTimeout(tick, 85);
+            else stream = null;
+          }
+          stream.timer = window.setTimeout(tick, 50);
+        }
+
+        function addUser(text) {
+          var row = document.createElement("div");
+          row.className = "chat-user";
+          row.innerHTML = '<span class="chat-role">You</span><span class="chat-msg">' + esc(text) + "</span>";
+          thread.appendChild(row);
+        }
+        function addAgent() {
+          var row = document.createElement("div");
+          row.className = "chat-agent";
+          row.innerHTML = '<span class="chat-role chat-role-agent">Valor</span>';
+          var body = document.createElement("div");
+          body.className = "chat-out";
+          row.appendChild(body);
+          thread.appendChild(row);
+          return body;
+        }
+        function reveal(el) {
+          if (calm || !el.scrollIntoView) return;
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+
+        function renderChips() {
+          chipsEl.innerHTML = "";
+          suggestions.slice(0, 3).forEach(function (id) {
+            var entry = byId[id];
+            if (!entry) return;
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "chip-suggest";
+            btn.textContent = entry.phrase;
+            btn.title = entry.label;
+            btn.addEventListener("click", function () { say(entry); });
+            chipsEl.appendChild(btn);
+          });
+        }
+
+        function say(entry) {
+          stopStream();
+          addUser(entry.phrase);
+          var body = addAgent();
+
+          suggestions = entry.suggests.filter(function (id) { return id !== entry.id; });
+          renderChips();
+          input.value = "";
+          if (suggestions.length && byId[suggestions[0]]) input.placeholder = byId[suggestions[0]].phrase;
+          reveal(body);
+
+          var items = blocks(entry.output);
+          if (calm) { body.innerHTML = items.join(""); return; }
+          body.innerHTML = '<p class="thinking">working…</p>';
+          window.setTimeout(function () { startStream(body, items); }, 240);
+        }
+
+        function findEntry(text) {
+          var q = normalize(text);
+          if (!q) return null;
+          var slash = q.replace(/\s/g, "-");
+          var words = q.split(" ").filter(function (w) { return w.length > 2; });
+          var best = null;
+          var bestScore = 0;
+          for (var i = 0; i < data.entries.length; i++) {
+            var entry = data.entries[i];
+            if (entry.command.indexOf("/valor-") === 0 && slash.indexOf(entry.command.slice(1)) === 0) {
+              return entry;
+            }
+            if (!words.length) continue;
+            var hay = normalize(entry.phrase + " " + entry.label + " " + entry.id);
+            var hits = 0;
+            words.forEach(function (w) { if (hay.indexOf(w) !== -1) hits += 1; });
+            var score = hits / words.length;
+            if (score > bestScore) { bestScore = score; best = entry; }
+          }
+          return bestScore >= 0.5 ? best : null;
+        }
+
+        function sayUnknown(text) {
+          stopStream();
+          addUser(text);
+          var body = addAgent();
+          var options = suggestions.slice(0, 3).map(function (id) {
+            return "<code>" + esc(byId[id].phrase) + "</code>";
+          }).join(", ");
+          body.innerHTML =
+            "<p>This session is a recording, so I only have the replies that were captured against the " +
+            "demo profile — there's no model behind this page to answer something new.</p>" +
+            (options ? "<p>From here it has: " + options + ".</p>" : "") +
+            "<p>For a session that answers anything, run the profile locally — the two commands are at " +
+            "the bottom of this page.</p>";
+          input.value = "";
+          reveal(body);
+        }
+
+        function start() {
+          stopStream();
+          thread.innerHTML = "";
+          var note = document.createElement("p");
+          note.className = "sys";
+          note.innerHTML =
+            "Recorded session · seeded demo profile · Valor v" + esc(data.valor_version) +
+            " · levels <code>L3 → L4</code>, all four integrations off.";
+          thread.appendChild(note);
+          suggestions = data.start.slice();
+          renderChips();
+          if (byId[data.start[0]]) input.placeholder = byId[data.start[0]].phrase;
+        }
+
+        form.addEventListener("submit", function (event) {
+          event.preventDefault();
+          var text = input.value.trim();
+          if (!text) return;
+          var entry = findEntry(text);
+          if (entry) say(entry);
+          else sayUnknown(text);
+        });
+        thread.addEventListener("click", function () { if (stream) finishStream(); });
+        restartBtn.addEventListener("click", function () { start(); input.focus(); });
+
+        window.fetch("./demo/transcripts.json").then(function (response) {
+          if (!response.ok) throw new Error(String(response.status));
+          return response.json();
+        }).then(function (payload) {
+          data = payload;
+          byId = {};
+          data.entries.forEach(function (entry) { byId[entry.id] = entry; });
+          start();
+        }).catch(function () {
+          thread.innerHTML =
+            '<p class="sys">This page loads its transcripts over HTTP, so it needs to be served rather ' +
+            'than opened from disk. They are plain text in the repo: <code>examples/demo/captures/</code>.</p>';
+          input.disabled = true;
+          form.querySelector("button").disabled = true;
+        });
+      })();
     </script>
   </body>
 </html>
