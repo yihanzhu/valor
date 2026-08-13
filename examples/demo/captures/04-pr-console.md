@@ -8,11 +8,11 @@ console: pr-console.html
 ---
 Building the review console for #418 (example-org/checkout-service).
 
-  Fetch      3 changed files, 1 excluded as tests
-  Analyze    net/transport.py, api/payments_client.py
-  Graph      2 actors · 3 containers · 5 components
-  Quiz       8 candidates generated, 2 dropped in verification
-  Assemble   layout deterministic, 3 diffs inlined
+    Fetch      3 changed files, 1 excluded as tests
+    Analyze    net/transport.py, api/payments_client.py
+    Graph      2 actors · 3 containers · 5 components
+    Quiz       8 candidates generated, 2 dropped in verification
+    Assemble   layout deterministic, 3 diffs inlined
 
 Two quiz candidates were dropped because an independent check against the diff couldn't defend a
 single answer:

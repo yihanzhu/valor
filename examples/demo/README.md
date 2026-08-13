@@ -107,10 +107,15 @@ python3 examples/demo/build_transcripts.py          # captures/ -> website/demo/
 python3 examples/demo/build_transcripts.py --check  # verify without writing
 ```
 
+Eighteen captures: one per command, ambient coaching, and a handful of follow-ups
+("why is the refund fix first?", "show me the carry-forward file") so the page
+behaves like a session rather than a menu. Which inputs open the session and what
+each reply offers next is the `SESSION` table in the builder.
+
 To re-capture from your own dry run: replace the body of a file in `captures/`,
 bump `CAPTURED_ON` in the builder if the run date moved, re-run it, and commit
-both. A test asserts the generated JSON matches the captures, and that every
-command in `commands/` has one.
+both. A test asserts the generated JSON matches the captures, that every command
+in `commands/` has one, and that no transcript is a dead end or unreachable.
 
 ## Editing it
 

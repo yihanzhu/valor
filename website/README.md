@@ -20,7 +20,14 @@ website/
 
 ## The demo page
 
-`demo.html` shows real Valor output rather than mock-ups, from two sources:
+`demo.html` is a session, not a document: an input line you can type into, a
+thread that accumulates, and suggestions that change as the session advances
+through a day → a week → a review cycle. Each reply carries chips showing what
+ran (`▸`) and where integration data came from (`◆`, the demo profile's
+fixtures). Typing something unrecorded gets an honest answer — it says it has no
+recording for that and lists what it does have.
+
+The content is real Valor output rather than mock-ups, from two sources:
 
 - **`demo/transcripts.json`** — generated from the capture files in
   [`examples/demo/captures/`](../examples/demo/captures/), which are recordings of
@@ -32,6 +39,11 @@ website/
 
   A test asserts the committed JSON matches the captures, so the page can't drift
   from what was recorded. `--check` verifies without writing.
+
+  The session flow — which inputs open the session, what each reply offers next,
+  and the tool chips — is the `SESSION` table in that same script. The builder
+  refuses to generate a graph with unknown ids, dead ends, or transcripts nothing
+  can reach.
 
 - **`demo/pr-console.html`** — an actual `/valor-pr-console` artifact built from
   the demo profile's fixture PR. Not a recording: it's the real page, embedded in

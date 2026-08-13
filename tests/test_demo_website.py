@@ -89,9 +89,60 @@ def test_transcript_version_matches_repo(transcripts):
 def test_page_discloses_that_transcripts_are_recordings():
     """The page must not imply a live agent is answering."""
     text = PAGE.read_text()
-    assert "These are recordings" in text
+    assert "session is recorded" in text
     assert "seeded demo profile" in text
     assert "no backend" in text
+
+
+def test_page_is_an_interactive_session_not_a_menu():
+    """The session shape is the point: an input you can type into, suggestions
+    that change as it advances, and somewhere to start over."""
+    text = PAGE.read_text()
+    assert 'id="input"' in text and "<form" in text
+    assert 'id="chips"' in text
+    assert 'id="thread"' in text
+    assert 'id="restart"' in text
+
+
+def test_page_answers_honestly_when_it_has_no_recording():
+    """Typing something unrecorded must say so, not improvise."""
+    text = PAGE.read_text()
+    assert "function unmatched" in text
+    assert "only has the replies that were captured" in text
+
+
+def test_session_graph_is_navigable(transcripts):
+    """Every entry needs a next move, the starts must exist, and nothing may be
+    unreachable — otherwise a transcript is dead weight nobody can open."""
+    ids = {e["id"] for e in transcripts["entries"]}
+    assert transcripts["start"], "no opening suggestions"
+    assert set(transcripts["start"]) <= ids
+
+    for entry in transcripts["entries"]:
+        assert isinstance(entry["tools"], list)
+        assert entry["suggests"], f"{entry['id']} is a dead end"
+        assert set(entry["suggests"]) <= ids, f"{entry['id']} suggests unknown ids"
+
+    reachable = set(transcripts["start"])
+    frontier = list(reachable)
+    by_id = {e["id"]: e for e in transcripts["entries"]}
+    while frontier:
+        for nxt in by_id[frontier.pop()]["suggests"]:
+            if nxt not in reachable:
+                reachable.add(nxt)
+                frontier.append(nxt)
+    assert reachable == ids, f"unreachable transcripts: {sorted(ids - reachable)}"
+
+
+def test_fixture_tool_chips_are_labelled_as_fixtures(transcripts):
+    """Where a transcript's data came from the demo profile rather than a live
+    integration, the page shows that instead of implying a real API call."""
+    tools = [t for e in transcripts["entries"] for t in e["tools"]]
+    assert any(t.startswith("fixture:") for t in tools)
+    for tool in tools:
+        assert not tool.startswith("gh "), (
+            f"{tool!r} implies a live GitHub call; the captures read fixtures"
+        )
 
 
 def test_page_loads_the_transcripts_and_the_console():

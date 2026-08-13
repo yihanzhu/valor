@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Valor — demo</title>
-    <meta name="description" content="Real output from every Valor workflow, recorded against a seeded demo profile — plus a live, fully interactive PR review console you can click through.">
+    <title>Valor — demo session</title>
+    <meta name="description" content="Sit in a recorded Valor session: say something, watch what it actually replies. Plus a real, fully interactive PR review console you can click through.">
     <meta name="theme-color" content="#08090c">
     <link rel="canonical" href="https://valor.sh/demo">
     <link rel="icon" type="image/svg+xml" href="./favicon.svg">
@@ -12,14 +12,14 @@
     <link rel="manifest" href="./manifest.webmanifest">
 
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Valor — demo">
-    <meta property="og:description" content="Real output from every Valor workflow, plus a live PR review console you can click through.">
+    <meta property="og:title" content="Valor — demo session">
+    <meta property="og:description" content="Say something, watch what Valor actually replies. Plus a live PR review console.">
     <meta property="og:url" content="https://valor.sh/demo">
     <meta property="og:site_name" content="Valor">
     <meta property="og:image" content="./og.svg">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Valor — demo">
-    <meta name="twitter:description" content="Real output from every Valor workflow, plus a live PR review console.">
+    <meta name="twitter:title" content="Valor — demo session">
+    <meta name="twitter:description" content="Say something, watch what Valor actually replies.">
     <meta name="twitter:image" content="./og.svg">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,84 +28,111 @@
     <link rel="stylesheet" href="./styles.css">
 
     <style>
-      .demo-head { padding: 72px 0 8px; }
+      .demo-head { padding: 68px 0 6px; }
       .demo-note {
-        margin: 20px 0 0; padding: 14px 16px; border: 1px solid var(--line-2);
+        margin: 18px 0 0; padding: 13px 16px; border: 1px solid var(--line-2);
         border-left: 3px solid var(--accent-dim); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-        background: var(--surface); color: var(--text-soft); font-size: 0.92rem; line-height: 1.65;
-        max-width: 70ch;
+        background: var(--surface); color: var(--text-soft); font-size: 0.9rem; line-height: 1.6;
+        max-width: 74ch;
       }
       .demo-note strong { color: var(--text); font-weight: 600; }
 
-      .replay { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 28px; align-items: start; }
-      .rail { position: sticky; top: 88px; display: flex; flex-direction: column; gap: 20px; }
-      .rail-act { display: flex; flex-direction: column; gap: 7px; }
-      .rail-act > h3 {
-        margin: 0 0 3px; font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase;
-        color: var(--text-dim); font-weight: 700;
-      }
-      .phrase {
-        appearance: none; text-align: left; cursor: pointer; width: 100%;
-        background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
-        color: var(--text-soft); padding: 10px 12px; font: inherit; font-size: 0.88rem;
-        display: flex; flex-direction: column; gap: 3px; transition: border-color 0.15s, background 0.15s;
-      }
-      .phrase:hover { border-color: var(--line-strong); background: var(--surface-2); color: var(--text); }
-      .phrase:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-      .phrase[aria-current="true"] { border-color: var(--accent-dim); background: var(--surface-2); color: var(--text); }
-      .phrase .p-label { font-weight: 600; }
-      .phrase .p-cmd { font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-dim); }
-      .phrase[aria-current="true"] .p-cmd { color: var(--accent-dim); }
+      .session { max-width: 940px; margin: 0 auto; }
+      .thread { padding: 4px 0 8px; }
 
-      .term { min-width: 0; }
-      .term .chat-head { justify-content: flex-start; }
-      .term-blurb {
-        margin: 0; padding: 12px 18px; border-bottom: 1px solid var(--line);
-        color: var(--text-dim); font-size: 0.86rem; background: var(--code-bg-2);
+      .turn { padding: 20px 20px 4px; border-top: 1px solid var(--line); }
+      .turn:first-child { border-top: none; }
+      .turn-you {
+        display: flex; gap: 10px; align-items: baseline; font-family: var(--font-mono);
+        font-size: 0.92rem; color: var(--text); margin-bottom: 12px;
       }
-      .term-you {
-        display: flex; gap: 10px; align-items: baseline; padding: 16px 18px 4px;
-        font-family: var(--font-mono); font-size: 0.9rem;
+      .turn-you .caret { color: var(--accent); flex: none; }
+
+      .turn-tools { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
+      .tool-chip {
+        font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);
+        border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px;
+        background: var(--code-bg); white-space: nowrap; max-width: 100%; overflow: hidden;
+        text-overflow: ellipsis;
       }
-      .term-you .caret { color: var(--accent); }
-      .term-you .typed { color: var(--text); }
-      .term-out {
-        margin: 0; padding: 12px 18px 22px; overflow-x: auto; white-space: pre-wrap; word-break: break-word;
-        font-family: var(--font-mono); font-size: 0.83rem; line-height: 1.75; color: var(--text-soft);
-        min-height: 320px;
+      .tool-chip::before { content: "▸ "; color: var(--ok); }
+      .tool-chip.fixture { border-style: dashed; }
+      .tool-chip.fixture::before { content: "◆ "; color: var(--accent-dim); }
+
+      .turn-out { font-size: 0.93rem; }
+      .turn-out h4 { font-size: 0.86rem; }
+      .turn-out h4.coach { color: var(--accent-bright); }
+      .turn-out pre {
+        margin: 10px 0 0; padding: 12px 14px; overflow-x: auto; background: var(--code-bg);
+        border: 1px solid var(--line); border-radius: var(--radius-sm);
+        font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.65; color: var(--text-soft);
       }
-      .term-out .h2 { color: var(--accent-bright); font-weight: 600; }
-      .term-out .h3 { color: var(--text); font-weight: 600; }
-      .term-out .h4 { color: var(--accent); font-weight: 600; }
-      .term-out .ok { color: var(--ok); }
-      .term-out .next { color: var(--warn); }
-      .term-out .dim { color: var(--text-dim); }
-      .term-out .url { color: var(--azure); }
-      .term-foot {
-        display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
-        padding: 12px 18px; border-top: 1px solid var(--line); background: var(--code-bg-2);
-        font-size: 0.8rem; color: var(--text-dim);
+      .turn-out a { color: var(--azure); }
+      .thinking { color: var(--text-dim); font-size: 0.88rem; font-style: italic; }
+      .cursor {
+        display: inline-block; width: 7px; height: 0.95em; background: var(--accent);
+        vertical-align: -2px; animation: blink 1s steps(2) infinite;
       }
-      .term-foot .btn { padding: 7px 12px; font-size: 0.8rem; }
-      .cursor { display: inline-block; width: 7px; height: 1em; background: var(--accent); vertical-align: -2px; animation: blink 1s steps(2) infinite; }
       @keyframes blink { 50% { opacity: 0; } }
       @media (prefers-reduced-motion: reduce) { .cursor { animation: none; } }
 
-      .console-card {
-        border: 1px solid var(--line-2); border-radius: var(--radius); overflow: hidden;
-        background: var(--surface);
+      .sys {
+        margin: 0; padding: 14px 20px; color: var(--text-dim); font-size: 0.86rem;
+        background: var(--code-bg-2); border-top: 1px solid var(--line);
       }
-      .console-frame { width: 100%; height: 620px; border: 0; display: block; background: #fff; }
+      .sys code { font-family: var(--font-mono); color: var(--text-soft); }
+
+      .composer {
+        position: sticky; bottom: 0; z-index: 5; padding: 14px 18px 16px;
+        border-top: 1px solid var(--line-2);
+        background: color-mix(in srgb, var(--surface) 92%, transparent);
+        backdrop-filter: blur(8px);
+      }
+      .composer-row { display: flex; gap: 8px; align-items: center; }
+      .composer-row .caret { font-family: var(--font-mono); color: var(--accent); }
+      .composer input {
+        flex: 1; min-width: 0; background: var(--code-bg); color: var(--text);
+        border: 1px solid var(--line-2); border-radius: var(--radius-sm);
+        padding: 10px 12px; font-family: var(--font-mono); font-size: 0.9rem;
+      }
+      .composer input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+      .composer .btn { padding: 9px 14px; font-size: 0.85rem; flex: none; }
+      .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; align-items: center; }
+      .chips-label {
+        font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
+        color: var(--text-faint); font-weight: 700; margin-right: 2px;
+      }
+      .chip-suggest {
+        appearance: none; cursor: pointer; font: inherit; font-size: 0.82rem;
+        background: var(--surface-2); color: var(--text-soft);
+        border: 1px solid var(--line-2); border-radius: 999px; padding: 6px 13px;
+        transition: border-color 0.15s, color 0.15s, background 0.15s;
+      }
+      .chip-suggest:hover { border-color: var(--accent-dim); color: var(--text); background: var(--surface); }
+      .chip-suggest:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      .chip-suggest[disabled] { opacity: 0.45; cursor: default; }
+      .session-foot {
+        display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+        margin-top: 12px; font-size: 0.78rem; color: var(--text-faint);
+      }
+      .session-foot button {
+        appearance: none; background: none; border: 0; padding: 0; cursor: pointer;
+        color: var(--text-dim); font: inherit; text-decoration: underline;
+        text-decoration-color: var(--line-strong); text-underline-offset: 3px;
+      }
+      .session-foot button:hover { color: var(--text); }
+
+      .console-card { border: 1px solid var(--line-2); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
+      .console-frame { width: 100%; height: 640px; border: 0; display: block; background: #fff; }
       .console-bar {
         display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
         padding: 14px 18px; border-top: 1px solid var(--line);
       }
       .console-bar p { margin: 0; color: var(--text-dim); font-size: 0.84rem; }
 
-      @media (max-width: 900px) {
-        .replay { grid-template-columns: 1fr; }
-        .rail { position: static; }
-        .rail-act { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+      @media (max-width: 760px) {
+        .turn { padding: 16px 14px 4px; }
+        .composer { padding: 12px 14px 14px; }
         .console-frame { height: 480px; }
       }
     </style>
@@ -124,7 +151,7 @@
         </a>
         <nav class="site-nav" aria-label="Primary">
           <a href="./#features">Features</a>
-          <a href="./#workflow">How it works</a>
+          <a href="./demo.html" aria-current="page">Demo</a>
           <a href="./#install">Setup</a>
           <a href="https://github.com/yihanzhu/valor/blob/main/docs/getting-started.md" rel="noreferrer">Docs</a>
           <a class="nav-github" href="https://github.com/yihanzhu/valor" rel="noreferrer" aria-label="GitHub repository">
@@ -136,47 +163,49 @@
 
     <main id="main">
       <section class="container demo-head">
-        <p class="eyebrow">Demo</p>
-        <h2 style="font-size:clamp(1.9rem,4vw,2.7rem);line-height:1.1;margin:6px 0 14px">What Valor actually says.</h2>
+        <p class="eyebrow">Demo session</p>
+        <h2 style="font-size:clamp(1.9rem,4vw,2.7rem);line-height:1.1;margin:6px 0 14px">Say something. See what it says back.</h2>
         <p class="band-lede" style="margin:0">
-          Every workflow below, with the output it produced — not a mock-up of
-          it. Pick a phrase the way you would type it at your agent.
+          A session in progress, the way it looks in your terminal. Type, or take
+          one of the suggestions — they change as the session moves through a day,
+          a week, a review cycle.
         </p>
         <p class="demo-note">
-          <strong>These are recordings.</strong> A live agent needs a model at
-          runtime, and this site has no backend — so the transcripts were
-          captured by running Valor's own command specs against the
+          <strong>This session is recorded.</strong> A live agent needs a model at
+          runtime and this site has no backend, so the replies were captured by
+          running Valor's own command specs against the
           <a href="https://github.com/yihanzhu/valor/tree/main/examples/demo" rel="noreferrer">seeded demo profile</a>
-          in the repo: a fictional engineer, fictional tickets, invented
-          colleagues. The <strong>review console further down is not a
-          recording</strong> — it's the real artifact, fully interactive. Want
-          the whole thing live against your own work? That's two commands, at
-          the bottom of this page.
+          in the repo — fictional engineer, fictional tickets, invented
+          colleagues. Type something it hasn't heard and it will say so rather
+          than improvise. The <strong>review console below is not
+          recorded</strong>: that one is the real artifact, and you can drive it.
         </p>
       </section>
 
-      <section class="band" aria-labelledby="replay-h">
+      <section class="band" style="padding-top:36px" aria-labelledby="session-h">
         <div class="container">
-          <h2 id="replay-h" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Workflow transcripts</h2>
-          <div class="replay">
-            <div class="rail" id="rail" aria-label="Choose a workflow"></div>
+          <h2 id="session-h" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Interactive session</h2>
+          <div class="session chat">
+            <div class="chat-head">
+              <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+              <span class="chat-title"><span class="dot"></span><span id="head-label">claude code · ~/projects/checkout-service</span></span>
+            </div>
 
-            <div class="term chat">
-              <div class="chat-head">
-                <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
-                <span class="chat-title"><span class="dot"></span>claude code · ~/projects/checkout-service</span>
-              </div>
-              <p class="term-blurb" id="blurb">Pick a phrase to replay it.</p>
-              <div class="term-you">
+            <div class="thread" id="thread" aria-live="polite" aria-atomic="false"></div>
+
+            <div class="composer">
+              <form class="composer-row" id="form" autocomplete="off">
                 <span class="caret" aria-hidden="true">&gt;</span>
-                <span class="typed" id="typed"></span>
-              </div>
-              <pre class="term-out" id="out" aria-live="polite" aria-atomic="false"></pre>
-              <div class="term-foot">
-                <span id="meta"></span>
-                <span style="display:flex;gap:8px">
-                  <button class="btn btn-ghost" type="button" id="skip">Skip typing</button>
-                  <button class="btn btn-ghost" type="button" id="replay">Replay</button>
+                <label for="input" class="chips-label" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">What do you want to say to your agent?</label>
+                <input id="input" name="input" type="text" placeholder="start my day" spellcheck="false">
+                <button class="btn btn-primary" type="submit">Send</button>
+              </form>
+              <div class="chips" id="chips"></div>
+              <div class="session-foot">
+                <span id="foot-meta"></span>
+                <span style="display:flex;gap:16px">
+                  <button type="button" id="skip">Skip to the end</button>
+                  <button type="button" id="restart">Start over</button>
                 </span>
               </div>
             </div>
@@ -191,19 +220,19 @@
             <h2 id="console-h">The review console, running.</h2>
             <p class="band-lede">
               This is what <code>/valor-pr-console</code> generated for the demo
-              profile's pull request — a self-contained page with the diagram,
-              the diffs, and the quiz embedded in it. Zoom
-              <em>Context → Inside → Components → the real code</em>, flip
-              <strong>Before ⇄ After</strong>, play a request through the system,
-              then try the quiz. Getting one wrong is the interesting part: the
-              gate wants all six.
+              profile's pull request — a self-contained page with the diagram, the
+              diffs and the quiz embedded in it, so it runs here with no backend
+              at all. Zoom <em>Context → Inside → Components → the real code</em>,
+              flip <strong>Before ⇄ After</strong>, play a request through the
+              system, then take the quiz. Getting one wrong is the interesting
+              part: the gate wants all six.
             </p>
           </header>
 
           <div class="console-card">
             <iframe class="console-frame" src="./demo/pr-console.html" title="PR review console for pull request 418" loading="lazy"></iframe>
             <div class="console-bar">
-              <p>Best viewed full-page — the console is built for a wide window.</p>
+              <p>Built for a wide window — open it full-page for the real thing.</p>
               <a class="btn btn-primary" href="./demo/pr-console.html" target="_blank" rel="noreferrer">
                 Open full page
                 <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M14 4h6v6M20 4l-8 8M18 14v6H4V6h6"/></svg>
@@ -215,11 +244,11 @@
 
       <section class="band band-cta" aria-labelledby="run-h">
         <div class="container cta-inner">
-          <h2 id="run-h">Run the whole thing yourself.</h2>
+          <h2 id="run-h">Run the real session yourself.</h2>
           <p class="cta-lede">
-            The same profile these transcripts came from ships in the repo. It
-            installs into a throwaway home, so your own work stays out of it —
-            and every integration is off, so nothing reaches a real system.
+            The profile these replies came from ships in the repo. It installs into
+            a throwaway home, so your own work stays out of it — and every
+            integration is off, so nothing reaches a real system.
           </p>
           <div class="install-card install-card-lg cta-install" data-install="demo">
             <code class="install-cmd" data-install-source>HOME=~/valor-demo bash install.sh &amp;&amp; python3 examples/demo/seed.py ~/valor-demo</code>
@@ -288,110 +317,287 @@
         });
       });
 
-      const rail = document.getElementById("rail");
-      const outEl = document.getElementById("out");
-      const typedEl = document.getElementById("typed");
-      const blurbEl = document.getElementById("blurb");
-      const metaEl = document.getElementById("meta");
+      const thread = document.getElementById("thread");
+      const chipsEl = document.getElementById("chips");
+      const form = document.getElementById("form");
+      const input = document.getElementById("input");
+      const headLabel = document.getElementById("head-label");
+      const footMeta = document.getElementById("foot-meta");
       const skipBtn = document.getElementById("skip");
-      const replayBtn = document.getElementById("replay");
-      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const restartBtn = document.getElementById("restart");
+      const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-      let entries = [];
-      let current = null;
-      let timer = null;
+      let data = null;
+      let byId = new Map();
+      let suggestions = [];
+      let played = new Set();
+      let queue = null;
 
       const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const norm = (s) => s.toLowerCase().replace(/[^a-z0-9#\s]/g, " ").replace(/\s+/g, " ").trim();
 
-      function decorate(text) {
-        return text.split("\n").map((line) => {
-          const safe = esc(line).replace(
-            /(https?:\/\/[^\s]+)/g,
-            '<span class="url">$1</span>'
-          );
-          if (/^#### /.test(line)) return `<span class="h4">${safe}</span>`;
-          if (/^### /.test(line)) return `<span class="h3">${safe}</span>`;
-          if (/^## /.test(line)) return `<span class="h2">${safe}</span>`;
-          if (/^\s*[-*]?\s*[✓✅]/.test(line)) return `<span class="ok">${safe}</span>`;
-          if (/^\s*[-*]?\s*[→🎯]/.test(line)) return `<span class="next">${safe}</span>`;
-          if (/^\s*\*.*\*\s*$/.test(line) || /^\s{2,}\S/.test(line)) return `<span class="dim">${safe}</span>`;
-          return safe;
-        }).join("\n");
+      /* ---- markdown-lite: enough for what the commands actually emit ---- */
+      function inline(text) {
+        return esc(text)
+          .replace(/`([^`]+)`/g, "<code>$1</code>")
+          .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+          .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s.,);]|$)/g, '$1<em>$2</em>')
+          .replace(/(https?:\/\/[^\s<)]+)/g, '<a href="$1" rel="noreferrer">$1</a>');
       }
 
-      function stop() {
-        if (timer) { cancelAnimationFrame(timer); timer = null; }
-      }
+      function blocks(text) {
+        const lines = text.split("\n");
+        const out = [];
+        let list = null;   // open bullet list
+        let pre = null;    // open literal block (CLI output)
+        let para = null;   // open paragraph, accumulating wrapped lines
 
-      function finish() {
-        stop();
-        if (current) outEl.innerHTML = decorate(current.output);
-      }
-
-      function play(entry) {
-        stop();
-        current = entry;
-        blurbEl.textContent = entry.blurb;
-        typedEl.innerHTML = esc(entry.phrase) + '<span class="cursor" aria-hidden="true"></span>';
-        metaEl.textContent = `${entry.command} · recorded ${window.__capturedOn || ""}`.trim();
-        outEl.innerHTML = "";
-
-        rail.querySelectorAll(".phrase").forEach((b) => {
-          b.setAttribute("aria-current", String(b.dataset.id === entry.id));
-        });
-
-        if (reduceMotion) { outEl.innerHTML = decorate(entry.output); return; }
-
-        const text = entry.output;
-        const step = Math.max(6, Math.ceil(text.length / 150));
-        let i = 0;
-        const tick = () => {
-          i = Math.min(text.length, i + step);
-          outEl.innerHTML = decorate(text.slice(0, i));
-          if (i < text.length) timer = requestAnimationFrame(tick);
-          else timer = null;
+        const flushList = () => {
+          if (!list) return;
+          out.push(`<ul>${list.join("")}</ul>`);
+          list = null;
         };
-        timer = requestAnimationFrame(tick);
+        const flushPre = () => {
+          if (!pre) return;
+          while (pre.length && pre[pre.length - 1] === "") pre.pop();
+          out.push(`<pre>${pre.map(esc).join("\n")}</pre>`);
+          pre = null;
+        };
+        const flushPara = () => {
+          if (!para) return;
+          const text = para.join(" ");
+          const tone = /^[✓✅]/.test(text) ? "ok" : /^[→🎯]/.test(text) ? "warn" : "";
+          out.push(`<p${tone ? ` class="${tone}"` : ""}>${inline(text)}</p>`);
+          para = null;
+        };
+
+        for (const raw of lines) {
+          const line = raw.replace(/\s+$/, "");
+          const indented = /^ {4}/.test(line);
+
+          // Inside a literal block, blank lines belong to it (CLI output has them).
+          if (pre) {
+            if (line === "" || indented) { pre.push(line.replace(/^ {4}/, "")); continue; }
+            flushPre();
+          }
+
+          if (line === "") { flushPara(); flushList(); continue; }
+
+          const heading = line.match(/^(#{2,4})\s+(.*)$/);
+          if (heading) {
+            flushPara(); flushList();
+            const cls = heading[1].length === 4 ? ' class="coach"' : "";
+            out.push(`<h4${cls}>${inline(heading[2])}</h4>`);
+            continue;
+          }
+
+          const item = line.match(/^\s*[-*]\s+(.*)$/);
+          if (item) {
+            flushPara();
+            (list = list || []).push(`<li>${inline(item[1])}</li>`);
+            continue;
+          }
+
+          // An indented line under an open bullet is that bullet wrapping, not a
+          // code block — the captures wrap continuations at 4 spaces.
+          if (list && /^\s+\S/.test(line)) {
+            list[list.length - 1] =
+              list[list.length - 1].replace(/<\/li>$/, " " + inline(line.trim()) + "</li>");
+            continue;
+          }
+
+          // Indented with no list open: literal CLI output.
+          if (indented && !para) { pre = [line.replace(/^ {4}/, "")]; continue; }
+
+          flushList();
+          (para = para || []).push(line.trim());
+        }
+        flushPara(); flushPre(); flushList();
+        return out;
       }
 
-      skipBtn.addEventListener("click", finish);
-      replayBtn.addEventListener("click", () => current && play(current));
-      outEl.addEventListener("click", () => { if (timer) finish(); });
+      /* ---- session ---- */
+      function stop() {
+        if (queue) { clearTimeout(queue.timer); queue = null; }
+        thread.querySelectorAll(".cursor").forEach((c) => c.remove());
+        thread.querySelectorAll(".thinking").forEach((t) => t.remove());
+      }
 
-      function build(data) {
-        window.__capturedOn = data.captured_on;
-        entries = data.entries;
-        data.acts.forEach((act) => {
-          const group = entries.filter((e) => e.act === act);
-          if (!group.length) return;
-          const wrap = document.createElement("div");
-          wrap.className = "rail-act";
-          const h = document.createElement("h3");
-          h.textContent = act;
-          wrap.append(h);
-          group.forEach((entry) => {
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.className = "phrase";
-            btn.dataset.id = entry.id;
-            btn.setAttribute("aria-current", "false");
-            btn.innerHTML = `<span class="p-label">${esc(entry.label)}</span><span class="p-cmd">${esc(entry.phrase)}</span>`;
-            btn.addEventListener("click", () => play(entry));
-            wrap.append(btn);
-          });
-          rail.append(wrap);
+      function finishNow() {
+        if (!queue) return;
+        const { host, items } = queue;
+        host.innerHTML = items.join("");
+        stop();
+      }
+
+      function stream(host, items) {
+        if (calm) { host.innerHTML = items.join(""); return; }
+        queue = { host, items, i: 0, timer: null };
+        const tick = () => {
+          if (!queue) return;
+          queue.i += 1;
+          host.innerHTML = items.slice(0, queue.i).join("") +
+            (queue.i < items.length ? '<span class="cursor" aria-hidden="true"></span>' : "");
+          if (queue.i < items.length) queue.timer = setTimeout(tick, 90);
+          else queue = null;
+        };
+        queue.timer = setTimeout(tick, 60);
+      }
+
+      function renderChips() {
+        chipsEl.innerHTML = "";
+        if (!suggestions.length) return;
+        const label = document.createElement("span");
+        label.className = "chips-label";
+        label.textContent = "try";
+        chipsEl.append(label);
+        suggestions.forEach((id) => {
+          const entry = byId.get(id);
+          if (!entry) return;
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "chip-suggest";
+          btn.textContent = entry.phrase;
+          btn.title = entry.label;
+          btn.addEventListener("click", () => say(entry));
+          chipsEl.append(btn);
         });
-        if (entries.length) play(entries[0]);
       }
+
+      function turnShell(text) {
+        const turn = document.createElement("div");
+        turn.className = "turn";
+        const you = document.createElement("div");
+        you.className = "turn-you";
+        you.innerHTML = `<span class="caret" aria-hidden="true">&gt;</span><span>${esc(text)}</span>`;
+        turn.append(you);
+        thread.append(turn);
+        return turn;
+      }
+
+      function scrollTo(el) {
+        if (calm) return;
+        const y = el.getBoundingClientRect().top + window.scrollY - 90;
+        window.scrollTo({ top: y, behavior: "smooth" });
+      }
+
+      function say(entry) {
+        stop();
+        const turn = turnShell(entry.phrase);
+
+        if (entry.tools.length) {
+          const strip = document.createElement("div");
+          strip.className = "turn-tools";
+          entry.tools.forEach((tool) => {
+            const chip = document.createElement("span");
+            const fixture = tool.startsWith("fixture:");
+            chip.className = "tool-chip" + (fixture ? " fixture" : "");
+            chip.textContent = fixture ? tool.replace(/^fixture:\s*/, "") : tool;
+            chip.title = fixture
+              ? "The demo profile standing in for an integration"
+              : "Ran locally during the capture";
+            strip.append(chip);
+          });
+          turn.append(strip);
+        }
+
+        const out = document.createElement("div");
+        out.className = "turn-out chat-out";
+        turn.append(out);
+
+        played.add(entry.id);
+        suggestions = entry.suggests.filter((id) => id !== entry.id);
+        renderChips();
+        headLabel.textContent = `claude code · ~/projects/checkout-service · ${entry.act.toLowerCase()}`;
+        footMeta.textContent = `${entry.command} · recorded ${data.captured_on} · v${data.valor_version}`;
+        input.value = "";
+        input.placeholder = suggestions.length ? byId.get(suggestions[0]).phrase : "ask something";
+        scrollTo(turn);
+
+        if (calm) { out.innerHTML = blocks(entry.output).join(""); return; }
+        out.innerHTML = '<p class="thinking">working…</p>';
+        setTimeout(() => { out.innerHTML = ""; stream(out, blocks(entry.output)); }, 260);
+      }
+
+      function match(text) {
+        const q = norm(text);
+        if (!q) return null;
+        const slash = q.replace(/\s/g, "-");
+        let best = null;
+        let bestScore = 0;
+        for (const entry of data.entries) {
+          if (entry.command.startsWith("/valor-") && slash.startsWith(entry.command.slice(1))) return entry;
+          const hay = norm(`${entry.phrase} ${entry.label} ${entry.id}`);
+          const qs = new Set(q.split(" ").filter((w) => w.length > 2));
+          if (!qs.size) continue;
+          let hits = 0;
+          qs.forEach((w) => { if (hay.includes(w)) hits += 1; });
+          const score = hits / qs.size;
+          if (score > bestScore) { bestScore = score; best = entry; }
+        }
+        return bestScore >= 0.5 ? best : null;
+      }
+
+      function unmatched(text) {
+        stop();
+        const turn = turnShell(text);
+        const note = document.createElement("div");
+        note.className = "turn-out chat-out";
+        const options = suggestions.map((id) => `<code>${esc(byId.get(id).phrase)}</code>`).join(", ");
+        note.innerHTML =
+          `<p>This session is a recording, so it only has the replies that were captured against the demo profile — I can't answer something new here without a model behind the page.</p>` +
+          (options ? `<p>What it does have from here: ${options}.</p>` : "") +
+          `<p>For a session that answers anything, run the profile locally — the two commands are at the bottom of this page.</p>`;
+        turn.append(note);
+        input.value = "";
+        scrollTo(turn);
+      }
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const text = input.value.trim();
+        if (!text) return;
+        const entry = match(text);
+        if (entry) say(entry);
+        else unmatched(text);
+      });
+
+      skipBtn.addEventListener("click", finishNow);
+      thread.addEventListener("click", () => { if (queue) finishNow(); });
+
+      function intro() {
+        stop();
+        thread.innerHTML = "";
+        played = new Set();
+        const note = document.createElement("p");
+        note.className = "sys";
+        note.innerHTML =
+          `Recorded session · seeded demo profile · Valor v${data.valor_version} · ` +
+          `levels <code>L3 → L4</code> · all four integrations off. ` +
+          `Say something below, or take a suggestion.`;
+        thread.append(note);
+        suggestions = data.start.slice();
+        renderChips();
+        footMeta.textContent = `${data.entries.length} recorded exchanges`;
+        headLabel.textContent = "claude code · ~/projects/checkout-service";
+        input.placeholder = byId.get(data.start[0]).phrase;
+      }
+
+      restartBtn.addEventListener("click", () => { intro(); scrollTo(thread); input.focus(); });
 
       fetch("./demo/transcripts.json")
         .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
-        .then(build)
+        .then((payload) => {
+          data = payload;
+          byId = new Map(data.entries.map((e) => [e.id, e]));
+          intro();
+        })
         .catch(() => {
-          blurbEl.textContent = "Couldn't load the transcripts.";
-          outEl.innerHTML =
-            'The transcripts load over HTTP, so this page needs to be served rather than opened from disk.\n\n' +
-            'They are plain text in the repo: <span class="url">github.com/yihanzhu/valor/tree/main/examples/demo/captures</span>';
+          thread.innerHTML =
+            '<p class="sys">The session loads its transcripts over HTTP, so this page needs to be served rather than opened from disk. ' +
+            'They are plain text in the repo: <code>examples/demo/captures/</code>.</p>';
+          form.querySelector("button").disabled = true;
+          input.disabled = true;
         });
     </script>
   </body>
