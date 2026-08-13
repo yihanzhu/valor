@@ -222,6 +222,12 @@ def test_console_is_self_contained():
     assert not remote, f"console loads remote resources: {remote}"
 
 
+def test_console_declares_utf8():
+    """The shipped copy must carry the charset too — it's served as a page and
+    also opened as a local file, where no header supplies one."""
+    assert '<meta charset="utf-8">' in CONSOLE.read_text()[:1024].lower()
+
+
 def test_console_header_names_the_demo_pr():
     html = CONSOLE.read_text()
     assert 'id="prtitle">PR #418' in html

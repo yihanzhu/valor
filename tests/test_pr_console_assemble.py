@@ -71,6 +71,20 @@ def _assemble(tmp_path, gen):
     return out.read_text(encoding="utf-8"), proc.stderr
 
 
+def test_template_declares_utf8():
+    """Without a charset the browser guesses windows-1252 whenever the server
+    doesn't declare one, and every em dash, ✓, ⤢ and ▶ in the console renders as
+    mojibake. It must be in the first 1024 bytes."""
+    head = TEMPLATE.read_bytes()[:1024].decode("utf-8", "replace").lower()
+    assert '<meta charset="utf-8">' in head, "template must declare UTF-8 up front"
+
+
+def test_assembled_console_declares_utf8(tmp_path):
+    html, _ = _assemble(tmp_path, _gen(title="Fix — the em dash case"))
+    assert '<meta charset="utf-8">' in html[:1024].lower()
+    assert "—" in html
+
+
 def test_template_keeps_the_header_slots():
     """The injection targets must exist, and the shipped template must not carry
     a hardcoded PR identity (heading, ticket key, repo name)."""
