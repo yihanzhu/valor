@@ -1020,6 +1020,35 @@ em { font-style: normal; color: var(--accent-bright); }
 /* ============================================================
    OSS band
    ============================================================ */
+/* ============================================================
+   What it does — three moment cards
+   ============================================================ */
+.does-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.does-card {
+  padding: 26px 24px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.does-card h3 {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.does-card p {
+  margin: 0 0 16px;
+  color: var(--text-soft);
+  font-size: 0.93rem;
+  line-height: 1.62;
+}
+.does-phrases { display: flex; flex-wrap: wrap; gap: 7px; }
+
 .oss-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1159,6 +1188,7 @@ em { font-style: normal; color: var(--accent-bright); }
   .feature-row-reverse .term { order: initial; }
 
   .rail { grid-template-columns: 1fr; }
+  .does-grid { grid-template-columns: 1fr; }
   .compat-grid { grid-template-columns: 1fr; }
   .oss-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .setup-notes { grid-template-columns: 1fr; }

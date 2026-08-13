@@ -90,8 +90,9 @@ def test_page_discloses_that_transcripts_are_recordings():
     """The page must not imply a live agent is answering."""
     text = PAGE.read_text()
     assert "session is recorded" in text
-    assert "seeded demo profile" in text
+    assert "seeded profile" in text
     assert "no backend" in text
+    assert "Recorded session" in text, "the thread itself should say so, not only the dialog"
 
 
 def test_page_is_an_interactive_session_not_a_menu():
@@ -104,20 +105,43 @@ def test_page_is_an_interactive_session_not_a_menu():
     assert 'id="restart"' in text
 
 
-def test_chat_window_is_a_fixed_height_scroll_box():
-    """A chat window, not a page that grows: the thread has its own height and
-    scrolls internally, and the code scrolls that box rather than the page."""
+def test_demo_page_is_one_immersive_screen():
+    """The demo fills the viewport and never scrolls the document — only the
+    thread scrolls. A page that grows is what this replaced."""
     text = PAGE.read_text()
+    shell = re.search(r"html,\s*body\s*\{(.*?)\}", text, re.S)
+    assert shell, "no html/body shell rule"
+    assert "height: 100%" in shell.group(1)
+    assert "overflow: hidden" in shell.group(1)
+
     thread_css = re.search(r"\.thread\s*\{(.*?)\}", text, re.S)
     assert thread_css, "no .thread rule on the page"
-    assert "height:" in thread_css.group(1)
     assert "overflow-y: auto" in thread_css.group(1)
-    assert "thread.scrollTop = thread.scrollHeight" in text, (
-        "the thread should be pinned to its own bottom"
+    assert "min-height: 0" in thread_css.group(1), (
+        "a flex child needs min-height:0 or it refuses to shrink and the page grows"
     )
+    assert "thread.scrollTop = thread.scrollHeight" in text
     assert "scrollIntoView" not in text, (
         "scrollIntoView moves the page; inside a fixed chat box, set scrollTop instead"
     )
+
+
+def test_demo_page_keeps_its_prose_short():
+    """The demo is for playing with, not reading: the long-form explanation lives
+    in a dialog, and the page body stays lean."""
+    text = PAGE.read_text()
+    assert "<dialog" in text, "the explanation should live in an About dialog"
+    body = text.split("<body>", 1)[1].split("<script>", 1)[0]
+    body = re.sub(r"<dialog[\s\S]*?</dialog>", "", body)
+    words = len(re.sub(r"<[^>]+>", " ", body).split())
+    assert words < 120, f"the demo screen carries {words} words of copy; keep it under 120"
+
+
+def test_console_is_a_view_not_a_section_below():
+    """One screen: the console is a switchable view, loaded on demand."""
+    text = PAGE.read_text()
+    assert 'id="view-console"' in text and 'id="panel-console"' in text
+    assert "data-src" in text, "the console iframe should load lazily, on first view"
 
 
 def test_page_answers_honestly_when_it_has_no_recording():
@@ -193,6 +217,20 @@ def test_page_loads_the_transcripts_and_the_console():
 def test_page_is_reachable_from_the_landing_page():
     index = (SITE / "index.html").read_text()
     assert "./demo.html" in index, "the landing page never links to the demo"
+
+
+def test_landing_page_is_a_straightforward_product_page():
+    """One install card, one path to the demo, and no duplicate CTAs — the
+    clutter this replaced was three install blocks and six stacked bands."""
+    index = (SITE / "index.html").read_text()
+    assert index.count("data-copy-install") == 2, (
+        "expected exactly one install card (a source + its copy button)"
+    )
+    for anchor in ("#does", "#install", "./demo.html"):
+        assert anchor in index, f"the landing nav lost {anchor}"
+    sections = re.findall(r'<section class="[^"]*band', index)
+    assert len(sections) <= 4, f"{len(sections)} bands on the landing page; keep it tight"
+    assert "oss-card" not in index, "the GitHub vanity-stat cards should be gone"
 
 
 def test_landing_page_no_longer_claims_invented_tickets():

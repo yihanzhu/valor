@@ -42,10 +42,9 @@
           <span class="brand-version">v0.17.0</span>
         </a>
         <nav class="site-nav" aria-label="Primary">
-          <a href="#features">Features</a>
           <a href="./demo.html">Demo</a>
-          <a href="#workflow">How it works</a>
-          <a href="#install">Setup</a>
+          <a href="#does">What it does</a>
+          <a href="#install">Install</a>
           <a href="https://github.com/yihanzhu/valor/blob/main/docs/getting-started.md" rel="noreferrer">Docs</a>
           <a class="nav-github" href="https://github.com/yihanzhu/valor" rel="noreferrer" aria-label="GitHub repository">
             <svg viewBox="0 0 16 16" aria-hidden="true" width="16" height="16"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.08.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.42 7.42 0 014 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
@@ -68,15 +67,15 @@
               <span class="accent">coding agent</span>.
             </h1>
             <p class="lede">
-              Valor is a set of skills, agents, and rules that turns
-              Claude Code, Codex CLI, and Cursor into a career coach. It
-              runs alongside your daily work — capturing evidence and
-              coaching at next-level — without another tool to open.
+              Valor turns Claude Code, Codex CLI, or Cursor into a career coach.
+              It plans your day, coaches your reviews, captures what you did, and
+              at review time writes the draft you'd otherwise reconstruct from
+              memory. No new tool to open.
             </p>
 
             <div class="hero-actions">
-              <a class="btn btn-primary" href="https://github.com/yihanzhu/valor/blob/main/docs/getting-started.md" rel="noreferrer">
-                Get started
+              <a class="btn btn-primary" href="./demo.html">
+                Try the demo
                 <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/></svg>
               </a>
               <a class="btn btn-ghost" href="https://github.com/yihanzhu/valor" rel="noreferrer">
@@ -97,7 +96,7 @@
             <div class="chat chat-side">
               <div class="chat-head">
                 <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
-                <span class="chat-title"><span class="dot"></span>claude code · ~/projects/auth</span>
+                <span class="chat-title"><span class="dot"></span>claude code · ~/projects/checkout-service</span>
               </div>
               <div class="chat-body">
                 <div class="chat-user">
@@ -122,341 +121,82 @@
                       <li><code>13:30–14:00</code> prep: checkout sync <span style="color:var(--text-dim)">· reserved</span></li>
                     </ul>
 
-                    <p class="footnote">Today has exactly one deep block — the refund fix gets all of it.</p>
+                    <p class="footnote">Real output — the demo has all eleven workflows.</p>
                   </div>
                 </div>
               </div>
             </div>
           </aside>
-
-          <div class="hero-install">
-            <p class="install-label">One-time setup</p>
-            <div class="install-card" data-install="hero">
-              <code class="install-cmd" data-install-source>curl -fsSL https://raw.githubusercontent.com/yihanzhu/valor/main/install.sh | bash -s -- --clone</code>
-              <button class="install-copy" type="button" data-copy-install="hero" aria-label="Copy install command">
-                <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 9h10v11H9zM6 4h10v2H8v10H6z"/></svg>
-                <span class="install-copy-label">Copy</span>
-              </button>
-            </div>
-          </div>
         </div>
         <div class="hero-glow" aria-hidden="true"></div>
       </section>
 
-      <section class="band band-setup" id="install" aria-labelledby="setup-h">
+      <section class="band" id="does" aria-labelledby="does-h">
         <div class="container">
           <header class="band-head">
-            <p class="eyebrow">Setup</p>
-            <h2 id="setup-h">Install once. Then talk to your agent like normal.</h2>
+            <p class="eyebrow">What it does</p>
+            <h2 id="does-h">Three moments in your week.</h2>
             <p class="band-lede">
-              The installer drops Valor's skills, agents, and rules into
-              <code>~/.claude/</code>, <code>~/.codex/</code>, and
-              <code>~/.cursor/</code>. After that, the install command isn't
-              part of your day — your AI agent is.
+              Eleven on-demand workflows plus ambient coaching, all triggered by
+              plain language. Everything runs against a local evidence store —
+              no dashboards, no telemetry.
             </p>
           </header>
 
-          <div class="install-card install-card-lg" data-install="setup">
-            <code class="install-cmd" data-install-source>curl -fsSL https://raw.githubusercontent.com/yihanzhu/valor/main/install.sh | bash -s -- --clone</code>
-            <button class="install-copy" type="button" data-copy-install="setup" aria-label="Copy install command">
-              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 9h10v11H9zM6 4h10v2H8v10H6z"/></svg>
-              <span class="install-copy-label">Copy</span>
-            </button>
-          </div>
-
-          <ul class="setup-notes">
-            <li>
-              <span class="setup-note-label">Read first</span>
-              The bootstrap is fetched from <code>main</code>. It's a short shell
-              script — read it before piping to bash:
-              <code>curl -fsSL …/main/install.sh | less</code>.
-            </li>
-            <li>
-              <span class="setup-note-label">Per host</span>
-              Only need one agent? Pass <code>--target claude-code</code>,
-              <code>codex</code>, or <code>cursor</code>.
-            </li>
-            <li>
-              <span class="setup-note-label">Updates</span>
-              Checks for new <strong>releases</strong> (tagged <code>vX.Y.Z</code>,
-              never <code>main</code>) when you start a session and
-              <strong>notifies</strong> you when one is available — updating is
-              manual. Pin a version with
-              <code>git -C ~/.valor/repo checkout vX.Y.Z</code>.
-            </li>
-            <li>
-              <span class="setup-note-label">Local state</span>
-              Career framework, evidence, and carry-forward notes live in
-              <code>~/.valor/</code>. Nothing leaves your machine.
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <section class="band band-features" id="features" aria-labelledby="features-h">
-        <div class="container">
-          <header class="band-head">
-            <p class="eyebrow">Features</p>
-            <h2 id="features-h">Just talk to your agent. Valor knows what you mean.</h2>
-            <p class="band-lede">Eleven on-demand workflows plus ambient coaching, triggered by natural language. It fits your day to your real calendar gaps, verifies carried-forward work before re-raising it, focuses on the project whose sync is next, turns a dense PR into a diagram a cold reviewer can follow, and at review time assembles a self-reflection from your evidence — flagging what to confirm instead of overclaiming. All against a local evidence store. No dashboards, no telemetry.</p>
-            <p class="band-lede" style="margin-top:14px">
-              Every panel below is a trimmed excerpt of output Valor actually
-              produced, not a mock-up — <a href="./demo.html">the demo page</a>
-              has the full transcripts and a review console you can click
-              through.
-            </p>
-          </header>
-
-          <div class="feature-row">
-            <div class="feature-copy">
-              <p class="feature-tag">Morning</p>
-              <h3>Start the day with priorities, not inbox.</h3>
+          <div class="does-grid">
+            <div class="does-card">
+              <h3>Every morning</h3>
               <p>
-                Say <em>"start my day"</em> and Valor pulls open Jira tickets,
-                your PR queue, today's calendar, and yesterday's carry-forward
-                — then proposes a focus order grounded in your target-level
-                competencies, and fits it to your calendar's real gaps (deep vs
-                fragmented), optionally written back as private calendar blocks
-                on clean clock times. If you rotate between projects, it plans
-                around the one that's due and quietly hides the rest.
+                Tickets, your review queue, today's calendar and yesterday's
+                carry-forward, ranked against the goals in your own 1:1 doc — then
+                fitted to the day's real gaps, deep work in the deep block, prep
+                reserved before the meetings you present at.
               </p>
-              <a class="link-arrow" href="https://github.com/yihanzhu/valor/blob/main/commands/briefing.md" rel="noreferrer">See the spec <span aria-hidden="true">→</span></a>
-            </div>
-            <div class="chat">
-              <div class="chat-head">
-                <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
-                <span class="chat-title"><span class="dot"></span>claude code</span>
-              </div>
-              <div class="chat-body">
-                <div class="chat-user">
-                  <span class="chat-role">You</span>
-                  <span class="chat-msg">start my day</span>
-                </div>
-                <div class="chat-agent">
-                  <span class="chat-role chat-role-agent">Valor</span>
-                  <div class="chat-out">
-                    <h4>Work context</h4>
-                    <ul>
-                      <li><code>PROJ-244</code> Retry storm under partial outage — <em>In Review</em>. Per your standing rules this sits ahead of new work: PROJ-248 is blocked until it lands.</li>
-                      <li><code>PROJ-231</code> Refunds can double-apply — <em>In Progress</em>. Week goal 1 — the one you wrote down as "the one that matters".</li>
-                    </ul>
-
-                    <h4>Career focus</h4>
-                    <ul>
-                      <li>Gap: Industry Knowledge <span style="color:var(--text-dim)">(2 of 51 entries this cycle)</span></li>
-                      <li>The 16:30 partner call is the opening — go in having read their rate-limit change, not just ready to explain ours.</li>
-                    </ul>
-
-                    <h4>Held (blocked)</h4>
-                    <p>PROJ-259 profiling — behind Riley's results. Not surfaced as actionable today.</p>
-
-                    <p class="footnote"><span class="ok">✓</span> Gate: 2 claims — 0 resolved · 1 unresolved · 1 unverified</p>
-                  </div>
-                </div>
+              <div class="does-phrases">
+                <span class="rail-phrase-pill">start my day</span>
+                <span class="rail-phrase-pill">wrap up</span>
               </div>
             </div>
-          </div>
 
-          <div class="feature-row feature-row-reverse">
-            <div class="feature-copy">
-              <p class="feature-tag">In flow</p>
-              <h3>Senior-level review, before you hit "Request changes".</h3>
+            <div class="does-card">
+              <h3>While you work</h3>
               <p>
-                Ask your agent to <em>"help me review PR #418"</em> and Valor
-                walks architecture, blast radius, test gaps, and tone of the
-                review itself. Say <em>"design doc for PROJ-123"</em> and you
-                get the same for design — options, trade-offs, and what to
-                explicitly punt.
+                Senior-level review before you hit "request changes", a design doc
+                with the trade-offs written down, and a PR turned into a diagram a
+                cold reviewer can follow. Coaching arrives unprompted, tied to your
+                own career framework.
               </p>
-              <a class="link-arrow" href="https://github.com/yihanzhu/valor/blob/main/commands/pr-review.md" rel="noreferrer">PR review playbook <span aria-hidden="true">→</span></a>
-            </div>
-            <div class="chat">
-              <div class="chat-head">
-                <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
-                <span class="chat-title"><span class="dot"></span>cursor · valor</span>
-              </div>
-              <div class="chat-body">
-                <div class="chat-user">
-                  <span class="chat-role">You</span>
-                  <span class="chat-msg">help me review PR #418</span>
-                </div>
-                <div class="chat-agent">
-                  <span class="chat-role chat-role-agent">Valor</span>
-                  <div class="chat-out">
-                    <h4>Behaviour changes the description doesn't mention</h4>
-                    <p><code>api/payments_client.py:12</code> — <code>capture()</code> now routes through the transport as a <code>POST</code>, and the new verb check refuses to retry non-idempotent verbs. So captures no longer retry at all; the old helper gave them 3 attempts on 5xx.</p>
-                    <p><span class="warn">!</span> Captures are the call that most needs a story on provider 5xx. Silently dropping their retries during an outage is the opposite of this PR's goal — and it won't show up in tests that only exercise <code>GET</code>.</p>
-
-                    <h4>Test gaps</h4>
-                    <ul>
-                      <li><code>random.uniform(0, ceiling)</code> can return ~0, so a "backoff" can be no wait at all. If that's intended, assert it.</li>
-                    </ul>
-
-                    <h4>Tone check</h4>
-                    <p>Your reply to Riley reads slightly clipped — reasoning first, conclusion second. Same content, easier to agree with.</p>
-
-                    <p class="footnote"><span class="ok">✓</span> Logged as evidence · pr_review_own_scope · subject_matter</p>
-                  </div>
-                </div>
+              <div class="does-phrases">
+                <span class="rail-phrase-pill">help me review #418</span>
+                <span class="rail-phrase-pill">design doc for PROJ-231</span>
               </div>
             </div>
-          </div>
 
-          <div class="feature-row">
-            <div class="feature-copy">
-              <p class="feature-tag">Onboarding a reviewer</p>
-              <h3>Turn a dense PR into a diagram anyone can review.</h3>
+            <div class="does-card">
+              <h3>At review time</h3>
               <p>
-                Say <em>"build a review console for #418"</em> and Valor turns
-                the diff into an interactive C4 walkthrough — system context →
-                containers → components → the real code — with a Before ⇄ After
-                toggle and a request-flow animation, all labelled in plain
-                English. It closes with a mastery quiz generated from the diff
-                and <strong>answer-verified against it</strong>: ace it and
-                you're approval-ready, so approving means you actually
-                understood the change. The approval itself still happens in
-                GitHub.
+                Six months of captured evidence becomes a self-reflection draft
+                mapped to your competencies — phrased from what actually shipped,
+                with the work you forgot to log surfaced and a confirm-before-you-
+                submit list instead of overclaiming.
               </p>
-              <a class="link-arrow" href="https://github.com/yihanzhu/valor/blob/main/commands/pr-console.md" rel="noreferrer">Review console spec <span aria-hidden="true">→</span></a>
-            </div>
-            <div class="chat">
-              <div class="chat-head">
-                <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
-                <span class="chat-title"><span class="dot"></span>claude code · valor</span>
-              </div>
-              <div class="chat-body">
-                <div class="chat-user">
-                  <span class="chat-role">You</span>
-                  <span class="chat-msg">build a review console for #418</span>
-                </div>
-                <div class="chat-agent">
-                  <span class="chat-role chat-role-agent">Valor</span>
-                  <div class="chat-out">
-                    <h4>Console built <span style="color:var(--text-dim);font-weight:400">(3 containers · 8 components)</span></h4>
-                    <ul>
-                      <li><span class="ok">●</span> <code>L1</code> Context — who calls the retry path</li>
-                      <li><span class="ok">●</span> <code>L2</code> Inside — front door, transport, rulebook</li>
-                      <li><span class="ok">●</span> <code>L3→L4</code> Components → the real diff lines</li>
-                    </ul>
-
-                    <h4>Mastery quiz</h4>
-                    <p>8 candidates generated, 2 dropped in verification — one depended on the env flag, so both answers were correct. That leaves 6, and the reviewer needs all 6.</p>
-
-                    <h4>Gate</h4>
-                    <p>Acing it marks you <span class="accent-text">approval-ready</span> — the actual approval still happens in GitHub.</p>
-
-                    <p class="footnote"><span class="ok">✓</span> <a href="./demo.html#console" style="color:var(--accent)">Try this console →</a> · evidence · leadership</p>
-                  </div>
-                </div>
+              <div class="does-phrases">
+                <span class="rail-phrase-pill">prep for 1:1</span>
+                <span class="rail-phrase-pill">half-year reflection</span>
               </div>
             </div>
           </div>
 
-          <div class="feature-row feature-row-reverse">
-            <div class="feature-copy">
-              <p class="feature-tag">Wrap-up</p>
-              <h3>End the day with carry-forward, not loose ends.</h3>
-              <p>
-                Say <em>"wrap up"</em> or <em>"call it a day"</em> and Valor
-                reads the day's conversation, git history, and evidence — then
-                writes a handoff file you (or tomorrow-you) can pick up cold,
-                verifying each carried-forward item against its source first so
-                nothing rides on a stale guess. It also pulls notes from today's
-                meetings — straight from your calendar events' attachments — into
-                your local evidence store, so 1:1 prep and weekly reflection can
-                use what actually happened.
-              </p>
-              <a class="link-arrow" href="https://github.com/yihanzhu/valor/blob/main/commands/wrapup.md" rel="noreferrer">Wrap-up spec <span aria-hidden="true">→</span></a>
-            </div>
-            <div class="chat">
-              <div class="chat-head">
-                <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
-                <span class="chat-title"><span class="dot"></span>codex cli · valor</span>
-              </div>
-              <div class="chat-body">
-                <div class="chat-user">
-                  <span class="chat-role">You</span>
-                  <span class="chat-msg">wrap up</span>
-                </div>
-                <div class="chat-agent">
-                  <span class="chat-role chat-role-agent">Valor</span>
-                  <div class="chat-out">
-                    <h4>Meeting notes captured</h4>
-                    <ul>
-                      <li><span class="ok">✓</span> Checkout weekly sync → recorded as evidence. Decisions: <code>#418</code> stays the critical path.</li>
-                      <li><span class="ok">✓</span> 1:1 → Sam still hasn't shared the written L4 expectations. Third week carried.</li>
-                    </ul>
-
-                    <h4>Verification gate</h4>
-                    <p>The provider rate-limit message — <span class="ok">resolved.</span> It went out in <code>#checkout</code> at 15:52, so the "not sent" claim is retired rather than carried into tomorrow.</p>
-
-                    <h4>Career note</h4>
-                    <p>The honest counterweight: everything you shipped today was inside scope somebody else had already decided. Sam's L4 note hasn't moved.</p>
-
-                    <p class="footnote"><span class="ok">✓</span> Saved to <code>~/.valor/carry-forward/carry-forward-2026-08-13.md</code></p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="feature-row">
-            <div class="feature-copy">
-              <p class="feature-tag">Review time</p>
-              <h3>Turn a half-year of evidence into a review draft you can defend.</h3>
-              <p>
-                Say <em>"half-year reflection"</em> and Valor pulls the cycle's
-                evidence, cross-checks git and past sessions for work you forgot
-                to log, and clusters it into impact themes mapped to your
-                competencies and company values. It phrases every claim from the
-                recorded status and role — nothing reads as "shipped" unless it
-                was — and hands you a <em>confirm-before-you-submit</em> list
-                instead of overclaiming. Say <em>"feedback about my manager"</em>
-                for the upward-feedback half, grounded in your 1:1 and meeting notes.
-              </p>
-              <a class="link-arrow" href="https://github.com/yihanzhu/valor/blob/main/commands/reflection.md" rel="noreferrer">Reflection spec <span aria-hidden="true">→</span></a>
-            </div>
-            <div class="chat">
-              <div class="chat-head">
-                <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
-                <span class="chat-title"><span class="dot"></span>claude code · valor</span>
-              </div>
-              <div class="chat-body">
-                <div class="chat-user">
-                  <span class="chat-role">You</span>
-                  <span class="chat-msg">half-year reflection</span>
-                </div>
-                <div class="chat-agent">
-                  <span class="chat-role chat-role-agent">Valor</span>
-                  <div class="chat-out">
-                    <h4>Impact themes</h4>
-                    <ul>
-                      <li>Made the payments path survive a degraded provider. <span style="color:var(--text-dim)">subject_matter · autonomy_scope · Ownership</span></li>
-                      <li>Set the outbound-HTTP boundary with the platform team. <span style="color:var(--text-dim)">collaboration · Collaboration</span></li>
-                    </ul>
-
-                    <h4>Work in git but not in your log</h4>
-                    <p><code>#397</code> "retry budget metrics", merged 2026-06-18. No evidence entry — it belongs in theme 1. Add it?</p>
-
-                    <h4>Confirm before you submit</h4>
-                    <ul>
-                      <li><span class="warn">?</span> The transport decision is recorded <code>decided-by-other</code> — confirm that's how you'd tell it.</li>
-                      <li><span class="warn">?</span> The funnel instrumentation has no role recorded. Led, or co-built?</li>
-                    </ul>
-
-                    <p class="footnote"><span class="ok">✓</span> Built from 51 evidence entries · plain-text, paste-ready</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <p class="band-lede" style="margin-top:28px">
+            <a class="link-arrow" href="./demo.html">See all eleven with real output, in a session you can talk to <span aria-hidden="true">→</span></a>
+          </p>
         </div>
       </section>
 
       <section class="band band-workflow" id="workflow" aria-labelledby="workflow-h">
         <div class="container">
           <header class="band-head">
-            <p class="eyebrow">Workflow</p>
+            <p class="eyebrow">How it works</p>
             <h2 id="workflow-h">Install → setup → use. That's it.</h2>
           </header>
 
@@ -492,11 +232,17 @@
         </div>
       </section>
 
-      <section class="band band-compat" aria-labelledby="compat-h">
+      <section class="band" aria-labelledby="local-h">
         <div class="container">
           <header class="band-head band-head-center">
-            <p class="eyebrow">Compatibility</p>
-            <h2 id="compat-h">Three hosts. Every major platform.</h2>
+            <p class="eyebrow">Local-first</p>
+            <h2 id="local-h">Your career data stays on your machine.</h2>
+            <p class="band-lede">
+              Apache-2.0, plain Python and Markdown, no backend and no telemetry.
+              Valor reaches only the tools your agent already has —
+              <a href="https://github.com/yihanzhu/valor/blob/main/PRIVACY.md" rel="noreferrer">PRIVACY.md</a>
+              draws the exact trust boundary.
+            </p>
           </header>
 
           <div class="compat-grid">
@@ -509,18 +255,21 @@
               </div>
             </div>
             <div class="compat-group">
-              <p class="compat-label">Operating systems</p>
+              <p class="compat-label">Runs on</p>
               <div class="badges">
                 <span class="chip">macOS</span>
                 <span class="chip">Linux</span>
                 <span class="chip">Windows · WSL</span>
+                <span class="chip">Python 3</span>
+                <span class="chip">stdlib only</span>
               </div>
             </div>
             <div class="compat-group">
-              <p class="compat-label">Runtime</p>
+              <p class="compat-label">Your data</p>
               <div class="badges">
-                <span class="chip">Python 3</span>
-                <span class="chip">stdlib only</span>
+                <span class="chip">~/.valor</span>
+                <span class="chip">one SQLite file</span>
+                <span class="chip">no telemetry</span>
                 <span class="chip">no cloud</span>
               </div>
             </div>
@@ -528,54 +277,51 @@
         </div>
       </section>
 
-      <section class="band band-oss" aria-labelledby="oss-h">
+      <section class="band band-setup" id="install" aria-labelledby="setup-h">
         <div class="container">
           <header class="band-head">
-            <p class="eyebrow">Open source</p>
-            <h2 id="oss-h">Inspect every file. Fork if you want.</h2>
+            <p class="eyebrow">Install</p>
+            <h2 id="setup-h">One command, then you can forget it happened.</h2>
             <p class="band-lede">
-              Apache-2.0. Plain Python and Markdown. Local state stays on your machine,
-              by design — see <a href="https://github.com/yihanzhu/valor/blob/main/PRIVACY.md" rel="noreferrer">PRIVACY.md</a>
-              for the exact trust boundary.
+              The installer drops Valor's skills, agents, and rules into
+              <code>~/.claude/</code>, <code>~/.codex/</code>, and
+              <code>~/.cursor/</code>. After that, your agent is the interface.
             </p>
           </header>
 
-          <div class="oss-grid">
-            <a class="oss-card" href="https://github.com/yihanzhu/valor" rel="noreferrer">
-              <p class="oss-num" id="oss-stars">★ —</p>
-              <p class="oss-label">stars</p>
-            </a>
-            <a class="oss-card" href="https://github.com/yihanzhu/valor/graphs/contributors" rel="noreferrer">
-              <p class="oss-num" id="oss-contrib">—</p>
-              <p class="oss-label">contributors</p>
-            </a>
-            <a class="oss-card" href="https://github.com/yihanzhu/valor/issues" rel="noreferrer">
-              <p class="oss-num" id="oss-issues">—</p>
-              <p class="oss-label">open issues</p>
-            </a>
-            <a class="oss-card" href="https://github.com/yihanzhu/valor/blob/main/LICENSE" rel="noreferrer">
-              <p class="oss-num">Apache 2.0</p>
-              <p class="oss-label">license</p>
-            </a>
-          </div>
-        </div>
-      </section>
-
-      <section class="band band-cta" aria-labelledby="cta-h">
-        <div class="container cta-inner">
-          <h2 id="cta-h">Turn your AI agent into a career coach.</h2>
-          <p class="cta-lede">One install, then you can forget it ever happened. Talk to your agent like normal.</p>
-          <div class="install-card install-card-lg cta-install" data-install="cta">
+          <div class="install-card install-card-lg" data-install="setup">
             <code class="install-cmd" data-install-source>curl -fsSL https://raw.githubusercontent.com/yihanzhu/valor/main/install.sh | bash -s -- --clone</code>
-            <button class="install-copy" type="button" data-copy-install="cta" aria-label="Copy install command">
+            <button class="install-copy" type="button" data-copy-install="setup" aria-label="Copy install command">
               <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 9h10v11H9zM6 4h10v2H8v10H6z"/></svg>
               <span class="install-copy-label">Copy</span>
             </button>
           </div>
-          <div class="cta-actions">
-            <a class="btn btn-primary" href="https://github.com/yihanzhu/valor/blob/main/docs/getting-started.md" rel="noreferrer">Read the docs</a>
-            <a class="btn btn-ghost" href="https://github.com/yihanzhu/valor" rel="noreferrer">GitHub</a>
-          </div>
+
+          <ul class="setup-notes">
+            <li>
+              <span class="setup-note-label">Read first</span>
+              The bootstrap is fetched from <code>main</code>. It's a short shell
+              script — read it before piping to bash:
+              <code>curl -fsSL …/main/install.sh | less</code>.
+            </li>
+            <li>
+              <span class="setup-note-label">Per host</span>
+              Only need one agent? Pass <code>--target claude-code</code>,
+              <code>codex</code>, or <code>cursor</code>.
+            </li>
+            <li>
+              <span class="setup-note-label">Updates</span>
+              Checks for new <strong>releases</strong> (tagged <code>vX.Y.Z</code>,
+              never <code>main</code>) and <strong>notifies</strong> you — updating
+              is manual. Pin with
+              <code>git -C ~/.valor/repo checkout vX.Y.Z</code>.
+            </li>
+            <li>
+              <span class="setup-note-label">Local state</span>
+              Career framework, evidence, and carry-forward notes live in
+              <code>~/.valor/</code>. Nothing leaves your machine.
+            </li>
+          </ul>
         </div>
       </section>
     </main>
@@ -592,10 +338,10 @@
         </div>
         <div class="footer-cols">
           <div class="footer-col">
-            <p class="footer-head">Project</p>
-            <a href="https://github.com/yihanzhu/valor" rel="noreferrer">GitHub</a>
+            <p class="footer-head">Product</p>
+            <a href="./demo.html">Demo</a>
+            <a href="#install">Install</a>
             <a href="https://github.com/yihanzhu/valor/blob/main/ROADMAP.md" rel="noreferrer">Roadmap</a>
-            <a href="https://github.com/yihanzhu/valor/blob/main/LICENSE" rel="noreferrer">License</a>
           </div>
           <div class="footer-col">
             <p class="footer-head">Docs</p>
@@ -604,8 +350,8 @@
             <a href="https://github.com/yihanzhu/valor/blob/main/docs/integrations.md" rel="noreferrer">Integrations</a>
           </div>
           <div class="footer-col">
-            <p class="footer-head">Community</p>
-            <a href="https://github.com/yihanzhu/valor/issues" rel="noreferrer">Issues</a>
+            <p class="footer-head">Project</p>
+            <a href="https://github.com/yihanzhu/valor" rel="noreferrer">GitHub</a>
             <a href="https://github.com/yihanzhu/valor/blob/main/CONTRIBUTING.md" rel="noreferrer">Contributing</a>
             <a href="https://github.com/yihanzhu/valor/blob/main/PRIVACY.md" rel="noreferrer">Privacy</a>
           </div>
@@ -614,19 +360,15 @@
     </footer>
 
     <script>
-      // install-card copy buttons
       document.querySelectorAll("[data-copy-install]").forEach((btn) => {
         btn.addEventListener("click", async () => {
-          const key = btn.dataset.copyInstall;
-          const card = document.querySelector(`[data-install="${key}"]`);
-          if (!card) return;
-          const source = card.querySelector("[data-install-source]");
+          const card = document.querySelector(`[data-install="${btn.dataset.copyInstall}"]`);
+          const source = card && card.querySelector("[data-install-source]");
           if (!source) return;
-          const text = source.innerText.trim();
           const label = btn.querySelector(".install-copy-label");
           const original = label ? label.textContent : null;
           try {
-            await navigator.clipboard.writeText(text);
+            await navigator.clipboard.writeText(source.innerText.trim());
             btn.classList.add("is-copied");
             if (label) label.textContent = "Copied";
           } catch {
@@ -640,39 +382,20 @@
         });
       });
 
-      // year
       document.getElementById("year").textContent = new Date().getFullYear();
 
-      // GitHub stats (best-effort, fails quietly)
+      // Star count, best-effort and quiet on failure.
       (async () => {
         try {
           const r = await fetch("https://api.github.com/repos/yihanzhu/valor", { headers: { Accept: "application/vnd.github+json" } });
           if (!r.ok) return;
           const data = await r.json();
-          const stars = typeof data.stargazers_count === "number" ? data.stargazers_count : null;
-          const issues = typeof data.open_issues_count === "number" ? data.open_issues_count : null;
-          if (stars !== null) {
-            const fmt = (n) => (n >= 1000 ? (n / 1000).toFixed(1) + "k" : String(n));
-            const headerEl = document.getElementById("gh-stars");
-            if (headerEl) headerEl.textContent = "★ " + fmt(stars);
-            const btnEl = document.getElementById("gh-stars-btn");
-            if (btnEl) btnEl.textContent = fmt(stars);
-            const ossEl = document.getElementById("oss-stars");
-            if (ossEl) ossEl.textContent = "★ " + fmt(stars);
-          }
-          if (issues !== null) {
-            const el = document.getElementById("oss-issues");
-            if (el) el.textContent = String(issues);
-          }
-        } catch {}
-        try {
-          const r = await fetch("https://api.github.com/repos/yihanzhu/valor/contributors?per_page=1&anon=1", { headers: { Accept: "application/vnd.github+json" } });
-          if (!r.ok) return;
-          const link = r.headers.get("Link") || "";
-          const m = link.match(/&page=(\d+)>; rel="last"/);
-          const count = m ? parseInt(m[1], 10) : (await r.json()).length;
-          const el = document.getElementById("oss-contrib");
-          if (el && Number.isFinite(count)) el.textContent = String(count);
+          if (typeof data.stargazers_count !== "number") return;
+          const fmt = (n) => (n >= 1000 ? (n / 1000).toFixed(1) + "k" : String(n));
+          const header = document.getElementById("gh-stars");
+          if (header) header.textContent = "★ " + fmt(data.stargazers_count);
+          const btn = document.getElementById("gh-stars-btn");
+          if (btn) btn.textContent = fmt(data.stargazers_count);
         } catch {}
       })();
     </script>

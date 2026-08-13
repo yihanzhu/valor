@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Valor — demo session</title>
-    <meta name="description" content="A recorded Valor session you can talk to: say something, see what it actually replies. Plus a real, fully interactive PR review console.">
+    <title>Valor — demo</title>
+    <meta name="description" content="Talk to a recorded Valor session, and drive a real PR review console. One screen, no reading.">
     <meta name="theme-color" content="#08090c">
     <link rel="canonical" href="https://valor.sh/demo">
     <link rel="icon" type="image/svg+xml" href="./favicon.svg">
@@ -12,14 +12,14 @@
     <link rel="manifest" href="./manifest.webmanifest">
 
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Valor — demo session">
-    <meta property="og:description" content="Say something, see what Valor actually replies. Plus a live PR review console.">
+    <meta property="og:title" content="Valor — demo">
+    <meta property="og:description" content="Talk to a recorded Valor session, and drive a real PR review console.">
     <meta property="og:url" content="https://valor.sh/demo">
     <meta property="og:site_name" content="Valor">
     <meta property="og:image" content="./og.svg">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Valor — demo session">
-    <meta name="twitter:description" content="Say something, see what Valor actually replies.">
+    <meta name="twitter:title" content="Valor — demo">
+    <meta name="twitter:description" content="Talk to a recorded Valor session, and drive a real PR review console.">
     <meta name="twitter:image" content="./og.svg">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,23 +28,38 @@
     <link rel="stylesheet" href="./styles.css">
 
     <style>
-      .demo-head { padding: 68px 0 8px; }
-      .demo-note {
-        margin: 18px 0 0; padding: 13px 16px; border: 1px solid var(--line-2);
-        border-left: 3px solid var(--accent-dim); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-        background: var(--surface); color: var(--text-soft); font-size: 0.9rem; line-height: 1.6;
-        max-width: 74ch;
-      }
-      .demo-note strong { color: var(--text); font-weight: 600; }
+      /* One screen. The page never scrolls; only the thread does. */
+      html, body { height: 100%; overflow: hidden; }
+      body { display: flex; flex-direction: column; }
 
-      .session { max-width: 860px; margin: 0 auto; }
-      /* A chat window: fixed box, scrolls inside itself, composer always in view. */
+      .bar {
+        flex: none; display: flex; align-items: center; gap: 14px;
+        padding: 0 18px; height: 54px; border-bottom: 1px solid var(--line);
+        background: var(--bg-2);
+      }
+      .bar .brand { margin-right: auto; }
+      .views { display: flex; gap: 4px; padding: 3px; background: var(--code-bg); border: 1px solid var(--line); border-radius: 999px; }
+      .view-btn {
+        appearance: none; cursor: pointer; font: inherit; font-size: 0.82rem; font-weight: 500;
+        background: none; border: 0; border-radius: 999px; padding: 6px 14px; color: var(--text-dim);
+      }
+      .view-btn[aria-pressed="true"] { background: var(--surface-2); color: var(--text); }
+      .view-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      .bar-link {
+        appearance: none; cursor: pointer; font: inherit; font-size: 0.82rem; background: none;
+        border: 0; color: var(--text-dim); padding: 6px 4px;
+      }
+      .bar-link:hover { color: var(--text); }
+
+      main { flex: 1; min-height: 0; display: flex; }
+      .view { flex: 1; min-height: 0; display: none; flex-direction: column; }
+      .view.is-active { display: flex; }
+
+      /* chat */
       .thread {
-        height: clamp(340px, 58vh, 560px);
-        overflow-y: auto;
-        overscroll-behavior: contain;
-        scrollbar-width: thin;
-        scrollbar-color: var(--line-strong) transparent;
+        flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+        padding: 18px 20px 8px; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent;
+        max-width: 900px; width: 100%; margin: 0 auto;
       }
       .thread::-webkit-scrollbar { width: 10px; }
       .thread::-webkit-scrollbar-track { background: transparent; }
@@ -52,10 +67,11 @@
         background: var(--line-2); border-radius: 999px;
         border: 3px solid transparent; background-clip: content-box;
       }
-      .thread::-webkit-scrollbar-thumb:hover { background: var(--line-strong); background-clip: content-box; }
-      .thread .chat-user:first-child { padding-top: 0; }
-      .sys { margin: 0 0 4px; color: var(--text-dim); font-size: 0.85rem; line-height: 1.6; }
-      .sys code { font-family: var(--font-mono); color: var(--text-soft); }
+      .sys { margin: 0 0 6px; color: var(--text-faint); font-size: 0.8rem; }
+      .sys button {
+        appearance: none; background: none; border: 0; padding: 0; cursor: pointer; font: inherit;
+        color: var(--text-dim); text-decoration: underline; text-underline-offset: 3px;
+      }
       .thinking { color: var(--text-dim); font-style: italic; }
       .cursor {
         display: inline-block; width: 7px; height: 0.95em; background: var(--accent);
@@ -72,7 +88,8 @@
       .chat-out a { color: var(--azure); }
       .chat-out h4.coach { color: var(--accent-bright); }
 
-      .composer { padding: 14px 20px 16px; border-top: 1px solid var(--line-2); background: var(--code-bg-2); }
+      .composer { flex: none; border-top: 1px solid var(--line); background: var(--bg-2); }
+      .composer-inner { max-width: 900px; margin: 0 auto; padding: 12px 20px 14px; }
       .composer-row { display: flex; gap: 8px; align-items: center; }
       .composer input {
         flex: 1; min-width: 0; background: var(--code-bg); color: var(--text);
@@ -81,221 +98,136 @@
       }
       .composer input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
       .composer .btn { padding: 10px 15px; font-size: 0.85rem; flex: none; }
-      .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+      .composer-foot { display: flex; gap: 12px; align-items: center; margin-top: 9px; }
+      .composer-foot .bar-link { flex: none; font-size: 0.78rem; margin-left: auto; }
+      .chips { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
       .chip-suggest {
-        appearance: none; cursor: pointer; font: inherit; font-size: 0.82rem;
+        appearance: none; cursor: pointer; font: inherit; font-size: 0.8rem;
         background: var(--surface-2); color: var(--text-soft);
-        border: 1px solid var(--line-2); border-radius: 999px; padding: 6px 13px;
-        transition: border-color 0.15s, color 0.15s;
+        border: 1px solid var(--line-2); border-radius: 999px; padding: 5px 12px;
+        max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       }
       .chip-suggest:hover { border-color: var(--accent-dim); color: var(--text); }
       .chip-suggest:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-      .composer-note { margin: 12px 0 0; font-size: 0.78rem; color: var(--text-faint); }
-      .composer-note button {
-        appearance: none; background: none; border: 0; padding: 0; cursor: pointer;
-        color: var(--text-dim); font: inherit; text-decoration: underline;
-        text-decoration-color: var(--line-strong); text-underline-offset: 3px;
-      }
-      .composer-note button:hover { color: var(--text); }
 
-      .console-card { border: 1px solid var(--line-2); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
-      .console-frame { width: 100%; height: 640px; border: 0; display: block; background: #fff; }
-      .console-bar {
-        display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
-        padding: 14px 18px; border-top: 1px solid var(--line);
+      /* console */
+      .console-note {
+        flex: none; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+        justify-content: space-between; padding: 9px 20px; border-bottom: 1px solid var(--line);
+        background: var(--bg-2); font-size: 0.8rem; color: var(--text-dim);
       }
-      .console-bar p { margin: 0; color: var(--text-dim); font-size: 0.84rem; }
+      .console-note strong { color: var(--ok); font-weight: 600; }
+      .console-frame { flex: 1; min-height: 0; width: 100%; border: 0; background: #fff; }
 
-      @media (max-width: 760px) {
+      /* about */
+      dialog.about {
+        max-width: 620px; width: calc(100% - 32px); border: 1px solid var(--line-2);
+        border-radius: var(--radius); background: var(--surface); color: var(--text-soft);
+        padding: 22px 24px; font-size: 0.9rem; line-height: 1.65;
+      }
+      dialog.about::backdrop { background: rgba(4, 5, 8, 0.72); }
+      dialog.about h2 { margin: 0 0 10px; font-size: 1.05rem; color: var(--text); }
+      dialog.about p { margin: 0 0 12px; }
+      dialog.about strong { color: var(--text); font-weight: 600; }
+      dialog.about code {
+        font-family: var(--font-mono); font-size: 0.8rem; display: block; overflow-x: auto;
+        padding: 10px 12px; background: var(--code-bg); border: 1px solid var(--line);
+        border-radius: var(--radius-sm); color: var(--accent-bright); margin: 0 0 12px;
+      }
+      dialog.about .about-close { margin-top: 4px; }
+
+      @media (max-width: 640px) {
+        .bar { gap: 8px; padding: 0 12px; }
+        .bar .brand-version, .bar-link.wide { display: none; }
         .chat-user, .chat-agent { grid-template-columns: 1fr; gap: 4px; }
-        .console-frame { height: 460px; }
+        .thread { padding: 14px 14px 6px; }
+        .composer-inner { padding: 10px 14px 12px; }
+      }
+      /* Safety valve: on a very short viewport, let the document scroll. */
+      @media (max-height: 460px) {
+        html, body { height: auto; overflow: auto; }
+        .thread { max-height: 60vh; }
       }
     </style>
   </head>
   <body>
-    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="bar">
+      <a class="brand" href="./" aria-label="Valor home">
+        <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 4l6 16 3-8 3 8 6-16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="brand-text">valor</span>
+        <span class="brand-version">v0.17.0</span>
+      </a>
 
-    <header class="site-header" id="top">
-      <div class="container header-row">
-        <a class="brand" href="./" aria-label="Valor home">
-          <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 4l6 16 3-8 3 8 6-16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <span class="brand-text">valor</span>
-          <span class="brand-version">v0.17.0</span>
-        </a>
-        <nav class="site-nav" aria-label="Primary">
-          <a href="./#features">Features</a>
-          <a href="./demo.html" aria-current="page">Demo</a>
-          <a href="./#install">Setup</a>
-          <a href="https://github.com/yihanzhu/valor/blob/main/docs/getting-started.md" rel="noreferrer">Docs</a>
-          <a class="nav-github" href="https://github.com/yihanzhu/valor" rel="noreferrer" aria-label="GitHub repository">
-            <svg viewBox="0 0 16 16" aria-hidden="true" width="16" height="16"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.08.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.42 7.42 0 014 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-          </a>
-        </nav>
+      <div class="views" role="group" aria-label="Switch view">
+        <button class="view-btn" type="button" id="view-chat" aria-pressed="true">Session</button>
+        <button class="view-btn" type="button" id="view-console" aria-pressed="false">Review console</button>
       </div>
-    </header>
 
-    <main id="main">
-      <section class="container demo-head">
-        <p class="eyebrow">Demo</p>
-        <h2 style="font-size:clamp(1.9rem,4vw,2.7rem);line-height:1.1;margin:6px 0 14px">Say something. See what it says back.</h2>
-        <p class="band-lede" style="margin:0">
-          Talk to it the way you'd talk to your agent. Type, or take a suggestion.
-        </p>
-        <p class="demo-note">
-          <strong>This session is recorded.</strong> A live agent needs a model at
-          runtime and this site has no backend, so the replies were captured by
-          running Valor against the
-          <a href="https://github.com/yihanzhu/valor/tree/main/examples/demo" rel="noreferrer">seeded demo profile</a>
-          in the repo — fictional engineer, fictional tickets, invented
-          colleagues, real output. Ask something it hasn't heard and it will say
-          so rather than improvise. The <strong>review console below is not
-          recorded</strong>: that one is the real artifact, and you can drive it.
-        </p>
-      </section>
+      <button class="bar-link" type="button" id="about-open">About this demo</button>
+      <a class="bar-link wide" href="./#install">Install</a>
+    </div>
 
-      <section class="band" style="padding-top:34px" aria-labelledby="session-h">
-        <div class="container">
-          <h2 id="session-h" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Demo session</h2>
-          <div class="session chat">
-            <div class="chat-head">
-              <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
-              <span class="chat-title"><span class="dot"></span>claude code · ~/projects/checkout-service</span>
-            </div>
-
-            <div class="chat-body thread" id="thread" aria-live="polite" aria-atomic="false"></div>
-
-            <div class="composer">
-              <form class="composer-row" id="form" autocomplete="off">
-                <label for="input" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Message your agent</label>
-                <input id="input" name="input" type="text" placeholder="start my day" spellcheck="false">
-                <button class="btn btn-primary" type="submit">Send</button>
-              </form>
+    <main>
+      <section class="view is-active" id="panel-chat" aria-label="Recorded Valor session">
+        <div class="thread" id="thread" aria-live="polite" aria-atomic="false"></div>
+        <div class="composer">
+          <div class="composer-inner">
+            <form class="composer-row" id="form" autocomplete="off">
+              <label for="input" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Message your agent</label>
+              <input id="input" type="text" placeholder="start my day" spellcheck="false">
+              <button class="btn btn-primary" type="submit">Send</button>
+            </form>
+            <div class="composer-foot">
               <div class="chips" id="chips"></div>
-              <p class="composer-note">
-                Recorded replies from the demo profile — <button type="button" id="restart">start over</button>
-              </p>
+              <button class="bar-link" type="button" id="restart">start over</button>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="band" id="console" aria-labelledby="console-h">
-        <div class="container">
-          <header class="band-head">
-            <p class="eyebrow">Live, not recorded</p>
-            <h2 id="console-h">The review console, running.</h2>
-            <p class="band-lede">
-              This is what <code>/valor-pr-console</code> generated for the demo
-              profile's pull request — a self-contained page with the diagram, the
-              diffs and the quiz embedded in it, so it runs here with no backend at
-              all. Zoom <em>Context → Inside → Components → the real code</em>, flip
-              <strong>Before ⇄ After</strong>, play a request through the system,
-              then take the quiz. Getting one wrong is the interesting part: the gate
-              wants all six.
-            </p>
-          </header>
-
-          <div class="console-card">
-            <iframe class="console-frame" src="./demo/pr-console.html" title="PR review console for pull request 418" loading="lazy"></iframe>
-            <div class="console-bar">
-              <p>Built for a wide window — open it full-page for the real thing.</p>
-              <a class="btn btn-primary" href="./demo/pr-console.html" target="_blank" rel="noreferrer">
-                Open full page
-                <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M14 4h6v6M20 4l-8 8M18 14v6H4V6h6"/></svg>
-              </a>
-            </div>
-          </div>
+      <section class="view" id="panel-console" aria-label="PR review console">
+        <div class="console-note">
+          <span><strong>Live, not recorded.</strong> Built by <code>/valor-pr-console</code> from the demo PR — zoom in, flip Before ⇄ After, take the quiz.</span>
+          <a class="btn btn-ghost" href="./demo/pr-console.html" target="_blank" rel="noreferrer" style="padding:5px 11px;font-size:0.78rem">Full page ↗</a>
         </div>
-      </section>
-
-      <section class="band band-cta" aria-labelledby="run-h">
-        <div class="container cta-inner">
-          <h2 id="run-h">Run the real session yourself.</h2>
-          <p class="cta-lede">
-            The profile these replies came from ships in the repo. It installs into a
-            throwaway home, so your own work stays out of it — and every integration
-            is off, so nothing reaches a real system.
-          </p>
-          <div class="install-card install-card-lg cta-install" data-install="demo">
-            <code class="install-cmd" data-install-source>HOME=~/valor-demo bash install.sh &amp;&amp; python3 examples/demo/seed.py ~/valor-demo</code>
-            <button class="install-copy" type="button" data-copy-install="demo" aria-label="Copy the demo setup command">
-              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 9h10v11H9zM6 4h10v2H8v10H6z"/></svg>
-              <span class="install-copy-label">Copy</span>
-            </button>
-          </div>
-          <div class="cta-actions">
-            <a class="btn btn-primary" href="https://github.com/yihanzhu/valor/blob/main/examples/demo/DEMO.md" rel="noreferrer">The 20-minute run-book</a>
-            <a class="btn btn-ghost" href="./#install">Install Valor for real</a>
-          </div>
-        </div>
+        <iframe class="console-frame" id="console-frame" title="PR review console for pull request 418" data-src="./demo/pr-console.html"></iframe>
       </section>
     </main>
 
-    <footer class="site-footer">
-      <div class="container footer-row">
-        <div class="footer-brand">
-          <span class="brand">
-            <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4l6 16 3-8 3 8 6-16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <span class="brand-text">valor</span>
-          </span>
-          <p class="footer-version">v0.17.0 · Apache-2.0</p>
-          <p class="footer-copy">© <span id="year">2026</span> <a href="https://yihanzhu.com" rel="noreferrer">Yihan Zhu</a></p>
-        </div>
-        <div class="footer-cols">
-          <div class="footer-col">
-            <p class="footer-head">Project</p>
-            <a href="./">Home</a>
-            <a href="https://github.com/yihanzhu/valor" rel="noreferrer">GitHub</a>
-            <a href="https://github.com/yihanzhu/valor/blob/main/ROADMAP.md" rel="noreferrer">Roadmap</a>
-          </div>
-          <div class="footer-col">
-            <p class="footer-head">Docs</p>
-            <a href="https://github.com/yihanzhu/valor/blob/main/docs/getting-started.md" rel="noreferrer">Getting started</a>
-            <a href="https://github.com/yihanzhu/valor/tree/main/examples/demo" rel="noreferrer">Demo profile</a>
-            <a href="https://github.com/yihanzhu/valor/blob/main/PRIVACY.md" rel="noreferrer">Privacy</a>
-          </div>
-        </div>
-      </div>
-    </footer>
+    <dialog class="about" id="about">
+      <h2>About this demo</h2>
+      <p>
+        <strong>The session is recorded.</strong> A live agent needs a model at
+        runtime and this site has no backend, so the replies were captured by
+        running Valor against a
+        <a href="https://github.com/yihanzhu/valor/tree/main/examples/demo" rel="noreferrer">seeded profile</a>
+        — fictional engineer, fictional tickets, real output. Ask something it
+        hasn't heard and it says so.
+      </p>
+      <p><strong>The review console is not recorded.</strong> That's the real artifact.</p>
+      <p>Run the whole thing yourself, against a throwaway home:</p>
+      <code>HOME=~/valor-demo bash install.sh &amp;&amp; python3 examples/demo/seed.py ~/valor-demo</code>
+      <p style="margin-bottom:16px">
+        <a href="https://github.com/yihanzhu/valor/blob/main/examples/demo/DEMO.md" rel="noreferrer">Run-book</a> ·
+        <a href="https://github.com/yihanzhu/valor" rel="noreferrer">GitHub</a> ·
+        <a href="https://github.com/yihanzhu/valor/blob/main/PRIVACY.md" rel="noreferrer">Privacy</a> ·
+        <a href="./">Home</a>
+      </p>
+      <button class="btn btn-primary about-close" type="button" id="about-close">Close</button>
+    </dialog>
 
     <script>
-      /* Everything is scoped: a top-level `function scrollTo(...)` in a classic
-         script overwrites window.scrollTo, which is exactly how this page shipped
-         broken once. Nothing here touches the global object. */
+      /* Scoped: a top-level `function scrollTo(...)` in a classic script replaces
+         window.scrollTo, which broke this page once. Nothing here touches the global. */
       (function () {
         "use strict";
-
-        var yearEl = document.getElementById("year");
-        if (yearEl) yearEl.textContent = String(new Date().getFullYear());
-
-        document.querySelectorAll("[data-copy-install]").forEach(function (btn) {
-          btn.addEventListener("click", function () {
-            var card = document.querySelector('[data-install="' + btn.dataset.copyInstall + '"]');
-            var source = card && card.querySelector("[data-install-source]");
-            if (!source) return;
-            var label = btn.querySelector(".install-copy-label");
-            var original = label ? label.textContent : null;
-            navigator.clipboard.writeText(source.innerText.trim()).then(function () {
-              btn.classList.add("is-copied");
-              if (label) label.textContent = "Copied";
-            }, function () {
-              btn.classList.add("is-failed");
-              if (label) label.textContent = "Failed";
-            });
-            window.setTimeout(function () {
-              btn.classList.remove("is-copied", "is-failed");
-              if (label && original) label.textContent = original;
-            }, 1600);
-          });
-        });
 
         var thread = document.getElementById("thread");
         var chipsEl = document.getElementById("chips");
         var form = document.getElementById("form");
         var input = document.getElementById("input");
-        var restartBtn = document.getElementById("restart");
         var calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
         var data = null;
@@ -382,16 +314,6 @@
         }
 
         /* ---- chat ---- */
-        function stopStream() {
-          if (stream) { window.clearTimeout(stream.timer); stream = null; }
-        }
-        function finishStream() {
-          if (!stream) return;
-          stream.host.innerHTML = stream.items.join("");
-          stopStream();
-        }
-        /* Standard chat behaviour: follow the conversation down, unless the reader
-           has scrolled up to re-read something. */
         function atBottom() {
           var slack = thread.scrollHeight - thread.scrollTop - thread.clientHeight;
           return !(slack > 90);
@@ -399,7 +321,15 @@
         function pin() {
           if (typeof thread.scrollHeight === "number") thread.scrollTop = thread.scrollHeight;
         }
-
+        function stopStream() {
+          if (stream) { window.clearTimeout(stream.timer); stream = null; }
+        }
+        function finishStream() {
+          if (!stream) return;
+          stream.host.innerHTML = stream.items.join("");
+          stopStream();
+          pin();
+        }
         function startStream(host, items) {
           stopStream();
           if (calm) { host.innerHTML = items.join(""); pin(); return; }
@@ -443,7 +373,6 @@
             btn.type = "button";
             btn.className = "chip-suggest";
             btn.textContent = entry.phrase;
-            btn.title = entry.label;
             btn.addEventListener("click", function () { say(entry); });
             chipsEl.appendChild(btn);
           });
@@ -461,7 +390,7 @@
           pin();
 
           var items = blocks(entry.output);
-          if (calm) { body.innerHTML = items.join(""); return; }
+          if (calm) { body.innerHTML = items.join(""); pin(); return; }
           body.innerHTML = '<p class="thinking">working…</p>';
           window.setTimeout(function () { startStream(body, items); }, 240);
         }
@@ -498,9 +427,7 @@
           body.innerHTML =
             "<p>This session is a recording, so I only have the replies that were captured against the " +
             "demo profile — there's no model behind this page to answer something new.</p>" +
-            (options ? "<p>From here it has: " + options + ".</p>" : "") +
-            "<p>For a session that answers anything, run the profile locally — the two commands are at " +
-            "the bottom of this page.</p>";
+            (options ? "<p>From here it has: " + options + ".</p>" : "");
           input.value = "";
           pin();
         }
@@ -511,9 +438,11 @@
           var note = document.createElement("p");
           note.className = "sys";
           note.innerHTML =
-            "Recorded session · seeded demo profile · Valor v" + esc(data.valor_version) +
-            " · levels <code>L3 → L4</code>, all four integrations off.";
+            "Recorded session · fictional profile · real output — " +
+            '<button type="button" id="sys-about">what does that mean?</button>';
           thread.appendChild(note);
+          var link = note.querySelector("#sys-about");
+          if (link) link.addEventListener("click", openAbout);
           suggestions = data.start.slice();
           renderChips();
           if (byId[data.start[0]]) input.placeholder = byId[data.start[0]].phrase;
@@ -528,7 +457,43 @@
           else sayUnknown(text);
         });
         thread.addEventListener("click", function () { if (stream) finishStream(); });
-        restartBtn.addEventListener("click", function () { start(); input.focus(); });
+        document.getElementById("restart").addEventListener("click", function () {
+          start();
+          if (input.focus) input.focus();
+        });
+
+        /* ---- views ---- */
+        var chatBtn = document.getElementById("view-chat");
+        var consoleBtn = document.getElementById("view-console");
+        var chatPanel = document.getElementById("panel-chat");
+        var consolePanel = document.getElementById("panel-console");
+        var frame = document.getElementById("console-frame");
+
+        function showView(which) {
+          var wantConsole = which === "console";
+          chatPanel.classList.toggle("is-active", !wantConsole);
+          consolePanel.classList.toggle("is-active", wantConsole);
+          chatBtn.setAttribute("aria-pressed", String(!wantConsole));
+          consoleBtn.setAttribute("aria-pressed", String(wantConsole));
+          /* Load the console only when it's first asked for. */
+          if (wantConsole && !frame.getAttribute("src")) frame.setAttribute("src", frame.dataset.src);
+          if (!wantConsole && input.focus) input.focus();
+        }
+        chatBtn.addEventListener("click", function () { showView("chat"); });
+        consoleBtn.addEventListener("click", function () { showView("console"); });
+
+        /* ---- about ---- */
+        var about = document.getElementById("about");
+        function openAbout() {
+          if (typeof about.showModal === "function") about.showModal();
+          else about.setAttribute("open", "");
+        }
+        function closeAbout() {
+          if (typeof about.close === "function") about.close();
+          else about.removeAttribute("open");
+        }
+        document.getElementById("about-open").addEventListener("click", openAbout);
+        document.getElementById("about-close").addEventListener("click", closeAbout);
 
         window.fetch("./demo/transcripts.json").then(function (response) {
           if (!response.ok) throw new Error(String(response.status));

@@ -53,7 +53,20 @@ function makeEl(tag = "div") {
     scrollTop: 0,
     clientHeight: 400,
     get scrollHeight() { return 200 + el.children.length * 260; },
-    classList: { add() {}, remove() {} },
+    classList: {
+      _set() { return new Set(String(el.className || "").split(/\s+/).filter(Boolean)); },
+      _save(set) { el.className = [...set].join(" "); },
+      add(...names) { const s = this._set(); names.forEach((n) => s.add(n)); this._save(s); },
+      remove(...names) { const s = this._set(); names.forEach((n) => s.delete(n)); this._save(s); },
+      contains(name) { return this._set().has(name); },
+      toggle(name, force) {
+        const s = this._set();
+        const want = force === undefined ? !s.has(name) : !!force;
+        if (want) s.add(name); else s.delete(name);
+        this._save(s);
+        return want;
+      },
+    },
     get innerHTML() { return el._html; },
     set innerHTML(v) { el._html = String(v); el.children = []; },
     get textContent() { return el._text; },
@@ -62,7 +75,11 @@ function makeEl(tag = "div") {
     append(child) { el.children.push(child); return child; },
     addEventListener(type, fn) { (el.handlers[type] = el.handlers[type] || []).push(fn); },
     removeEventListener() {},
-    setAttribute() {},
+    _attrs: {},
+    setAttribute(name, value) { el._attrs[name] = String(value); },
+    getAttribute(name) { return Object.prototype.hasOwnProperty.call(el._attrs, name) ? el._attrs[name] : null; },
+    removeAttribute(name) { delete el._attrs[name]; },
+    hasAttribute(name) { return Object.prototype.hasOwnProperty.call(el._attrs, name); },
     focus() {},
     remove() {},
     scrollIntoView() {},
@@ -102,7 +119,14 @@ function makeEl(tag = "div") {
 }
 
 const ids = {};
-for (const id of ["year", "thread", "chips", "form", "input", "restart"]) ids[id] = makeEl();
+for (const id of [
+  "year", "thread", "chips", "form", "input", "restart",
+  "view-chat", "view-console", "panel-chat", "panel-console", "console-frame",
+  "about", "about-open", "about-close",
+]) ids[id] = makeEl();
+ids["panel-chat"].className = "view is-active";
+ids["panel-console"].className = "view";
+ids["console-frame"].dataset.src = "./demo/pr-console.html";
 
 /* In a browser `window === globalThis`, so a top-level `function scrollTo(...)`
    in a classic script *replaces* window.scrollTo. Model that faithfully: one
@@ -211,16 +235,47 @@ if (!thread.texts().includes("only have the replies that were captured")) {
   ok("unrecorded input answered honestly");
 }
 
-/* The chat window scrolls itself rather than growing the page. */
-if (!/overflow-y:\s*auto/.test(html) || !/\.thread\s*\{[^}]*height:/.test(html)) {
-  fail("the thread is not a fixed-height scroll container");
+/* One immersive screen: the document never scrolls, only the thread does. */
+const shell = html.match(/html,\s*body\s*\{([^}]*)\}/);
+if (!shell || !/overflow:\s*hidden/.test(shell[1]) || !/height:\s*100%/.test(shell[1])) {
+  fail("the page shell does not lock the document to the viewport");
 } else {
-  ok("thread is a fixed-height scroll container");
+  ok("document is locked to the viewport");
+}
+const threadCss = html.match(/\.thread\s*\{([^}]*)\}/);
+if (!threadCss || !/overflow-y:\s*auto/.test(threadCss[1]) || !/min-height:\s*0/.test(threadCss[1])) {
+  fail("the thread is not a shrinkable internal scroll region (needs min-height:0)");
+} else {
+  ok("thread is the only scroll region");
 }
 if (thread.scrollTop <= 0) fail("the thread never scrolled to follow the conversation");
 else ok(`thread follows the conversation (scrollTop ${thread.scrollTop})`);
 if (sandbox.__scrolledWith) fail("the page window was scrolled; only the thread should scroll");
 else ok("the page itself was not scrolled");
+
+/* The console is a second view on the same screen, loaded on first use. */
+if (ids["console-frame"].getAttribute("src")) fail("the console iframe loaded before it was asked for");
+else ok("console iframe deferred until the view is opened");
+ids["view-console"].fire("click");
+await sleep(10);
+if (ids["console-frame"].getAttribute("src") !== "./demo/pr-console.html") {
+  fail("opening the console view did not load the iframe");
+} else if (!ids["panel-console"].classList.contains("is-active") ||
+           ids["panel-chat"].classList.contains("is-active")) {
+  fail("the console view did not become the active panel");
+} else {
+  ok("console view activates and loads on demand");
+}
+ids["view-chat"].fire("click");
+await sleep(10);
+if (!ids["panel-chat"].classList.contains("is-active")) fail("could not switch back to the session");
+else ok("switches back to the session");
+
+/* The long explanation lives in a dialog, not on the screen. */
+ids["about-open"].fire("click");
+await sleep(10);
+if (!ids.about.hasAttribute("open")) fail("the About dialog did not open");
+else ok("About dialog opens");
 
 /* Restart clears the thread back to the opening state. */
 ids.restart.fire("click");

@@ -293,14 +293,21 @@ What shipped:
   can reach an external system. Ships with a ~20-minute run-book and its own
   test suite (fixtures parse, dates resolve, demo-safety settings hold, the
   run-book covers every command).
-- **`/demo` on the website**: the landing page's hand-written output panels are
-  gone. A new demo page runs as a **session** — an input line, a thread that
-  accumulates, suggestions that change as it advances through a day, a week and a
-  review cycle, and an honest "no recording for that" when you type something it
-  hasn't heard. Eighteen transcripts (every command, ambient coaching, and
+- **Website restructured around two surfaces**: the landing page states the
+  product (hero → what it does, as three moments → how it works → local-first →
+  install) and nothing else — down from seven stacked bands, three install cards
+  and 1,586 words of copy to five sections, one install card and 619. The
+  vanity-stat cards and the duplicate CTA band are gone; the long output panels
+  moved to where you can drive them.
+- **`/demo` is that place**: one full-screen app that never scrolls the document.
+  Two views — a recorded **session** (type or take a suggestion; replies stream
+  into a chat thread that scrolls internally) and the **review console**, loaded
+  on first use. The explanation lives in an About dialog, so the screen itself
+  carries under 120 words. Type something it hasn't heard and it says so instead
+  of improvising. Eighteen transcripts (every command, ambient coaching, and
   follow-ups like "why is the refund fix first?") are captured from the demo
-  profile and generated into the site from `examples/demo/captures/`. It also
-  embeds a **real** `/valor-pr-console` artifact,
+  profile and generated into the site from `examples/demo/captures/`. The console
+  is a **real** `/valor-pr-console` artifact,
   self-contained and fully interactive, built from the profile's fixture PR. Ten
   of the eleven workflows need a model at runtime and the site has no backend, so
   those are honestly labelled as recordings; the console is the genuine thing.

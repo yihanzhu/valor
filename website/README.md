@@ -4,8 +4,8 @@ Static marketing site for Valor.
 
 ```
 website/
-├── index.html              # one-page landing
-├── demo.html               # /demo — transcript replay + the live review console
+├── index.html              # landing page: hero → what it does → how → local-first → install
+├── demo.html               # /demo — one full-screen app: session + review console
 ├── demo/
 │   ├── transcripts.json    # generated — see below
 │   └── pr-console.html     # generated — a real /valor-pr-console artifact
@@ -20,12 +20,12 @@ website/
 
 ## The demo page
 
-`demo.html` is a session, not a document: an input line you can type into, a
-thread that accumulates, and suggestions that change as the session advances
-through a day → a week → a review cycle. Each reply carries chips showing what
-ran (`▸`) and where integration data came from (`◆`, the demo profile's
-fixtures). Typing something unrecorded gets an honest answer — it says it has no
-recording for that and lists what it does have.
+`demo.html` fills the viewport and never scrolls the document — only the thread
+does. Two views switch in the header: the recorded **session** (type or take a
+suggestion; replies stream in) and the **review console** (the real artifact,
+iframed, loaded on first use). The long explanation lives in an About dialog
+rather than on screen, so the page itself carries under 120 words. Typing
+something unrecorded gets an honest answer, not an improvised one.
 
 The content is real Valor output rather than mock-ups, from two sources:
 
