@@ -22,6 +22,11 @@ matching fixture below and treat its contents as that source's response:
 | News / markets headlines | `~/.valor/demo/news.json` |
 | Today's local git activity | `~/.valor/demo/git_activity.txt` |
 
+Each calendar event carries a `category_hint` (`standup`, `one_on_one`,
+`project_sync`, `external`) — treat it as the category you would otherwise
+derive, which means the `project_sync` and `external` events are the
+prep-worthy ones when you hand today's events to the day planner.
+
 Everything else behaves normally: the evidence CLI, the verification gate, the
 day planner, the project-focus resolver, coaching, and the review-console
 generator/assembler all run for real against this profile's own state.

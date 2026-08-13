@@ -53,10 +53,12 @@ Watch for, and name out loud:
   team's migration is blocked on it
 - **The verification gate**: the seeded claim that a message was "not sent"
   yesterday gets checked before it's re-raised, not carried on faith
-- **A day plan fit to real gaps** — a deep block in the 11:30–14:00 stretch, the
-  small review dropped in the fragmented slot, a breather after the sync, nothing
-  before 09:30. Point out that it's *shown, not written*: `calendar_auto_write` is
-  off in this profile
+- **A day plan fit to real gaps** — the profile's calendar leaves exactly one
+  genuine deep block (10:30–13:30) for the heaviest item, short work in the
+  fragmented slots, a breather after each meeting, and **30 minutes reserved
+  before the project sync and before the partner call** — the meetings you present
+  at get prep; the standup doesn't. Point out that it's *shown, not written*:
+  `calendar_auto_write` is off in this profile
 - **Project focus**: the demo rotates projects, so off-focus work is hidden
 - **Coaching nudge** tied to a real L4 competency, not a generic tip
 
