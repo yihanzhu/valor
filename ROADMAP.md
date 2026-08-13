@@ -19,7 +19,7 @@ What shipped:
 
 - local evidence store and CLI
 - configurable career framework template
-- six assistant workflows (expanded over later phases to the current ten)
+- six assistant workflows (expanded over later phases to the current eleven)
 - ambient coaching rules
 - install flow for Claude Code, with Cursor kept as a legacy target
 
@@ -256,6 +256,35 @@ What shipped:
   thin evidence rather than fabricating.
 - evidence DB schema v3 → v5.
 - version bump to 0.16.0
+
+## Phase 14: Reviewer Onboarding + Launch Hygiene
+
+**Status:** Complete
+
+What shipped:
+
+- **`/valor-pr-console`**: turns a pull request into an interactive C4 review
+  console — plain-English, zoomable (system context → containers → components →
+  the real diff) with a Before ⇄ After toggle and a request-flow animation —
+  plus a coverage-driven **mastery quiz** whose answers are independently
+  verified against the diff (ambiguous candidates are dropped). Acing it marks
+  the reviewer "approval-ready"; the approval itself still happens in GitHub.
+  Layout is deterministic (`assemble.py`), so only the labels/quiz are
+  LLM-generated. Requires GitHub; published as a private Artifact.
+- **Example career frameworks**: three fully generic starting points ship in
+  `examples/frameworks/` (software-engineering IC ladder, engineering-manager
+  ladder, no-formal-levels growth framework) and `/valor-setup` offers them when
+  the user has no ladder to paste — previously the only fallback was generating
+  one from the job title.
+- **Release-tracked updates**: the update check resolves the latest **release
+  tag** (`vX.Y.Z`, semver-aware, pre-releases skipped) instead of `main`, and is
+  **notify-only** — it never pulls, checks out, or re-installs. `--upgrade` and
+  `--auto-update` are locked to that behavior by tests.
+- **Doc/site sync contract**: the command-set tests now also assert that
+  `README.md`, `docs/architecture.md`, and the website's workflow count stay in
+  step with `commands/` — the drift that let this command ship undocumented on
+  three surfaces at once now fails CI.
+- version stays at 0.17.0
 
 ## Future Considerations
 

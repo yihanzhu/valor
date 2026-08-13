@@ -195,7 +195,7 @@
           <header class="band-head">
             <p class="eyebrow">Features</p>
             <h2 id="features-h">Just talk to your agent. Valor knows what you mean.</h2>
-            <p class="band-lede">Ten on-demand workflows plus ambient coaching, triggered by natural language. It fits your day to your real calendar gaps, verifies carried-forward work before re-raising it, focuses on the project whose sync is next, and at review time assembles a self-reflection from your evidence — flagging what to confirm instead of overclaiming. All against a local evidence store. No dashboards, no telemetry.</p>
+            <p class="band-lede">Eleven on-demand workflows plus ambient coaching, triggered by natural language. It fits your day to your real calendar gaps, verifies carried-forward work before re-raising it, focuses on the project whose sync is next, turns a dense PR into a diagram a cold reviewer can follow, and at review time assembles a self-reflection from your evidence — flagging what to confirm instead of overclaiming. All against a local evidence store. No dashboards, no telemetry.</p>
           </header>
 
           <div class="feature-row">
@@ -291,6 +291,56 @@
                     <p>Comment on line 84 reads sharper than intended — soften to a question.</p>
 
                     <p class="footnote"><span class="ok">✓</span> Logged as evidence · code_review · subject_matter</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="feature-row">
+            <div class="feature-copy">
+              <p class="feature-tag">Onboarding a reviewer</p>
+              <h3>Turn a dense PR into a diagram anyone can review.</h3>
+              <p>
+                Say <em>"build a review console for #418"</em> and Valor turns
+                the diff into an interactive C4 walkthrough — system context →
+                containers → components → the real code — with a Before ⇄ After
+                toggle and a request-flow animation, all labelled in plain
+                English. It closes with a mastery quiz generated from the diff
+                and <strong>answer-verified against it</strong>: ace it and
+                you're approval-ready, so approving means you actually
+                understood the change. The approval itself still happens in
+                GitHub.
+              </p>
+              <a class="link-arrow" href="https://github.com/yihanzhu/valor/blob/main/commands/pr-console.md" rel="noreferrer">Review console spec <span aria-hidden="true">→</span></a>
+            </div>
+            <div class="chat">
+              <div class="chat-head">
+                <span class="tl tl-r"></span><span class="tl tl-y"></span><span class="tl tl-g"></span>
+                <span class="chat-title"><span class="dot"></span>claude code · valor</span>
+              </div>
+              <div class="chat-body">
+                <div class="chat-user">
+                  <span class="chat-role">You</span>
+                  <span class="chat-msg">build a review console for #418</span>
+                </div>
+                <div class="chat-agent">
+                  <span class="chat-role chat-role-agent">Valor</span>
+                  <div class="chat-out">
+                    <h4>Console built <span style="color:var(--text-dim);font-weight:400">(4 containers · 11 components)</span></h4>
+                    <ul>
+                      <li><span class="ok">●</span> <code>L1</code> Context — who calls the retry path</li>
+                      <li><span class="ok">●</span> <code>L2</code> Inside — front door, rulebook, transport</li>
+                      <li><span class="ok">●</span> <code>L3→L4</code> Components → the real diff lines</li>
+                    </ul>
+
+                    <h4>Mastery quiz</h4>
+                    <p>10 questions, answers verified against the diff. 2 candidates dropped as ambiguous.</p>
+
+                    <h4>Gate</h4>
+                    <p>Reviewer must ace the quiz to be <span class="accent-text">approval-ready</span> — record the actual approval in GitHub.</p>
+
+                    <p class="footnote"><span class="ok">✓</span> Published as a private Artifact · evidence · leadership</p>
                   </div>
                 </div>
               </div>
@@ -418,10 +468,10 @@
             <li class="rail-step">
               <p class="rail-num">02</p>
               <h3>Configure in your agent</h3>
-              <p>Say <em>"set up valor"</em>. Paste your career ladder. Pick your level. Done.</p>
+              <p>Say <em>"set up valor"</em>. Paste your career ladder — or start from a bundled example. Pick your level. Done.</p>
               <div class="rail-slash">
                 <span class="rail-phrase-pill">set up valor</span>
-                <p class="rail-slash-note">guided framework, level &amp; integrations</p>
+                <p class="rail-slash-note">paste a ladder, start from an example, or generate one from your title</p>
               </div>
             </li>
             <li class="rail-step">
@@ -465,7 +515,7 @@
             <div class="compat-group">
               <p class="compat-label">Runtime</p>
               <div class="badges">
-                <span class="chip">Python 3.9+</span>
+                <span class="chip">Python 3</span>
                 <span class="chip">stdlib only</span>
                 <span class="chip">no cloud</span>
               </div>

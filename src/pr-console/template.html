@@ -1,4 +1,4 @@
-<title>PR #2382 — Ivy OAuth Path: C4 Review Console</title>
+<title>C4 Review Console</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 :root{
@@ -171,9 +171,9 @@ svg.stage{display:block;width:100%;height:auto;min-width:480px}
 <div class="wrap">
   <div id="explorer">
   <header class="hero">
-    <div class="eyebrow">C4 review console · IVY-4128 · py-gpt-service</div>
-    <h1>PR #2382 — Ivy OAuth Path</h1>
-    <div class="sub">A new front door lets SAS talk to Ivy with an OAuth token instead of a browser cookie — statelessly, text-only. Boxes are named in plain English. <b>Click a ⤢ box to zoom into its parts</b>, or a <b>&lt;/&gt; box to see the real code (L4)</b>. Flip <b>Before ⇄ After</b> or <b>▶ Play</b> a request, then pass the check to mark yourself approval-ready.</div>
+    <div class="eyebrow">C4 review console</div>
+    <h1 id="prtitle">Pull request</h1>
+    <div class="sub"><span id="prsub">What this pull request changes, and why.</span> Boxes are named in plain English. <b>Click a ⤢ box to zoom into its parts</b>, or a <b>&lt;/&gt; box to see the real code (L4)</b>. Flip <b>Before ⇄ After</b> or <b>▶ Play</b> a request, then pass the check to mark yourself approval-ready.</div>
   </header>
 
   <div class="controls">
@@ -316,14 +316,6 @@ phaseSw.addEventListener("click",()=>{stopPlay();cap.textContent="";selId=null;s
 phaseSw.addEventListener("keydown",e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();stopPlay();selId=null;setPhase(cur.phase==="after"?"before":"after");}});
 playBtn.addEventListener("click",play);
 zoomOut.addEventListener("click",()=>{if(PATH.length>1)popTo(PATH.length-2);});
-
-const PASS=8;
-function buildQuiz(){const box=document.getElementById("quiz");const st={ans:0,cor:0,tot:QUIZ.length};const mtxt=document.getElementById("mtxt"),mbar=document.getElementById("mbar"),mscore=document.getElementById("mscore");const upd=()=>{mtxt.textContent=`${st.ans} / ${st.tot} answered`;mbar.style.width=(st.ans/st.tot*100)+"%";mscore.innerHTML=`<b>${st.cor}</b> correct`;};upd();
-  QUIZ.forEach((q,qi)=>{const card=document.createElement("div");card.className="q";card.innerHTML=`<div class="qhead"><span class="qn">Q${qi+1}</span><span class="qt">${escg(q.q)}</span><span class="diff2 ${(q.difficulty||'medium').toLowerCase()}">${escg(q.difficulty||'medium')}</span></div>`;const opts=document.createElement("div");opts.className="opts";const expl=document.createElement("div");expl.className="qexpl";expl.innerHTML=`<span class="k">Why</span>${escg(q.explanation)}`;const btns=[];
-    q.options.forEach((o,oi)=>{const b=document.createElement("button");b.className="opt";b.type="button";b.innerHTML=`<span class="mk">${String.fromCharCode(65+oi)}</span><span>${escg(o)}</span>`;b.onclick=()=>{if(btns.some(x=>x.disabled))return;btns.forEach(x=>x.disabled=true);const right=oi===q.answer_index;if(right)b.classList.add("correct");else{b.classList.add("wrong");btns[q.answer_index].classList.add("correct");}btns.forEach((x,xi)=>{if(xi!==oi&&xi!==q.answer_index)x.classList.add("dim");});expl.classList.add("show");st.ans++;if(right)st.cor++;upd();if(st.ans===st.tot)finish(st);};btns.push(b);opts.append(b);});
-    card.append(opts,expl);box.append(card);});
-}
-function finish(st){const v=document.getElementById("verdict");v.style.display="block";const pass=st.cor>=PASS;v.className="verdict "+(pass?"pass":"");if(pass){v.innerHTML=`<h3>✓ Approval-ready — you scored ${st.cor}/${st.tot}</h3><p>You can explain what this PR changes, why it's safe, and how a request flows end-to-end. Record your approval in GitHub.</p><button class="approve" id="apv">Mark myself ready to approve</button><div class="after-approve" id="aftv">Noted — now leave the review in GitHub. This console can't approve for you.</div>`;v.querySelector("#apv").onclick=()=>{v.querySelector("#apv").disabled=true;v.querySelector("#aftv").style.display="block";};}else{v.innerHTML=`<h3>Not yet — ${st.cor}/${st.tot}</h3><p>You need ${PASS}/10. Zoom into the parts, flip <b>Before ⇄ After</b>, and open the <b>code (L4)</b> for what you missed, then retry.</p>`;if(v.scrollIntoView)v.scrollIntoView({behavior:"smooth",block:"center"});}}
 
 /* ---- approval quiz: exam mode, one question at a time, must get ALL correct ---- */
 const explorer=document.getElementById("explorer"),quizEntry=document.getElementById("quizEntry"),quizRun=document.getElementById("quizRun"),quizResult=document.getElementById("quizResult");
