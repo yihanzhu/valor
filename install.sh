@@ -26,7 +26,8 @@
 # Pin a version (stop the daily check from nudging you off it):
 #   set "update_check_interval_hours": 0 in ~/.valor/state.json
 #
-# Quick install (clones repo then installs):
+# Quick install (clones when absent; otherwise reinstalls the existing checkout
+# without pulling or checking out anything):
 #   curl -fsSL https://raw.githubusercontent.com/yihanzhu/valor/main/install.sh | bash -s -- --clone
 # It's a short shell script -- read it before piping to bash:
 #   curl -fsSL .../main/install.sh | less
@@ -73,7 +74,7 @@ print_update_instructions() {
     echo "  Pin:     after checkout, set \"update_check_interval_hours\": 0 in ~/.valor/state.json"
 }
 
-# --- Handle --clone early (bootstrap from remote) ---
+# --- Handle --clone early (bootstrap only; existing checkouts never mutate) ---
 for arg in "$@"; do
     if [ "$arg" = "--clone" ]; then
         mkdir -p "$VALOR_HOME"
@@ -83,8 +84,8 @@ for arg in "$@"; do
             mv "$HOME/valor" "$VALOR_CLONE_DIR"
         fi
         if [ -d "$VALOR_CLONE_DIR/.git" ]; then
-            echo "Valor repo already exists at $VALOR_CLONE_DIR -- pulling latest..."
-            git -C "$VALOR_CLONE_DIR" pull --ff-only
+            echo "Valor repo already exists at $VALOR_CLONE_DIR -- leaving checkout unchanged."
+            echo "Reinstalling that checkout. Run its install.sh --upgrade to check for a newer release."
         else
             echo "Cloning Valor to $VALOR_CLONE_DIR..."
             git clone "$VALOR_REPO" "$VALOR_CLONE_DIR"

@@ -17,14 +17,14 @@ Security-relevant issues include:
 Please avoid posting sensitive details, credentials, internal code, or company
 documents in a public issue.
 
-Use GitHub private vulnerability reporting for this repository once it is
-enabled.
+Use [GitHub private vulnerability reporting](https://github.com/yihanzhu/valor/security/advisories/new)
+for this repository.
 
 Do not disclose undisclosed vulnerabilities in public issues, pull requests, or
 discussions.
 
-If private vulnerability reporting is temporarily unavailable, wait for a
-private reporting path to be enabled before sharing sensitive details.
+If GitHub cannot open the private report form, do not post the vulnerability
+publicly; retry the private reporting link later.
 
 ## Security Expectations for Contributions
 

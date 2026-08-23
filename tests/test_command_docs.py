@@ -632,6 +632,18 @@ def test_no_self_mutating_update_machinery_remains():
         assert banned not in text, f"removed update machinery leaked back in: {banned!r}"
 
 
+def test_clone_bootstrap_keeps_existing_checkout_unchanged():
+    """Re-running the public bootstrap must reinstall the checked-out version,
+    not silently move an existing checkout to `main`."""
+    text = Path("install.sh").read_text()
+    start = text.index("# --- Handle --clone early")
+    end = text.index("# --- Command source files", start)
+    body = text[start:end]
+    assert "pull --ff-only" not in body
+    assert 'git -C "$VALOR_CLONE_DIR" pull' not in body
+    assert "leaving checkout unchanged" in body
+
+
 # --- Utilities reference tests ---
 
 def test_utilities_documents_integrations():
