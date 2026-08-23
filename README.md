@@ -126,11 +126,13 @@ curl -fsSL https://raw.githubusercontent.com/yihanzhu/valor/main/install.sh | ba
 The bootstrap script is fetched from `main` (it's the entry point). It's a short
 shell script — read it before piping to bash (`curl -fsSL …/main/install.sh | less`).
 
-This clones the repo to `~/.valor/repo/`, creates `~/.valor/` for local state
-and evidence, and installs Valor for all supported agents (Claude Code,
-Codex CLI, and Cursor). Valor checks daily for new **releases** (tagged `vX.Y.Z`,
-never `main` HEAD) and **notifies you** when one is available — updating is
-manual (see below). It never silently pulls `main` or checks anything out.
+On first use, this clones the repo to `~/.valor/repo/`, creates `~/.valor/` for
+local state and evidence, and installs Valor for all supported agents (Claude
+Code, Codex CLI, and Cursor). If that checkout already exists, the bootstrap
+leaves it unchanged and reinstalls the version already checked out. Valor checks
+daily for new **releases** (tagged `vX.Y.Z`, never `main` HEAD) and **notifies
+you** when one is available — updating is manual (see below). It never silently
+pulls `main` or checks anything out.
 
 **Manual install:**
 
