@@ -1663,7 +1663,9 @@ def test_migrate_state_in_memory_preserves_planning_overrides():
 
 def test_migrate_state_in_memory_adds_v7_one_on_one_fields():
     migrated = _migrate_state_in_memory({"current_level": "L3"})
-    assert migrated["one_on_one"] == {"doc": "", "format_notes": "", "write_mode": "off"}
+    assert migrated["one_on_one"] == {
+        "doc": "", "format_notes": "", "write_mode": "off", "staging_doc": "",
+    }
     assert migrated["state_schema_version"] == STATE_SCHEMA_VERSION
 
 
@@ -1684,13 +1686,23 @@ def test_migrate_state_in_memory_adds_v20_write_mode_preserving_doc():
         "doc": "https://docs.example.com/d/abc",
         "format_notes": "dated H2s",
         "write_mode": "off",
+        "staging_doc": "",
     }
     assert migrated["state_schema_version"] == STATE_SCHEMA_VERSION
 
 
-def test_migrate_state_in_memory_preserves_draft_write_mode():
+def test_migrate_state_in_memory_preserves_valid_write_modes():
+    for mode in ("staging", "approve"):
+        state = {"one_on_one": {"doc": "d", "format_notes": "", "write_mode": mode,
+                                "staging_doc": "s"}}
+        oo = _migrate_state_in_memory(state)["one_on_one"]
+        assert oo["write_mode"] == mode and oo["staging_doc"] == "s"
+
+
+def test_migrate_state_in_memory_resets_direct_draft_write_mode():
+    # "draft" (unreviewed direct write to the shared doc) is not a mode.
     state = {"one_on_one": {"doc": "d", "format_notes": "", "write_mode": "draft"}}
-    assert _migrate_state_in_memory(state)["one_on_one"]["write_mode"] == "draft"
+    assert _migrate_state_in_memory(state)["one_on_one"]["write_mode"] == "off"
 
 
 def test_migrate_state_in_memory_repairs_invalid_write_mode():
@@ -2066,12 +2078,15 @@ def test_context_one_on_one_write_mode(cli_db, capsys):
     (valor_home / "state.json").write_text(json.dumps({"current_level": "L3"}))
     cmd_context(argparse.Namespace())
     assert json.loads(capsys.readouterr().out)["one_on_one_write_mode"] == "off"
-    # Opted in -> draft
+    # Opted in -> staging, with the staging doc flag
     (valor_home / "state.json").write_text(json.dumps({
-        "one_on_one": {"doc": "https://docs.example.com/d/abc", "write_mode": "draft"},
+        "one_on_one": {"doc": "https://docs.example.com/d/abc", "write_mode": "staging",
+                       "staging_doc": "https://docs.example.com/d/private"},
     }))
     cmd_context(argparse.Namespace())
-    assert json.loads(capsys.readouterr().out)["one_on_one_write_mode"] == "draft"
+    out = json.loads(capsys.readouterr().out)
+    assert out["one_on_one_write_mode"] == "staging"
+    assert out["one_on_one_staging_doc_set"] is True
     # Unknown value -> off (never widens write access)
     (valor_home / "state.json").write_text(json.dumps({
         "one_on_one": {"doc": "x", "write_mode": "overwrite"},

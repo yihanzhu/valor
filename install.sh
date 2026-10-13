@@ -529,7 +529,8 @@ install_shared() {
   "one_on_one": {
     "doc": "",
     "format_notes": "",
-    "write_mode": "off"
+    "write_mode": "off",
+    "staging_doc": ""
   },
   "project_focus": {
     "enabled": false,

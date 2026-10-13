@@ -44,9 +44,12 @@ STATE_SCHEMA_VERSION = 20
 
 ROUTINE_SLOTS = ("briefing", "wrapup", "weekly", "prep")
 
-# How valor-prep may touch the user's 1:1 doc. "off" = read-only (paste-ready
-# draft in chat); "draft" = insert this week's draft-marked entry in place.
-ONE_ON_ONE_WRITE_MODES = ("off", "draft")
+# How valor-prep may write this week's 1:1 entry. "off" = paste-ready text in
+# chat only; "staging" = write it into the user's private staging doc (never the
+# shared 1:1 doc); "approve" = write into the shared 1:1 doc only after the user
+# approves the exact text in a live session. Doc history keeps every revision,
+# so nothing unreviewed may ever reach the shared doc.
+ONE_ON_ONE_WRITE_MODES = ("off", "staging", "approve")
 
 VALID_COMPETENCIES = (
     "subject_matter",
@@ -720,16 +723,19 @@ def _migrate_state_in_memory(state: dict) -> dict:
     # so it can learn the format and draft this week's entry to match;
     # `format_notes` is an optional fallback when the doc can't be read. Both are
     # user-local (the doc reference is never committed).
-    # v20 adds `write_mode`: "off" (default; prep drafts the entry as paste-ready
-    # text) or "draft" (opt-in; prep inserts a draft-marked entry into the doc
-    # with a positional writer). Off unless the user turns it on, because the
-    # doc is usually shared with the manager, so a write is visible to them.
+    # v20 adds `write_mode` (see ONE_ON_ONE_WRITE_MODES; default "off") and
+    # `staging_doc`, the user's private doc that "staging" writes into. Off
+    # unless the user opts in; an unknown value resets to "off" so a bad value
+    # can never widen write access.
     if "one_on_one" not in state or not isinstance(state.get("one_on_one"), dict):
-        state["one_on_one"] = {"doc": "", "format_notes": "", "write_mode": "off"}
+        state["one_on_one"] = {
+            "doc": "", "format_notes": "", "write_mode": "off", "staging_doc": "",
+        }
     else:
         oo = state["one_on_one"]
         oo.setdefault("doc", "")
         oo.setdefault("format_notes", "")
+        oo.setdefault("staging_doc", "")
         if oo.get("write_mode") not in ONE_ON_ONE_WRITE_MODES:
             oo["write_mode"] = "off"
     # v8: project-focus customization (focus.py). Opt-in: when `enabled`, the
@@ -1050,12 +1056,13 @@ def cmd_context(args: argparse.Namespace) -> None:
         },
         "escalate_in_one_on_one_count": len(state.get("escalate_in_one_on_one", []) or []),
         "one_on_one_doc_set": bool((state.get("one_on_one") or {}).get("doc")),
-        # v20: "draft" only when explicitly opted in; anything else reads "off".
+        # v20: a write mode only when explicitly opted in; anything else reads "off".
         "one_on_one_write_mode": (
             (state.get("one_on_one") or {}).get("write_mode")
             if (state.get("one_on_one") or {}).get("write_mode") in ONE_ON_ONE_WRITE_MODES
             else "off"
         ),
+        "one_on_one_staging_doc_set": bool((state.get("one_on_one") or {}).get("staging_doc")),
         "planning": {
             "calendar_auto_write": bool((state.get("planning") or {}).get("calendar_auto_write", True)),
             "workday_start": (state.get("planning") or {}).get("workday_start", "09:00"),
