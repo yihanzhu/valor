@@ -93,8 +93,8 @@ Calendar or calendar-related slash command (look for commands matching
 details for each event (including attendee response statuses). For each event:
 
 1. **Check the user's own RSVP** (`responseStatus` where `self: true`).
-   Show status next to each event: *accepted*, *tentative*, *needsAction*
-   (no RSVP), or *declined*.
+   Use it for planning; in the rendered Schedule, flag only the exceptions
+   (*tentative*, *needsAction*) — accepted is the default and goes unlabeled.
 2. **Filter out declined events.** If the user has declined, show it with
    strikethrough (~~event~~) rather than as an active commitment.
 3. **Check other attendees for small meetings** (<=5 attendees). If a key
@@ -140,7 +140,7 @@ Translate the window into search terms:
 - **Next-day** (12-36 hours): `"[topic] news today [Month Day Year]"`
 - **Weekend gap** (2-3 days): `"[topic] news this week [Month Year]"`
 - **Extended absence** (4+ days): `"[topic] news past week [Month Year]"`
-  and select more headlines (4-5 per category).
+  and select a few more headlines (2-3 per category).
 
 Always search for **broad, general topics** -- never narrow the search
 query to the user's work areas:
@@ -171,12 +171,14 @@ levels, and the week/month trend are retrospective by design and should be
 reported regardless of the window. Any *driver story* the Markets slot cites
 should still come from within the coverage window.
 
-Select 2-3 headlines per category. For AI/ML news, add a brief note on
-relevance to the user's work if applicable.
+Select **1-2 headlines per category** — the most consequential, not the most
+numerous. For AI/ML news, add a brief note on relevance to the user's work if
+applicable.
 
 **Markets (US + Canada):** A market pulse, not a list of standalone headlines,
 and not just a day's up/down number -- a single session says little on its own.
-Aim for ~6 lines plus one sourced driver story.
+Gather at full depth, but **render in 3 lines** (US · Canada & macro · trend &
+watch) plus an optional sourced driver story — see Briefing Format.
 
 **First, fix the market state.** US and Canadian markets (S&P 500, Nasdaq, Dow,
 S&P/TSX Composite) all trade 9:30 AM - 4:00 PM Eastern. Convert the current time
@@ -191,7 +193,8 @@ to ET, compare against that window, and frame the slot accordingly:
   session it was. US and Canadian holidays differ -- if one market is open and
   the other closed, report each on its own footing.
 
-**Cover, at full depth:**
+**Gather, at full depth** (then compress into the 3 rendered lines — keep the
+numbers and the *why*, drop the prose):
 
 1. **US.** S&P 500, Nasdaq, Dow -- direction and magnitude (or futures, if
    pre-open). Name the sector leadership (e.g. tech/AI led, industrials lagged)
@@ -244,9 +247,13 @@ Use these counts to identify:
 - Gap areas (lowest count or zero)
 - Specific opportunities tied to today's work items
 
-**If evidence store doesn't exist or is empty:** Skip the coaching section
-entirely. Don't show empty placeholders. The section will appear naturally
-after a few briefings accumulate evidence.
+**If evidence store doesn't exist or is empty:** Skip the coaching line
+entirely. Don't show empty placeholders.
+
+**Render as one line, or not at all.** The stats feed the *ranking* (§6.5) and
+spare-capacity pickups; the briefing itself shows at most a single 🦅 line
+naming one gap competency and the **specific action today** that builds it. No
+strongest-area recap, no counts list. If no today action genuinely fits, omit it.
 
 **Competency reference** (from `valor/src/evidence_cli.py`):
 - Subject Matter (`subject_matter`): technical designs, clean code, ML concepts
@@ -280,7 +287,7 @@ Use `context.briefing_meta.tone_tier` (pre-computed from briefing count):
   ratio: 10% (target: 25%). Sarah's #892 is a good candidate."
 - **established:** Data only. E.g., "Cross-team: 10/25%. #892 available."
 
-### 5.5 Project Focus (filter to the current project — run before Work Context and Priorities)
+### 5.5 Project Focus (filter to the current project — run before Priorities)
 
 If `context.project_focus.enabled` is `false` (the default), skip this and
 surface all projects as usual. When it's on, the user works **one project at a
@@ -307,12 +314,12 @@ Apply the result:
 - Otherwise, **classify each candidate ticket/PR by reading it** (epic /
   component / labels / content — not a key prefix, since two projects can share a
   prefix) and **keep only items belonging to `current_project`.** Off-focus items
-  are **hidden entirely** — not shown under a "later" heading — across Work
-  Context, PR Situation, Suggested Priorities, and the Day Plan. A PR that only
+  are **hidden entirely** — not shown under a "later" heading — across
+  Priorities, Schedule, and On your radar. A PR that only
   needs your approval still counts as off-focus: a review is a focus session, not
   a click, and the user has asked to hold that boundary.
 - **`transition_today` is true** (the focus just flipped — today is the first working day after a sync):
-  lead Suggested Priorities with a one-time hand-off line, e.g. *"Focus shifts to
+  lead Priorities with a one-time hand-off line, e.g. *"Focus shifts to
   [current_project] this cycle; [next_project] resumes after its sync on
   [next_sync_date]."* Outside the transition, do not preview the off-focus project
   at all.
@@ -373,7 +380,7 @@ silent, only genuinely new ones surface — so there's no periodic gate:
    python3 ~/.valor/focus.py catalog-sync --entries '[{"title":"...","category":"project_sync","project":"Y"}, ...]'
    ```
 
-### 6. Verification Gate (anti-phantom — run before Work Context and Priorities)
+### 6. Verification Gate (anti-phantom — run before Priorities)
 
 Yesterday's `today_priorities` (from state) and the carry-forward file are
 **claims, not facts**. The phantom-propagation bug is the briefing re-asserting
@@ -398,15 +405,16 @@ open claim for you. Process it:
    wrap-up). Tell the user in one line, register the real ones
    (`verify.py register`), and treat their assertions as unverified until checked.
 
-**Default-deny:** an artifact claim may appear in Work Context, Career Focus, or
-Suggested Priorities **only with a fresh verdict from this run's gate**
+**Default-deny:** an artifact claim may appear in Priorities, On your radar, or
+the coaching line **only with a fresh verdict from this run's gate**
 (`fresh`, or just recorded). Anything else — unverified, never-checked,
-confirm-only, unstamped — goes under "Needs Confirmation" as
+confirm-only, unstamped — goes under "Needs confirmation" as
 "unverified — confirm or drop?", never as a numbered priority, never with an
 advanced "week N / Nd" figure. Doing nothing must be the safe path.
 
-After processing, print the gate summary line under Suggested Priorities:
-`Gate: K claims — R resolved · U unresolved · V unverified`.
+After processing, print the gate summary in the briefing's footer line:
+`Gate: K claims — R resolved · U unresolved · V unverified` (compressible to
+`Gate K: R resolved · U unresolved · V unverified`).
 
 **Overnight replies (conversational items):** a verified send isn't the end of
 the loop. For each carried conversational item — a sent message awaiting a
@@ -528,7 +536,7 @@ backlog, gated on the integration:
 - **Jira** (`integrations.jira`): unassigned, stale (>2w), or High/Highest-priority
   tickets in `context.jira_projects`.
 - **GitHub** (`integrations.github`): open PRs in your domain worth picking up —
-  **skip any PR already listed under PR Situation (§2)** so a review-requested PR
+  **skip any PR already shown in Priorities or On your radar** so a review-requested PR
   appears once, not twice (say "review PR repo#N" to start a coached review).
 
 Rank them by the **same lens** as priorities: advances an **open** `week_goal`, fills a
@@ -543,100 +551,89 @@ python3 ~/.valor/evidence_cli.py add --activity task_identified --competency <ga
 
 ## Briefing Format
 
-Present the full briefing in this structure. Use markdown formatting.
-Cross-reference items across sections (link tickets to meetings, PRs to tickets).
+The briefing is read in a minute, not studied. All the gathering, gating,
+focus filtering, ranking and day-fitting above still runs in full — this section
+governs only what gets **rendered**.
+
+**Rendering rules:**
+
+- **Lead with what needs action.** Priorities and the schedule come first;
+  status and news come after. Within any list, show what *changed* or *needs a
+  decision* — not a re-statement of steady state.
+- **Each item appears once.** A ticket, PR, meeting or claim is rendered in
+  exactly one place. If it is a priority, it lives in Priorities (fold its useful
+  status — draft, CI red, N comments, blocks X — into that line) and the Schedule
+  refers to it by number (`#1`, `#2`), never by repeating the description.
+  "On your radar" lists only items that are **not** already a priority.
+- **One line per item.** No second "cross-reference" line unless it carries a
+  fact the reader needs to act today (e.g. "reply already in the thread").
+- **Omit empty or low-signal parts entirely** — no headings with nothing under
+  them, no "none today" placeholders, no restating the integration list.
+- **Soft budget:** the non-news part (heading through On your radar, plus the
+  footer) aims for **~30–40 lines**. If it runs long, trim radar items and
+  annotations first — never drop a priority, a held/needs-confirmation note, or
+  a schedule entry.
 
 ```
 ## Valor Morning Briefing -- [Day], [Date]
+[*Focus: [current_project] ([sync time if today]) — off-focus hidden.* — one line, only when focus filtering is active]
 
-[📌 **Heads up:** rare, high-signal one-time alerts — shown only when present and
-pinned above everything else so they survive a news-only skim. E.g. a possible
-new/dropped project from §5.5's drift check. Omit this line entirely when there's
-nothing.]
+[📌 **Heads up:** rare, high-signal one-time alerts — e.g. a possible new/dropped
+project from §5.5's drift check. Omit entirely when there's nothing.]
 
-### Work Context
-- [Ticket ID]: [Title] -- *[Status]* ([days in status])
-  [Cross-reference if this ticket relates to a meeting, PR, or blocker resolution]
-  [Career coaching annotation if applicable]
-- ...
-
-### PR Situation
-**Awaiting your review:**
-- #[num]: [title] (from [author], [age])
-  [Flag if cross-team] [Coaching annotation if applicable]
-
-**Your open PRs:**
-- #[num]: [title] -- [approvals], [comments], [CI status]
-  [Nudge if action needed, e.g. "2 unresolved comments from Mike"]
-
-### Today's Calendar
-- [time] -- [meeting] ([duration]) -- *[your RSVP status]*
-  [Prep suggestion if related to a ticket or PR]
-- ~~[time] -- [meeting]~~ *declined* [or: key attendee declined]
-
-### News
-
-**AI/ML**
-- headline -- [1-sentence relevance note if applicable]
-  url
-
-**Tech Industry**
-- headline
-  url
-
-**World**
-- headline
-  url
-
-**Markets** *[market state -- e.g. pre-open, US/Canada open 9:30 ET]*
-- US: S&P 500 [±x% or futures], Nasdaq [±x%], Dow [±x%] -- [sector leadership; note any divergence]
-- Canada: S&P/TSX Composite [±x%] -- [driver, e.g. energy/financials]
-- Macro: US 10-yr [yield, ±bp], WTI [$, ±%], USD/CAD [rate], gold [$] -- [what it implies]
-- Trend: [past week & month direction; streak or distance from recent high/low]
-- Watch: [next catalyst -- Fed / CPI / jobs / earnings, with date or time]
-- [driver story headline]
-  url
-
-### Career Focus
-[Only show if evidence store has data]
-- Strongest area: [competency] ([count] entries)
-- Gap: [competency] ([count] entries)
-- Today's opportunities:
-  1. [specific action tied to today's work]
-  2. [specific action]
-
-### Suggested Priorities
-[Ranked by the §6.5 pass — week goals + dependencies first. Each line shows *why*.]
-1. [action] -- [why first, e.g. "advances week goal: <goal>" or "unblocks <goal>"]
+### Priorities
+[Ranked by the §6.5 pass — week goals + dependencies first. One line each:
+action, the artifact it touches, its status if useful, and *why*.]
+1. [action] ([KEY] / #[PR] [draft · CI red · N comments]) -- [why, e.g. "week goal: <goal>" or "unblocks <goal>"]
 2. [action] -- [why]
 3. ...
+[**Held (blocked):** [item] — behind [unfinished upstream]. Only if something is held.]
+[**Needs confirmation:** [claim] — unverified, confirm or drop? Only gate-demoted claims (§6).]
+[**Goals done:** ✓ [goal] — retired. Only if a goal was retired this run.]
+[**Heads-up:** looks like more than a week's work — consider deferring [item]. Only when clearly over-committed.]
+[**Spare capacity:** 1–2 backlog pickups — [KEY/PR] [why]. Only if the day is light.]
 
-[**Held (blocked):** [item] — behind [unfinished upstream], per a standing rule
-or a retired goal's gated residual; not surfaced as actionable until its
-blocker is done. Only if something is held.]
-[**Goals done:** ✓ [goal] (per wrap-up / [date] evidence) — retired, no longer generating
-tasks. Only if a goal was retired this run.]
-[**Heads-up:** this looks like more than a week's work — consider deferring
-[item(s)]. Only when clearly over-committed; no estimation math, just a nudge.]
-[**Spare capacity (only if the day is light):** 1–2 backlog pickups — [KEY/PR] [why:
-gap/goal/team-need]. Omit unless there's real slack.]
-
-[Carried artifact claims appear here only after passing the §6 gate. Verified
-resolved items are dropped (or shown as just-completed); unconfirmable ones are
-listed under a short "Needs Confirmation" note as "unverified — confirm or
-drop?", never as numbered priorities with a day count.]
-
-*Gate: [K] claims — [R] resolved · [U] unresolved · [V] unverified*
-[Mandatory whenever any artifact claim was processed — it makes a skipped
-gate visible at a glance.]
-
-### Day Plan
-[Time-blocked schedule from the §7 day-planning pass. Omit if calendar is off.]
-- [HH:MM]–[HH:MM] — [priority] *(deep)*
-- [HH:MM]–[HH:MM] — [priority] *(fragmented)*
-[**Open windows:** [HH:MM]–[HH:MM] (Nm)[, …] — free slots for a quick win or overflow (from plan.py `open_windows`); if any]
+### Schedule
+[Today's calendar and the §7 Day Plan as ONE timeline, in time order. If the
+calendar integration is off, omit this section.]
+- [HH:MM] [meeting] [· [HH:MM] [meeting] — consecutive routine meetings may share a line]
+- [HH:MM]–[HH:MM] #1 [short label] *(deep)*   [or "start #1 (Nm now, ~Mm next deep block)" for a partial block]
+- [HH:MM] prep → [HH:MM]–[HH:MM] [prep-worthy meeting] [— one agenda hint if mined]
+- [HH:MM] [meeting] — *[needsAction / tentative]* [RSVP shown ONLY when not accepted; ~~declined~~ only if worth noting; "Alice declined" only if it changes the meeting]
+- [HH:MM]–[HH:MM] #2, #3 *(fragmented)*
+[**Open windows:** [HH:MM]–[HH:MM][, …] — one line, if any]
 [**Push to next deep block:** [unassigned deep_only items], if any]
-[*Calendar: N events written/updated* — only if auto-write ran]
+[**No prep time before** [meeting] — make room, or prep the day before. If any.]
+
+### On your radar
+[Only items NOT already a priority, and only if worth knowing today: a review
+request you're not taking today, a blocked teammate waiting on you, a ticket
+whose status changed. One line each, ≤5 lines. Omit the section if empty.]
+- #[num] [title] ([author], [age], [CI]) -- [why it's not today / what would change that]
+- [KEY] [title] -- *[status change]*
+
+### News
+[See §4. 1–2 headlines per category (AI/ML, Tech, World); Markets is 3 lines.]
+
+**AI/ML**
+- headline [-- relevance note, only if a genuine work-area match]
+  url
+
+**Tech Industry** / **World** — same shape.
+
+**Markets** *[state — e.g. pre-open]*
+- US: S&P [±x%], Nasdaq [±x%], Dow [±x%] -- [leadership / divergence]
+- Canada & macro: TSX [±x%]; 10-yr [y%], WTI [$], USD/CAD [r], gold [$] -- [the why]
+- Trend & watch: [week/month direction or streak]; next: [catalyst + date]
+[- driver story headline, optional
+  url]
+
+[🦅 [Competency]: [one specific action today that builds it]. — ONE line, only
+when tied to a today action and grounded per §5; otherwise omit.]
+*[Gate K: R resolved · U unresolved · V unverified] · [Catch-up: N merged, M new tickets] · [Calendar: N blocks written | plan only]*
+[Footer: a single italic line. Include each part only when it applies — the
+gate part is mandatory whenever any artifact claim was processed; drop the line
+entirely if no part applies.]
 ```
 
 ## Day Plan & Calendar (§7 — after priorities)
@@ -746,15 +743,17 @@ Write"). In short:
 
 ## Monday / Return-from-Absence Mode
 
-If `context.briefing_meta.is_monday_or_catchup` is `true`, add a "Catch-Up"
-section after Work Context:
+If `context.briefing_meta.is_monday_or_catchup` is `true`, gather what changed
+while the user was away:
 
-```
-### Weekend/Absence Catch-Up
-- PRs merged while you were away: [list from gh pr list --state merged --search "updated:>YYYY-MM-DD"]
+- PRs merged while you were away
 - New tickets assigned since [last_briefing_date]
 - Status changes on your tickets
-```
+
+Render it **without a separate section**: anything that changes today's work
+(a new assignment, a PR that now needs you) becomes a priority or a radar line;
+everything else is a count in the footer (`Catch-up: N merged, M new tickets`).
+Never re-list an item already shown elsewhere in the briefing.
 
 Run additional queries:
 ```bash
@@ -774,7 +773,7 @@ from the briefing content.
 python3 ~/.valor/evidence_cli.py add \
     --activity morning_briefing_completed \
     --competency autonomy_scope \
-    --statement "Prioritized: [top 2-3 items from Suggested Priorities]. Key items: [N] tickets, [M] PRs, [P] meetings." \
+    --statement "Prioritized: [top 2-3 items from Priorities]. Key items: [N] tickets, [M] PRs, [P] meetings." \
     --agent valor-morning-briefing
 ```
 
