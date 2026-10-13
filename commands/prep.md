@@ -206,9 +206,17 @@ must reformat afterward.
   trim or sequence the goals to fit the working days available and add a brief
   "short week — N working days (off [days])" framing, so next-period goals are
   read against the real runway rather than a nominal five days.
-- **Concrete and honest:** reference specific PRs/tickets; keep the user's voice
-  and length. The user reviews before pasting — do not fabricate; if a section
-  has nothing real, leave it light/empty as their doc does.
+- **Match the user's own length — no longer.** Measure the last 1-2 entries the
+  user wrote (bullets per section, words per bullet, nesting depth) and stay at
+  or under that. The entry carries **outcomes, status, and asks** only: one line
+  per PR in the doc's own PR-line style (e.g. `repo#N - TICKET short title
+  (status)`), at most one level of sub-detail. Leave implementation detail out
+  of the entry — test counts, row/record counts, step-by-step fixes, per-person
+  support lists; that is evidence, and it belongs in §4.3, not in the doc. If
+  the user would have to cherry-pick lines, the draft is too long.
+- **Concrete and honest:** reference specific PRs/tickets; keep the user's
+  voice. The user reviews before pasting — do not fabricate; if a section has
+  nothing real, leave it light/empty as their doc does.
 
 Then add a short **"Chronic — consider raising"** note: the §2.5 escalation
 candidates with how long each has been stuck, so the user decides what to
@@ -222,6 +230,14 @@ a suitable writer is available, insert this week's entry into the doc directly
 (this is what lets a scheduled prep routine leave the draft where the user will
 see it). The doc is usually shared with the manager, so anything written here is
 visible to them -- which is why this is off unless the user opted in at setup.
+
+**Opting in is the standing authorization.** Setting `write_mode` to `"draft"`
+is the user's explicit, durable permission for prep to insert this week's draft
+entry, **including unattended runs** (a scheduled routine whose prompt is just
+`/valor-prep`). Do not hold the write back waiting for a live confirmation, and
+do not require the routine prompt to restate it. The permission covers exactly
+the write described in this section -- one draft entry, positional insert,
+idempotent -- and nothing else in the doc or anywhere else.
 
 **Writer discovery** (match by capability, not a fixed tool name -- MCP server
 ids are per-session):
@@ -244,10 +260,19 @@ ids are per-session):
 - **Where:** where new entries go per the §2.6 format (usually the top of the
   entries), in the **tab that holds the weekly entries** when the doc has tabs.
   Never write into pinned/notes/archive tabs.
-- **Date:** the **actual 1:1 date** from the calendar -- the next occurrence of
-  the manager 1:1 (`routines.prep.personalization.calendar_event_id` when set,
-  else the recurring 1:1 matched by `state.manager`), so a holiday reschedule
-  moves the date with it. No calendar → `routines.prep.personalization.one_on_one_day`.
+- **Date:** the **actual 1:1 date** from the calendar, so a holiday reschedule
+  moves the date with it. Find this week's occurrence of the manager 1:1, first
+  match wins:
+  1. `routines.prep.personalization.calendar_event_id` when set;
+  2. the recurring 1:1 with `state.manager` as attendee;
+  3. **no manager set** → this week's event whose title reads as a 1:1
+     (`1:1`, `1-1`, `one on one`) with exactly two attendees, the user and one
+     other person, picking the one with the same title/attendee as recent doc
+     entries' Gemini/notes links when several match. A moved single instance of
+     the recurring event counts (e.g. Mon → Tue after a holiday): use the
+     instance's own date, not the series' usual weekday.
+  4. No calendar, or nothing matched → `routines.prep.personalization.one_on_one_day`,
+     and say in the report that the date was not confirmed from the calendar.
   Format the date/title the way the doc's existing entries do.
 - **Draft marker:** the first line of the entry is
   `[Draft by Valor, review before 1:1]`, so the user (and the manager, if they

@@ -354,6 +354,10 @@ def test_prep_doc_write_back_is_opt_in_and_non_destructive():
     assert "fill only" in text and "empty" in text       # idempotent re-runs
     assert "actual 1:1 date" in text                     # dated from the calendar
     assert "stay **in chat**" in text                    # chronic/analysis not in doc
+    assert "standing authorization" in text              # scheduled runs may write
+    assert "including unattended runs" in text
+    assert "no manager set" in text                      # date fallback without state.manager
+    assert "moved single instance" in text               # holiday reschedule dated correctly
     setup = Path("commands/setup.md").read_text()
     assert '"write_mode"' in setup and "shared with your" in setup
 
