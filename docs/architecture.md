@@ -161,7 +161,7 @@ Cross-cutting behaviors run inside the existing agents — no new commands:
   it surfaces spare-capacity backlog pickups — the former standalone
   task-finding capability, now folded in: unassigned/stale/High-priority Jira
   work and open PRs in your domain, skipping anything already in the PR section.
-- **Day-planning pass** (`plan.py`): after the briefing's Suggested Priorities,
+- **Day-planning pass** (`plan.py`): after the briefing's Priorities,
   it fits them to the day's real calendar gaps (deep vs fragmented; focus-time is
   deep-work, out-of-office blocks), sizing each task by an agent-provided
   `est_minutes` and reserving a `post_meeting_break_minutes` breather after real

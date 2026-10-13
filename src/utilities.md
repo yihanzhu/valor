@@ -205,7 +205,7 @@ ticket→project classification is the agent's job (read the ticket).
 `--syncs` accepts inline JSON, `@file`, or `-` (stdin), shape
 `[{"project": "...", "date": "YYYY-MM-DD"}]`.
 
-### Protocol (run before Work Context / Priorities / Day Plan)
+### Protocol (run before Priorities / Day Plan)
 
 1. **Resolve the focus.**
    - `mode: meeting_derived` — the focus follows a recurring per-project sync.
@@ -220,11 +220,11 @@ ticket→project classification is the agent's job (read the ticket).
    never a key prefix; prefixes collide) and keep only `current_project` items.
    Hide everything else **entirely** — including a PR that only needs the user's
    approval (a review is a focus session, and the user asked to hold that
-   single-project boundary). Applies to Work Context, PR Situation, Suggested
-   Priorities, and the Day Plan.
+   single-project boundary). Applies to Priorities, On your radar, and the
+   Schedule (Day Plan).
 3. **Transition hand-off.** When `transition_today` is true (the first working
    day after a sync — Monday for a Friday sync — so the focus just flipped), lead
-   Suggested Priorities with a one-time
+   Priorities with a one-time
    line naming the new focus and when the other project resumes (`next_project` /
    `next_sync_date`). Outside the transition, don't preview off-focus work.
 4. **Project & meeting intelligence (briefing, every run).** The mapping is set
@@ -328,7 +328,8 @@ blocks back as events. Skipped entirely if `integrations.calendar` is `false`.
    before `workday_start + morning_buffer_minutes` (the AM ritual). Block
    starts/ends snap to `block_granularity_minutes` (default 15) so they land on
    clean clock boundaries (:00/:15/:30/:45) like meetings, not odd times like 2:09.
-4. **Present** the `blocks` as a "Day Plan" section (time-blocked), then list
+4. **Present** the `blocks` interleaved with the day's meetings as one
+   time-ordered "Schedule" (the Day Plan; never a separate calendar list), then list
    **`open_windows`** (free slots ≥15 min left after assignment, including a
    partly-used gap's leftover) as "open windows for a quick win / overflow" so
    short gaps aren't invisible. Surface each `unassigned` item as "push to your
@@ -388,7 +389,7 @@ Common rules (both targets):
   `valor:task:` token. If found, update it in place (the time may have shifted);
   else create. Never create a second item for the same task.
 - **Skip unverified:** do NOT write an item for a priority the gate demoted — it
-  stays in the markdown "Needs Confirmation" note only.
+  stays in the markdown "Needs confirmation" note only.
 - **Cleanup (done = gone):** for a Valor item whose `valor:claim:` now verifies
   **resolved**, delete/complete it — the task got done, so it leaves the
   calendar. Leave `unresolved` ones in place (they're real reminders).
