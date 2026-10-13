@@ -45,7 +45,7 @@ vice versa — or CI will fail. -->
 | Design Doc Coach | -- | Ticket lookup for context | -- | -- | Records design doc evidence |
 | Weekly Reflection | Merged PRs, reviewed PRs | Tickets completed this week | -- | -- | Competency breakdown, trends |
 | Evening Wrap-up | Optional: today's activity from your repos | Optional: today's ticket activity | Captures meeting notes from event attachments into evidence | -- | Today's entries, carry-forward |
-| 1:1 Prep | Merged/reviewed PRs (optional) | Completed tickets (optional) | This week's working-day capacity (off-days/holidays) to frame goals | -- | Primary source: evidence + weekly summaries |
+| 1:1 Prep | Merged/reviewed PRs (optional) | Completed tickets (optional) | This week's working-day capacity (off-days/holidays) to frame goals; the actual 1:1 date for opt-in doc write-back | -- | Primary source: evidence + weekly summaries |
 | Project Sync Prep | Project PRs since last sync (optional) | Project tickets since last sync (optional) | Identifies the next project sync | -- | Primary source: project progress since last sync |
 | Performance Reflection | Coverage: merged PRs not in the log (optional) | Coverage: completed tickets not in the log (optional) | Coverage: meeting decisions not captured (optional) | -- | Primary source: the cycle's evidence mapped to competency + value (+ AI-tier when an entry or the framework supplies one); git + transcripts cross-checked for uncaptured work |
 | Upward Feedback | -- | -- | -- | -- | Primary source: manager behaviors from meeting_notes + 1:1 evidence |

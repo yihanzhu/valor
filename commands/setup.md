@@ -281,14 +281,29 @@ Ask: "Do you keep a running 1:1 doc? Paste the link (or say 'skip'). With it,
 `/valor-prep` drafts each week's entry in **your doc's own format** instead of a
 generic layout."
 
-If provided, save it (the reference is local-only, never committed):
+If provided, ask about write-back next and save both together. Your 1:1 doc is usually shared with your manager,
+and doc version history keeps every revision, so trimming later doesn't
+un-share anything. Offer:
+
+- **off** (default): you get the entry in chat to paste.
+- **staging**: every run, including scheduled ones, writes the draft into a
+  **private** doc only you can access; you trim it there and copy it into the
+  1:1 doc. Ask for that doc's link (`staging_doc`); prep checks it is private
+  before each write.
+- **approve**: in a live session prep shows the entry, and writes it into the
+  shared 1:1 doc only after you approve the exact text. Scheduled runs never
+  write the shared doc.
+
+Save the answers in one call (the references are local-only, never committed):
 
 ```bash
-python3 ~/.valor/evidence_cli.py state-set one_on_one '{"doc":"<link or name>","format_notes":""}'
+python3 ~/.valor/evidence_cli.py state-set one_on_one '{"doc":"<link or name>","format_notes":"","write_mode":"off","staging_doc":""}'
 ```
 
-If they skip, leave it empty -- prep falls back to the generic layout and can
-be pointed at the doc later.
+If they skip the doc, leave it empty and don't ask about write-back -- prep
+falls back to the generic layout and can be pointed at the doc later. On a
+re-run where a doc is already set, show the current `write_mode` and offer to
+flip it, carrying `doc`/`format_notes`/`staging_doc` over unchanged.
 
 ### Applying integration changes
 

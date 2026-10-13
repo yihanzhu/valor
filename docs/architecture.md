@@ -68,7 +68,7 @@ version control. Upgrades overwrite the installer-managed runtime files
 
 The `installed_version` and `installed_at` fields track when the last install
 happened. The `state_schema_version` field enables forward-only migrations
-when the installer adds new fields (currently at version 19). Migrations
+when the installer adds new fields (currently at version 20). Migrations
 add missing keys with safe defaults and prune keys removed in later schema
 versions (e.g. the v16 sync-rescan throttle), never overwriting existing user
 values; they run in `_migrate_state_in_memory` (src/evidence_cli.py). The
@@ -81,7 +81,7 @@ Key fields:
 - `integrations` -- boolean flags for github, jira, calendar, news
 - `verification` -- gate config: `enabled`, `escalation_threshold`, `ttl_overrides` (v5)
 - `planning` -- day-plan config: `calendar_auto_write`, `workday_start`/`workday_end`, `deep_min_hours`, `post_meeting_break_minutes`, `block_granularity_minutes`, `morning_buffer_minutes`, `pre_meeting_prep_minutes` (v6, v9, v12, v13, v15)
-- `one_on_one` -- 1:1 doc reference + `format_notes` for `/valor-prep` (v7; local only)
+- `one_on_one` -- 1:1 doc reference + `format_notes` for `/valor-prep` (v7; local only), plus `write_mode` (`off` | `staging` | `approve`, default `off`) and `staging_doc` (v20) -- opt-in write-back: unattended runs write only to a private staging doc; the shared doc is written only after live approval
 - `project_focus` -- opt-in project rotation: `enabled`, `mode`, `syncs`, `meeting_catalog` (categorized recurring meetings), `auto_sync_prep`, `parked_projects` (v8–v16; local only). Catalog drift-checked daily — no throttle.
 - `prioritization` -- weekly goal ranking: `week_goals` (this week's ordered goals, extracted silently from the 1:1 doc), `week_start`, `goals_source`; used by the briefing to rank todos before the day plan (v17; local only)
 - `standing_rules` -- durable sequencing/priority corrections, kept separate from `prioritization` so the weekly goal-refresh never drops them (v17; local only)
@@ -179,7 +179,13 @@ Cross-cutting behaviors run inside the existing agents — no new commands:
   `/valor-sync-prep` run before each project_sync.
 - **Chronic escalation**: items verified-unresolved past
   `verification.escalation_threshold` surface in `/valor-prep`, which also drafts
-  the entry in the user's own 1:1-doc format when `one_on_one.doc` is set.
+  the entry in the user's own 1:1-doc format when `one_on_one.doc` is set. Opt-in
+  write-back (`one_on_one.write_mode`): `staging` writes the entry into the
+  user's private staging doc on every run (verified private first); `approve`
+  writes it into the shared 1:1 doc only after the user approves the exact text
+  live. Doc history keeps every revision, so an unreviewed draft never reaches
+  the shared doc. Positional inserts only, idempotent, never a whole-file
+  replace.
 - **Meeting-notes capture** (wrap-up): the evening wrap-up detects a notes
   attachment on the day's calendar events (e.g. a Gemini "Notes by Gemini" Doc —
   not the event agenda/description), summarizes its decisions/outcomes/action

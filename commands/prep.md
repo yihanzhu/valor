@@ -100,13 +100,17 @@ drafted **in the format the user already uses** -- not Valor's generic layout.
 
 1. Read the doc reference from `state.one_on_one.doc` (a Google Doc link/id or
    name). If unset, ask once ("What's your 1:1 doc? paste the link") and store:
-   `python3 ~/.valor/evidence_cli.py state-set one_on_one '{"doc":"<ref>","format_notes":""}'`.
+   `python3 ~/.valor/evidence_cli.py state-set one_on_one '{"doc":"<ref>","format_notes":"","write_mode":"off","staging_doc":""}'`
+   (`state-set` replaces the whole object, so carry over any existing
+   `write_mode`/`staging_doc` instead of resetting them).
 2. Discover a docs-read capability (a Drive/Docs MCP that reads file content, or
-   a docs-related slash command). If none, use the §4.3 fallback.
+   a docs-related slash command). If none, use the §4.4 fallback.
 3. Read the doc and study the **most recent 1-2 entries** to infer the format:
    section labels (verbatim), their order, bullet vs numbered convention and
    nesting, the tone/length of each section, whether new entries go at the top
-   or bottom, and how entries are dated/titled.
+   or bottom, and how entries are dated/titled. If the doc has **tabs**, note
+   which tab holds the dated weekly entries (others are often pinned notes or
+   archives) -- §4.2 writes only there.
 4. If the doc can't be read but `state.one_on_one.format_notes` is set, use that
    as the format spec.
 
@@ -184,7 +188,8 @@ Using the format learned in §2.6, draft **this week's entry, ready to paste**
 into the user's doc. This is the main output — not a pile of key points the user
 must reformat afterward.
 
-- **Plain text — no markdown.** The entry is pasted into a doc that renders
+- **Plain text — no markdown** (paste path; §4.2 writes natively instead). The
+  entry is pasted into a doc that renders
   markdown literally, so emit **no `*`, `**`, `_`, or `#`** — no bold, italic,
   markdown bullets, or `#` headers (a plain leading `- ` for a list item is fine;
   `*` is not). The user applies their doc's real formatting (bold, bullets) after
@@ -201,21 +206,131 @@ must reformat afterward.
   trim or sequence the goals to fit the working days available and add a brief
   "short week — N working days (off [days])" framing, so next-period goals are
   read against the real runway rather than a nominal five days.
-- **Concrete and honest:** reference specific PRs/tickets; keep the user's voice
-  and length. The user reviews before pasting — do not fabricate; if a section
-  has nothing real, leave it light/empty as their doc does.
+- **Match the user's own length — no longer.** Measure the last 1-2 entries the
+  user wrote (bullets per section, words per bullet, nesting depth) and stay at
+  or under that. The entry carries **outcomes, status, and asks** only: one line
+  per PR in the doc's own PR-line style (e.g. `repo#N - TICKET short title
+  (status)`), at most one level of sub-detail. Leave implementation detail out
+  of the entry — test counts, row/record counts, step-by-step fixes, per-person
+  support lists; that is evidence, and it belongs in §4.3, not in the doc. If
+  the user would have to cherry-pick lines, the draft is too long.
+- **Concrete and honest:** reference specific PRs/tickets; keep the user's
+  voice. The user reviews before pasting — do not fabricate; if a section has
+  nothing real, leave it light/empty as their doc does.
 
 Then add a short **"Chronic — consider raising"** note: the §2.5 escalation
 candidates with how long each has been stuck, so the user decides what to
 actually surface.
 
-### 4.2 Supporting analysis (grounding, condensed)
+### 4.2 Write the entry into a doc (opt-in)
+
+By default prep is **read-only**: §4.1 is paste-ready text and the user pastes
+it. The shared 1:1 doc is usually visible to the manager, and **doc version
+history keeps every revision** -- trimming an entry after it lands does not
+un-share what was written. So **nothing unreviewed ever goes into the shared
+1:1 doc.** `context.one_on_one_write_mode` picks one of:
+
+| Mode | Writes to | When |
+|------|-----------|------|
+| `off` (default) | nothing | -- the §4.1 text is the output |
+| `staging` | the user's **private staging doc** (`one_on_one.staging_doc`), never the shared doc | every run, **including unattended** scheduled runs |
+| `approve` | the shared 1:1 doc (`one_on_one.doc`) | only in a **live** session, after the user approves the exact text |
+
+**`staging` -- the standing authorization for unattended runs.** Opting into
+`staging` is the user's durable permission for prep to write this week's entry
+into their staging doc, including a scheduled routine whose prompt is just
+`/valor-prep`; do not wait for a live confirmation and do not require the
+routine prompt to restate it. It covers only the staging doc. Before every
+write, **verify the staging doc is private**: read its sharing/permissions and
+write only if the user is the sole person with access (no other users, groups,
+domain or link sharing). If it is shared, or permissions cannot be read, do not
+write -- fall back to §4.1 and say why in one line. The user trims the entry
+there and copies it into the 1:1 doc themselves (doc-to-doc copy keeps the
+formatting). No staging doc set → fall back to §4.1 and say "set
+`one_on_one.staging_doc` to a private doc to get the draft written there".
+
+**`approve` -- shared doc, live approval only.** Show the entry in chat first.
+Write into the shared 1:1 doc only after the user, **live in this session**,
+approves that exact text (after their edits). An unattended or scheduled run
+never writes the shared doc in any mode -- it behaves like `staging` if a
+staging doc is set, else like `off`. Approval covers that one write; a later
+change needs a new approval.
+
+**Writer discovery** (match by capability, not a fixed tool name -- MCP server
+ids are per-session):
+
+1. **Positional insert only.** The writer must insert text and apply formatting
+   **at a position** in the existing document, tab-aware when the doc has tabs
+   -- e.g. a Google Docs `batchUpdate` with `insertText` / paragraph-style /
+   bullet / link requests at an index, via a Docs MCP or a docs skill/CLI.
+2. **Never use a whole-file replace on the 1:1 doc.** A Drive-style
+   `update_file` / upload / "replace content" tool rewrites the entire doc and
+   can destroy the manager's comments, suggestions, history and the other tabs.
+   It is **not** a writer for this purpose, even if it is the only Drive tool
+   present.
+3. **No suitable writer** → fall back to the §4.1 paste-ready output and say so
+   in one line ("Write-back is on, but no positional doc writer is available in
+   this session -- here's the entry to paste.").
+
+**What to write** (both modes) -- this week's entry only, nothing else:
+
+- **Where:** in `approve` mode, where new entries go per the §2.6 format
+  (usually the top of the entries), in the **tab that holds the weekly
+  entries** when the doc has tabs; never into pinned/notes/archive tabs. In
+  `staging` mode, at the top of the staging doc, newest first.
+- **Date:** the **actual 1:1 date** from the calendar, so a holiday reschedule
+  moves the date with it. Find this week's occurrence of the manager 1:1, first
+  match wins:
+  1. `routines.prep.personalization.calendar_event_id` when set;
+  2. the recurring 1:1 with `state.manager` as attendee;
+  3. **no manager set** → this week's event whose title reads as a 1:1
+     (`1:1`, `1-1`, `one on one`) with exactly two attendees, the user and one
+     other person, picking the one with the same title/attendee as recent doc
+     entries' Gemini/notes links when several match. A moved single instance of
+     the recurring event counts (e.g. Mon → Tue after a holiday): use the
+     instance's own date, not the series' usual weekday.
+  4. No calendar, or nothing matched → `routines.prep.personalization.one_on_one_day`,
+     and say in the report that the date was not confirmed from the calendar.
+  Format the date/title the way the doc's existing entries do.
+- **Draft marker (staging only):** the staging copy starts with
+  `[Draft by Valor, trim before copying]`. Keep `[confirm]` markers on any
+  claim not backed by an evidence entry, PR, or ticket. In `approve` mode the
+  approved text goes in as approved -- no draft marker, no `[confirm]` left.
+- **Native formatting:** apply the doc's real formatting -- its heading style
+  for the entry title and section labels, real bullets/nesting, and real links
+  for PRs/tickets -- instead of the §4.1 plain-text rule, which applies only to
+  the paste path.
+
+**Idempotent, never destructive.** Before inserting, look for an entry already
+dated for this 1:1 in the target doc:
+
+- **None** → insert the full entry.
+- **Exists** (the user, the manager, or an earlier run started it) → fill only
+  sections that are **empty**; leave every non-empty section exactly as is.
+  Never overwrite, reorder, or duplicate content someone else wrote, and never
+  insert a second entry for the same date.
+- Never edit, move, or delete anything outside this week's entry.
+
+**Report** in chat what was inserted and where (which doc, tab, entry
+title/date, which sections were filled vs. left alone because they already had
+content). The
+"Chronic — consider raising" note (§4.1) and the supporting analysis (§4.3)
+stay **in chat**, never in the doc.
+
+**Goals feed prioritization.** Goals are read from the shared 1:1 doc as §2.6
+describes -- the entry that actually landed there, not the staging draft. In
+`approve` mode, the goals section of the written entry is this week's goals: store them into `prioritization.week_goals` exactly as §2.6
+describes (`week_start` = `context.prioritization.week_start_current` verbatim,
+`goals_source: "one_on_one_doc"`), so the briefing ranks against what is
+actually in the doc.
+
+### 4.3 Supporting analysis (grounding, condensed)
 
 Below the entry, include a condensed version of the §3 competency map and
 target-level alignment — the evidence behind the entry, for the user who wants
 to go deeper. The entry in §4.1 is the deliverable; this is backup.
 
-### 4.3 Fallback — no doc format available
+### 4.4 Fallback — no doc format available
 
 If no 1:1 doc is configured and no docs reader is available, produce the generic
 layout instead, and note once: "Set `one_on_one.doc` (your 1:1 doc link) to get
@@ -277,3 +392,6 @@ python3 ~/.valor/evidence_cli.py add \
 | GitHub/Jira disabled | Build prep from evidence only. This is a valid workflow. |
 | Career framework not configured | Use generic competency names. Note: "Configure `~/.valor/career_framework.md` for personalized coaching." |
 | Evidence CLI fails | Note the error. Proceed with any available data. |
+| `one_on_one_write_mode` is `"staging"`/`"approve"` but no positional doc writer | Output the §4.1 paste-ready entry; note in one line that write-back was skipped. Never substitute a whole-file replace tool. |
+| `staging` but the staging doc is shared with anyone, or its permissions can't be read | Do not write. Output §4.1 and say the staging doc must be private. |
+| Unattended run with `approve` | Never write the shared doc. Behave as `staging` if a staging doc is set, else `off`. |

@@ -342,6 +342,30 @@ def test_briefing_prioritizes_against_week_goals_and_dependencies():
     assert "Prioritize against the week" in text    # the §6.5 ranking pass exists
 
 
+def test_prep_doc_write_back_is_opt_in_and_non_destructive():
+    """1:1 write-back is opt-in, positional and idempotent; unattended runs write
+    only a private staging doc, and the shared doc needs live approval."""
+    text = Path("commands/prep.md").read_text()
+    assert "context.one_on_one_write_mode" in text      # gated on the opt-in
+    assert "Never use a whole-file replace" in text      # no update_file overwrite
+    assert "Positional insert only" in text
+    assert "[Draft by Valor, trim before copying]" in text  # staging marker
+    assert "history keeps every revision" in text        # why no unreviewed shared write
+    assert "nothing unreviewed ever goes into the shared" in text
+    assert "verify the staging doc is private" in text
+    assert "never writes the shared doc" in text         # unattended runs
+    assert "[confirm]" in text                           # unevidenced claims flagged
+    assert "fill only" in text and "empty" in text       # idempotent re-runs
+    assert "actual 1:1 date" in text                     # dated from the calendar
+    assert "stay **in chat**" in text                    # chronic/analysis not in doc
+    assert "standing authorization for unattended runs" in text  # staging only
+    assert "no manager set" in text                      # date fallback without state.manager
+    assert "moved single instance" in text               # holiday reschedule dated correctly
+    setup = Path("commands/setup.md").read_text()
+    assert '"write_mode"' in setup and '"staging_doc"' in setup
+    assert "shared with your manager" in setup
+
+
 def test_prep_captures_week_goals():
     """1:1 prep extracts this week's goals from the doc into prioritization state
     (silently) so the briefing can rank against them."""

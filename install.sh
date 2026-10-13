@@ -528,7 +528,9 @@ install_shared() {
   },
   "one_on_one": {
     "doc": "",
-    "format_notes": ""
+    "format_notes": "",
+    "write_mode": "off",
+    "staging_doc": ""
   },
   "project_focus": {
     "enabled": false,
