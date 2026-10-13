@@ -40,9 +40,13 @@ from pathlib import Path
 DB_PATH = Path.home() / ".valor" / "evidence.sqlite"
 BACKUP_DIR = Path.home() / ".valor" / "backups"
 
-STATE_SCHEMA_VERSION = 19
+STATE_SCHEMA_VERSION = 20
 
 ROUTINE_SLOTS = ("briefing", "wrapup", "weekly", "prep")
+
+# How valor-prep may touch the user's 1:1 doc. "off" = read-only (paste-ready
+# draft in chat); "draft" = insert this week's draft-marked entry in place.
+ONE_ON_ONE_WRITE_MODES = ("off", "draft")
 
 VALID_COMPETENCIES = (
     "subject_matter",
@@ -716,12 +720,18 @@ def _migrate_state_in_memory(state: dict) -> dict:
     # so it can learn the format and draft this week's entry to match;
     # `format_notes` is an optional fallback when the doc can't be read. Both are
     # user-local (the doc reference is never committed).
+    # v20 adds `write_mode`: "off" (default; prep drafts the entry as paste-ready
+    # text) or "draft" (opt-in; prep inserts a draft-marked entry into the doc
+    # with a positional writer). Off unless the user turns it on, because the
+    # doc is usually shared with the manager, so a write is visible to them.
     if "one_on_one" not in state or not isinstance(state.get("one_on_one"), dict):
-        state["one_on_one"] = {"doc": "", "format_notes": ""}
+        state["one_on_one"] = {"doc": "", "format_notes": "", "write_mode": "off"}
     else:
         oo = state["one_on_one"]
         oo.setdefault("doc", "")
         oo.setdefault("format_notes", "")
+        if oo.get("write_mode") not in ONE_ON_ONE_WRITE_MODES:
+            oo["write_mode"] = "off"
     # v8: project-focus customization (focus.py). Opt-in: when `enabled`, the
     # briefing plans around the current project only and hides the rest.
     # `mode` is "meeting_derived" (focus follows the next per-project sync on the
@@ -1040,6 +1050,12 @@ def cmd_context(args: argparse.Namespace) -> None:
         },
         "escalate_in_one_on_one_count": len(state.get("escalate_in_one_on_one", []) or []),
         "one_on_one_doc_set": bool((state.get("one_on_one") or {}).get("doc")),
+        # v20: "draft" only when explicitly opted in; anything else reads "off".
+        "one_on_one_write_mode": (
+            (state.get("one_on_one") or {}).get("write_mode")
+            if (state.get("one_on_one") or {}).get("write_mode") in ONE_ON_ONE_WRITE_MODES
+            else "off"
+        ),
         "planning": {
             "calendar_auto_write": bool((state.get("planning") or {}).get("calendar_auto_write", True)),
             "workday_start": (state.get("planning") or {}).get("workday_start", "09:00"),

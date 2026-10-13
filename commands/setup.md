@@ -283,12 +283,23 @@ generic layout."
 
 If provided, save it (the reference is local-only, never committed):
 
+Then ask about write-back: "Should `/valor-prep` write a draft of each week's
+entry **into the doc** (marked `[Draft by Valor, review before 1:1]`, inserted
+in place, never overwriting anything)? Your 1:1 doc is usually shared with your
+manager, so they can see the draft before you review it. Default: no -- you get
+the entry in chat to paste."
+
+Save both answers in one call (`write_mode` is `"draft"` on yes, `"off"`
+otherwise; the reference is local-only, never committed):
+
 ```bash
-python3 ~/.valor/evidence_cli.py state-set one_on_one '{"doc":"<link or name>","format_notes":""}'
+python3 ~/.valor/evidence_cli.py state-set one_on_one '{"doc":"<link or name>","format_notes":"","write_mode":"off"}'
 ```
 
-If they skip, leave it empty -- prep falls back to the generic layout and can
-be pointed at the doc later.
+If they skip the doc, leave it empty and don't ask about write-back -- prep
+falls back to the generic layout and can be pointed at the doc later. On a
+re-run where a doc is already set, show the current `write_mode` and offer to
+flip it, carrying `doc`/`format_notes` over unchanged.
 
 ### Applying integration changes
 

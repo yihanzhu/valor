@@ -342,6 +342,22 @@ def test_briefing_prioritizes_against_week_goals_and_dependencies():
     assert "Prioritize against the week" in text    # the §6.5 ranking pass exists
 
 
+def test_prep_doc_write_back_is_opt_in_and_non_destructive():
+    """Writing the 1:1 entry into the (manager-shared) doc is opt-in, positional,
+    idempotent, draft-marked, and falls back to paste-ready text."""
+    text = Path("commands/prep.md").read_text()
+    assert "context.one_on_one_write_mode" in text      # gated on the opt-in
+    assert "Never use a whole-file replace" in text      # no update_file overwrite
+    assert "Positional insert only" in text
+    assert "[Draft by Valor, review before 1:1]" in text
+    assert "[confirm]" in text                           # unevidenced claims flagged
+    assert "fill only" in text and "empty" in text       # idempotent re-runs
+    assert "actual 1:1 date" in text                     # dated from the calendar
+    assert "stay **in chat**" in text                    # chronic/analysis not in doc
+    setup = Path("commands/setup.md").read_text()
+    assert '"write_mode"' in setup and "shared with your" in setup
+
+
 def test_prep_captures_week_goals():
     """1:1 prep extracts this week's goals from the doc into prioritization state
     (silently) so the briefing can rank against them."""
