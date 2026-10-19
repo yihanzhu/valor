@@ -38,6 +38,19 @@ If an enabled source fails at runtime (e.g. `gh` not authenticated), note it
 once and suggest the user either fix the tool or set the integration to `false`
 in state.json.
 
+**Credentials (hard rule):** never `cat`, `grep`, `echo` or `env`/`printenv`-dump
+shell rc files (`~/.zshrc`, `~/.bashrc`, ...), `.env` files or environment
+variable values -- anything printed lands in the transcript. Only check
+presence: `[ -n "$VAR" ] && echo set`. If a credential is missing, say so and
+let the user fix it.
+
+**Drop muted ids before anything is ranked.** `context.muted_ids` holds the
+stable ids (`owner/repo#N`, issue keys) the user said to stop mentioning (see
+Follow-Up). Remove every gathered item whose id is in that list — review
+requests, watched or assigned tickets, backlog pickups — before focus (§5.5) and ranking, so
+it never reaches Priorities, On your radar, Spare capacity, or the day plan.
+Don't announce the filtering.
+
 ### 1. Jira Tickets
 
 **Preferred: Atlassian MCP**
@@ -397,6 +410,8 @@ open claim for you. Process it:
    `verify.py record --type <T> --id "<ID>" --result <resolved|unresolved|unverified>`.
    **resolved** → done: drop it from priorities and, if it closes a streak,
    record the completion. **unresolved** → surface with the real `day_count`.
+   **dropped** (an auto-checked PR closed without merging) → moot: leave it out
+   entirely, and record no completion.
 2. `context.claims.unverifiable` — confirm-only claims: ask the user
    ("confirm or drop?"). **Skip entries marked `parked`** — they've gone
    unanswered 3+ mornings; the weekly owns them now.
@@ -404,6 +419,14 @@ open claim for you. Process it:
    carry-forward with no registered claim behind them (a bypassed or hand-edited
    wrap-up). Tell the user in one line, register the real ones
    (`verify.py register`), and treat their assertions as unverified until checked.
+
+**User corrections are verdicts.** An answer of "done" records
+`--result resolved`. "Not needed", "don't bother", "moot", "not mine", or
+"stop mentioning this" records
+`verify.py record --type <T> --id "<ID>" --result dropped --reason "<short>"` —
+terminal: the claim leaves every worklist and is **never** recorded as a
+completion. Items under the carry-forward's "Dropped" section are history;
+never resurface them.
 
 **Default-deny:** an artifact claim may appear in Priorities, On your radar, or
 the coaching line **only with a fresh verdict from this run's gate**
@@ -726,7 +749,7 @@ Write"). In short:
    description, and a `valor:prep:<slug>` token (idempotent like the task token).
    Idempotent via the `valor:task:` token (never duplicate), **skip
    unverified claims**, delete/complete items whose claim has since verified
-   **resolved**, and never touch items Valor didn't create. No writer → present
+   **resolved** or been **dropped**, and never touch items Valor didn't create. No writer → present
    the plan only, note once.
 4. **Auto-schedule sync prep** — only if `context.project_focus.auto_sync_prep`
    is `true` (the default) **and `planning.pre_meeting_prep_minutes` > 0** (0 means
@@ -912,6 +935,35 @@ After the briefing, the user may ask follow-up questions. Handle them naturally:
   from the briefing data (yesterday, today, blockers)
 - **"Help me review [PR]"** -- Use the
   `/valor-pr-review` command for coached review with career-level annotations
-- **"Prioritize differently"** -- Re-order based on user's input
+- **"Prioritize differently"** -- Re-order based on user's input, then re-plan
+  (below)
+- **"X is done" / "not mine" / "not needed" / "stop mentioning X"** -- a
+  correction, not just a re-order. Resolve X to the stable id the briefing
+  showed (`owner/repo#N`, issue key, doc title), then make it stick:
+  1. **Claim-backed** (it came through the §6 gate): "done" →
+     `verify.py record --type <T> --id "<ID>" --result resolved`; anything else
+     → `verify.py record --type <T> --id "<ID>" --result dropped --reason "<their words>"`.
+     A dropped item never gets a completion evidence row.
+  2. **Live source** (a review request, a watched or assigned ticket — re-fetched
+     every morning, so a claim drop can't hold it): for "not mine" / "stop
+     mentioning", append the id to `muted_ids`. Re-emit the existing list —
+     `state-set` replaces it:
+     ```bash
+     python3 ~/.valor/evidence_cli.py state-set muted_ids \
+       '[<existing ids from context.muted_ids>, "owner/repo#123"]'
+     ```
+     "Unmute X" / "X is mine again" removes it the same way.
+  3. **Week goal**: if X is one of `context.prioritization.week_goals` and it's
+     done, append it to `completed_goals` (same read-modify-write as the
+     wrap-up; carry `week_goals` / `week_start` / `goals_source` verbatim). If
+     it's not the user's or no longer needed, remove it from `week_goals`
+     instead — it must not read "✓ done".
+  4. **Calendar**: delete today's `valor:task:<slug>` block for X if Valor
+     wrote one (never touch blocks Valor didn't create), then re-plan.
+- **Re-plan mid-session** (after a correction or a re-order) -- the morning
+  calendar snapshot is stale by now (meetings move, blocks were written).
+  **Re-fetch today's calendar first**, then re-run
+  `python3 ~/.valor/plan.py fit` (§7) with the updated priorities and render
+  its blocks — never patch the old plan by hand.
 
 These follow-ups are part of the natural conversation -- no special trigger needed.

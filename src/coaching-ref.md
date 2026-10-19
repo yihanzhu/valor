@@ -45,9 +45,17 @@ Two parts per coaching annotation:
 "That's solid Subject Matter work. At [target], you'd also document the root
 cause for the team so the fix is discoverable next time."
 
-**Footer:** After every completed task, use the template from the agent rule.
+**Footer:** Only when the turn produced a new deliverable (PR opened or
+merged, decision made, message drafted), at most once per deliverable, using
+the template from the agent rule. No ambient footer, and no suggestions of
+other Valor commands, after the output of a `/valor-*` command or a scheduled
+Valor run, unless that command's spec asks for it. If the response already ends
+with a next-step offer, fold the growth angle into that offer instead.
 The company value is optional -- include only when genuinely relevant.
 The footer must be specific and actionable, never vague ("do more of this").
+Its ✅ line credits only what the user decided, traded off or pushed back on,
+not the steps the agent carried out. Record evidence whether or not a footer
+is shown.
 
 ## Evidence Statement Rules
 

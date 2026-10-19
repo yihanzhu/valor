@@ -1058,6 +1058,141 @@ def test_cmd_backup_prunes_old_backups_to_10(cli_db, capsys):
     assert len(backups) <= 10
 
 
+def _stamp(days_ago):
+    return (datetime.now() - timedelta(days=days_ago)).strftime("%Y%m%d_%H%M%S")
+
+
+def test_backup_is_a_consistent_sqlite_copy_with_state(cli_db, capsys):
+    """The snapshot is a readable SQLite DB (online backup API, not a raw file
+    copy) and state.json is copied alongside under the same timestamp."""
+    _, backup_dir = cli_db
+    _add_entry("code_written", "subject_matter", "Backed-up row")
+    (cli_module.VALOR_HOME / "state.json").write_text(json.dumps({"coaching_mode": "ambient"}))
+    capsys.readouterr()
+    for old in backup_dir.glob("*"):
+        old.unlink()
+
+    cmd_backup(argparse.Namespace())
+    capsys.readouterr()
+
+    [db_backup] = backup_dir.glob("evidence_*.sqlite")
+    [state_backup] = backup_dir.glob("state_*.json")
+    assert state_backup.name == db_backup.name.replace("evidence_", "state_").replace(".sqlite", ".json")
+    assert json.loads(state_backup.read_text()) == {"coaching_mode": "ambient"}
+    conn = _make_conn(db_backup)
+    rows = conn.execute("SELECT evidence_statement FROM evidence").fetchall()
+    conn.close()
+    assert [r["evidence_statement"] for r in rows] == ["Backed-up row"]
+
+
+def test_backup_rotation_keeps_newest_10_of_each_kind(cli_db, capsys):
+    _, backup_dir = cli_db
+    conn = cli_module.get_conn()
+    ensure_schema(conn)
+    conn.close()
+    (cli_module.VALOR_HOME / "state.json").write_text("{}")
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    for i in range(12):
+        ts = _stamp(30 + i)
+        (backup_dir / f"evidence_{ts}.sqlite").write_bytes(b"old")
+        (backup_dir / f"state_{ts}.json").write_text("{}")
+
+    dest, removed = cli_module._backup_now()
+
+    db_backups = sorted(backup_dir.glob("evidence_*.sqlite"))
+    state_backups = sorted(backup_dir.glob("state_*.json"))
+    assert len(db_backups) == 10 and len(state_backups) == 10
+    assert db_backups[-1] == dest  # the fresh one survives; the oldest go
+    assert len(removed) == 6
+
+
+def test_ensure_schema_backs_up_before_pending_migration(cli_db, capsys):
+    """An existing store behind the latest schema is snapshotted BEFORE the
+    migration runs: the backup still carries the old version and the rows."""
+    db_path, backup_dir = cli_db
+    conn = _make_conn(db_path)
+    conn.executescript(cli_module.SCHEMA_V1)
+    now = datetime.now(timezone.utc).isoformat()
+    for v in (1, 2, 3):
+        conn.execute("INSERT INTO schema_version VALUES (?, ?)", (v, now))
+    conn.execute(
+        "INSERT INTO evidence VALUES (?,?,?,?,?,?,?,?)",
+        ("legacy-1", "2026-01-01", "code_written", "subject_matter",
+         "Legacy row", "test-agent", now, "{}"),
+    )
+    conn.commit()
+
+    ensure_schema(conn)
+    conn.close()
+
+    [backup] = backup_dir.glob("evidence_*.sqlite")
+    bconn = _make_conn(backup)
+    assert bconn.execute("SELECT MAX(version) AS v FROM schema_version").fetchone()["v"] == 3
+    assert bconn.execute("SELECT COUNT(*) AS c FROM evidence").fetchone()["c"] == 1
+    bconn.close()
+    assert "before migrating from v3" in capsys.readouterr().err
+
+
+def test_ensure_schema_no_backup_for_new_or_current_db(cli_db):
+    _, backup_dir = cli_db
+    conn = cli_module.get_conn()
+    ensure_schema(conn)  # brand-new DB: nothing worth saving
+    ensure_schema(conn)  # already current: no migration pending
+    conn.close()
+    assert not list(backup_dir.glob("evidence_*.sqlite"))
+
+
+@pytest.mark.parametrize("days_ago,expect_new", [(8, True), (1, False)])
+def test_add_backs_up_when_newest_backup_older_than_7_days(cli_db, capsys, days_ago, expect_new):
+    _, backup_dir = cli_db
+    _add_entry("code_written", "subject_matter", "First")
+    for old in backup_dir.glob("*"):
+        old.unlink()
+    (backup_dir / f"evidence_{_stamp(days_ago)}.sqlite").write_bytes(b"old")
+    capsys.readouterr()
+
+    _add_entry("code_written", "subject_matter", "Second")
+
+    out = capsys.readouterr().out
+    assert json.loads(out)["status"] == "ok"  # stdout stays the command's JSON
+    assert len(list(backup_dir.glob("evidence_*.sqlite"))) == (2 if expect_new else 1)
+
+
+def test_weekly_summary_save_backs_up_when_none_exists(cli_db, capsys):
+    _, backup_dir = cli_db
+    conn = cli_module.get_conn()
+    ensure_schema(conn)
+    conn.close()
+    cmd_weekly_summary_save(argparse.Namespace(
+        week_start="2026-01-05", week_end="2026-01-11",
+        summary={"subject_matter": 1}, gaps=[], narrative="",
+    ))
+    capsys.readouterr()
+    assert len(list(backup_dir.glob("evidence_*.sqlite"))) == 1
+
+
+def test_auto_backup_failure_never_breaks_add(cli_db, capsys, monkeypatch, tmp_path):
+    blocker = tmp_path / "not-a-dir"
+    blocker.write_text("")
+    monkeypatch.setattr(cli_module, "BACKUP_DIR", blocker / "backups")
+
+    _add_entry("code_written", "subject_matter", "Still recorded")
+
+    captured = capsys.readouterr()
+    assert json.loads(captured.out)["status"] == "ok"
+    assert "automatic backup failed" in captured.err
+
+
+def test_context_reports_last_backup_age_days(cli_db, capsys):
+    _, backup_dir = cli_db
+    cmd_context(argparse.Namespace())
+    assert json.loads(capsys.readouterr().out)["last_backup_age_days"] is None
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    (backup_dir / f"evidence_{_stamp(3)}.sqlite").write_bytes(b"x")
+    cmd_context(argparse.Namespace())
+    assert json.loads(capsys.readouterr().out)["last_backup_age_days"] == pytest.approx(3, abs=0.1)
+
+
 # --- cmd_schema_version ---
 
 def test_cmd_schema_version_shows_version(cli_db, capsys):
@@ -1373,6 +1508,21 @@ def test_context_ooo_today_suppresses_wrapup(cli_db, capsys, monkeypatch):
     }))
     cmd_context(argparse.Namespace())
     assert json.loads(capsys.readouterr().out)["suggest"]["wrapup"] is False
+
+
+def test_context_suggest_skips_slots_scheduled_as_routines(cli_db, capsys, monkeypatch):
+    """A slot already running as a scheduled routine is not offered in chat too."""
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    _mock_now(monkeypatch, datetime(2026, 4, 17, 9, 0, 0))  # Friday 9am
+    (valor_home / "state.json").write_text(json.dumps({
+        "last_briefing_date": "2020-01-01",
+        "routines": {"briefing": {"enabled": True}, "weekly": {"enabled": False}},
+    }))
+    cmd_context(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["suggest"]["briefing"] is False
+    assert result["suggest"]["weekly"] is True
 
 
 def test_context_ooo_dates_prunes_past(cli_db, capsys, monkeypatch):
@@ -1887,6 +2037,28 @@ def test_migrate_state_in_memory_repairs_non_list_ooo_dates():
 def test_migrate_state_in_memory_preserves_ooo_dates():
     migrated = _migrate_state_in_memory({"ooo_dates": ["2026-04-17"]})
     assert migrated["ooo_dates"] == ["2026-04-17"]
+
+
+def test_migrate_state_in_memory_adds_v21_muted_ids():
+    migrated = _migrate_state_in_memory({"current_level": "L3"})
+    assert migrated["muted_ids"] == []
+    assert migrated["state_schema_version"] == STATE_SCHEMA_VERSION
+    assert _migrate_state_in_memory({"muted_ids": "oops"})["muted_ids"] == []
+    kept = _migrate_state_in_memory({"muted_ids": ["ExampleOrg/repo#7"]})
+    assert kept["muted_ids"] == ["ExampleOrg/repo#7"]
+
+
+def test_context_exposes_muted_ids_cleaned(cli_db, capsys):
+    """context.muted_ids is what the briefing filters live sources against:
+    strings only, trimmed, deduped, order kept."""
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({
+        "muted_ids": ["ExampleOrg/repo#7", " PROJ-42 ", "", 5, "ExampleOrg/repo#7"],
+    }))
+    cmd_context(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["muted_ids"] == ["ExampleOrg/repo#7", "PROJ-42"]
 
 
 def test_migrate_state_in_memory_drops_legacy_meeting_baseline():

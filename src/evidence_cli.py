@@ -17,7 +17,8 @@ Subcommands:
     export                Export evidence (markdown or JSON)
     stats                 Evidence totals, by-competency, this-week, by-agent
     status                Valor home, version, levels, coaching mode, integrations
-    backup                Copy DB to ~/.valor/backups/ (keeps last 10)
+    backup                Snapshot DB + state.json to ~/.valor/backups/ (keeps last 10;
+                          also automatic before a migration and when >7 days old)
     schema-version        Show schema migration history
     feedback-add          Record feedback for a coaching annotation
     feedback-stats        Show feedback statistics
@@ -40,7 +41,13 @@ from pathlib import Path
 DB_PATH = Path.home() / ".valor" / "evidence.sqlite"
 BACKUP_DIR = Path.home() / ".valor" / "backups"
 
-STATE_SCHEMA_VERSION = 20
+# Backups kept per kind (evidence_*.sqlite, state_*.json); older ones are pruned.
+BACKUP_KEEP = 10
+# A write (add / weekly-summary-save) refreshes the backup once the newest one
+# is older than this, so the store never goes long without a safety copy.
+AUTO_BACKUP_MAX_AGE_DAYS = 7
+
+STATE_SCHEMA_VERSION = 21
 
 ROUTINE_SLOTS = ("briefing", "wrapup", "weekly", "prep")
 
@@ -228,6 +235,10 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
         )
         conn.commit()
         current = 1
+    elif any(version > current for version in MIGRATIONS):
+        # An existing store is about to migrate: snapshot it first so a bad
+        # migration is recoverable. A brand-new DB has nothing to save.
+        _auto_backup(conn, reason=f"before migrating from v{current}")
 
     for version in sorted(MIGRATIONS.keys()):
         if version > current:
@@ -338,6 +349,7 @@ def cmd_add(args: argparse.Namespace) -> None:
     )
     conn.commit()
     conn.close()
+    _maybe_auto_backup()
     print(json.dumps({"status": "ok", "id": entry_id, "activity": args.activity}))
 
 
@@ -443,21 +455,90 @@ def cmd_stats(args: argparse.Namespace) -> None:
     print(json.dumps(result, indent=2))
 
 
+def _backup_now(conn: sqlite3.Connection | None = None) -> tuple[Path, list[Path]]:
+    """Snapshot the evidence DB (and state.json) into BACKUP_DIR.
+
+    Uses SQLite's online backup API rather than a file copy, so the snapshot is
+    consistent even if another process is writing. `conn` backs up that open
+    connection's DB (ensure_schema passes the one it is about to migrate);
+    otherwise DB_PATH is opened. Keeps the newest BACKUP_KEEP of each kind.
+    Returns (db_backup_path, removed_paths).
+    """
+    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    dest = BACKUP_DIR / f"evidence_{ts}.sqlite"
+    src = conn if conn is not None else sqlite3.connect(str(DB_PATH))
+    dst = sqlite3.connect(str(dest))
+    try:
+        src.backup(dst)
+    finally:
+        dst.close()
+        if conn is None:
+            src.close()
+
+    state_path = VALOR_HOME / "state.json"
+    if state_path.exists():
+        shutil.copy2(str(state_path), str(BACKUP_DIR / f"state_{ts}.json"))
+
+    removed: list[Path] = []
+    for pattern in ("evidence_*.sqlite", "state_*.json"):
+        backups = sorted(BACKUP_DIR.glob(pattern))
+        for old in backups[:-BACKUP_KEEP]:
+            old.unlink()
+            removed.append(old)
+    return dest, removed
+
+
+def _newest_backup_age_days() -> float | None:
+    """Age in days of the newest evidence backup (by its filename stamp), or
+    None when there is none."""
+    newest: datetime | None = None
+    for path in BACKUP_DIR.glob("evidence_*.sqlite"):
+        try:
+            stamp = datetime.strptime(path.stem[len("evidence_"):], "%Y%m%d_%H%M%S")
+        except ValueError:
+            continue
+        if newest is None or stamp > newest:
+            newest = stamp
+    if newest is None:
+        return None
+    return (datetime.now() - newest).total_seconds() / 86400
+
+
+def _auto_backup(conn: sqlite3.Connection | None = None, reason: str = "") -> None:
+    """Best-effort automatic backup: a failure is reported on stderr and never
+    breaks the command that triggered it (stdout stays the command's JSON)."""
+    try:
+        dest, _ = _backup_now(conn)
+        print(f"[valor] backed up evidence to {dest.name} ({reason})", file=sys.stderr)
+    except Exception as exc:
+        print(f"[valor] warning: automatic backup failed ({reason}): {exc}",
+              file=sys.stderr)
+
+
+def _maybe_auto_backup() -> None:
+    """Back up when the newest backup is older than AUTO_BACKUP_MAX_AGE_DAYS
+    (or missing). Called after writes; never raises."""
+    try:
+        if not DB_PATH.exists():
+            return
+        age = _newest_backup_age_days()
+        if age is not None and age < AUTO_BACKUP_MAX_AGE_DAYS:
+            return
+    except Exception:
+        return
+    _auto_backup(reason="no backup yet" if age is None
+                 else f"newest backup is {age:.0f} days old")
+
+
 def cmd_backup(args: argparse.Namespace) -> None:
     if not DB_PATH.exists():
         print("No database to back up.")
         return
-    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    dest = BACKUP_DIR / f"evidence_{ts}.sqlite"
-    shutil.copy2(str(DB_PATH), str(dest))
+    dest, removed = _backup_now()
     print(f"Backed up to {dest}")
-
-    backups = sorted(BACKUP_DIR.glob("evidence_*.sqlite"))
-    if len(backups) > 10:
-        for old in backups[:-10]:
-            old.unlink()
-            print(f"Removed old backup: {old.name}")
+    for old in removed:
+        print(f"Removed old backup: {old.name}")
 
 
 def cmd_search(args: argparse.Namespace) -> None:
@@ -661,6 +742,7 @@ def cmd_weekly_summary_save(args: argparse.Namespace) -> None:
     )
     conn.commit()
     conn.close()
+    _maybe_auto_backup()
     print(json.dumps({"status": "ok", "id": entry_id, "week_start": args.week_start}))
 
 
@@ -871,6 +953,13 @@ def _migrate_state_in_memory(state: dict) -> dict:
     # rewrites the list, so it stays small.
     if not isinstance(state.get("ooo_dates"), list):
         state["ooo_dates"] = []
+    # v21: stable ids ("owner/repo#N", "PROJ-42") the user told the briefing to
+    # stop mentioning ("not mine", "stop mentioning this"). Live sources — review
+    # requests, watched tickets — have no claim for verify.py to drop, so without
+    # this a dismissed PR resurfaced through `review-requested=@me` every morning.
+    # The briefing filters these out before ranking.
+    if not isinstance(state.get("muted_ids"), list):
+        state["muted_ids"] = []
     state["state_schema_version"] = STATE_SCHEMA_VERSION
     return state
 
@@ -973,6 +1062,15 @@ def _claims_summary_for_context() -> dict:
         return {"open_count": 0, "unavailable": True}
 
 
+def _backup_age_for_context() -> float | None:
+    """Failure-isolated like the claims summary: never brick `context`."""
+    try:
+        age = _newest_backup_age_days()
+        return None if age is None else round(age, 1)
+    except Exception:
+        return None
+
+
 def cmd_context(args: argparse.Namespace) -> None:
     state = _read_state()
     now = datetime.now().astimezone()
@@ -1067,10 +1165,12 @@ def cmd_context(args: argparse.Namespace) -> None:
     result = {
         "coaching_mode": state.get("coaching_mode", "ambient"),
         "levels": levels,
+        # A slot already scheduled as a routine runs on its own; offering it in
+        # chat as well would only duplicate it.
         "suggest": {
-            "briefing": suggest_briefing,
-            "wrapup": suggest_wrapup,
-            "weekly": suggest_weekly,
+            "briefing": suggest_briefing and "briefing" not in routines_enabled,
+            "wrapup": suggest_wrapup and "wrapup" not in routines_enabled,
+            "weekly": suggest_weekly and "weekly" not in routines_enabled,
         },
         # OOO awareness for the suggest-gate. `today` true -> the briefing/wrapup
         # short-circuit and nothing is auto-suggested. `dates` is the recorded
@@ -1151,11 +1251,19 @@ def cmd_context(args: argparse.Namespace) -> None:
         # Durable sequencing/priority corrections (separate top-level key so the
         # goal-refresh can't clobber them). Surfaced for the briefing to apply.
         "standing_rules": state.get("standing_rules", []) or [],
+        # v21: ids the user muted; the briefing drops matching items before ranking.
+        "muted_ids": list(dict.fromkeys(
+            m.strip() for m in (state.get("muted_ids") or [])
+            if isinstance(m, str) and m.strip()
+        )),
         # Open verification claims (verify.py). Delivered here — the one channel
         # loaded at EVERY session start — so the briefing receives its
         # verification worklist instead of having to remember to derive one.
         # {"open_count": 0} in the common empty case.
         "claims": _claims_summary_for_context(),
+        # Days since the newest evidence backup (None = never backed up). Writes
+        # refresh it automatically past AUTO_BACKUP_MAX_AGE_DAYS.
+        "last_backup_age_days": _backup_age_for_context(),
         "state_schema_version": state.get("state_schema_version", STATE_SCHEMA_VERSION),
     }
     print(json.dumps(result, indent=2))

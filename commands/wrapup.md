@@ -275,13 +275,27 @@ message for six days).
      entry (this is how a chronic zero-streak finally breaks).
    - **unresolved** → carry it with the real `day_count`.
    - **unverified** → demoted to "unverified — confirm or drop?", counter frozen.
+   - **dropped** (a `fresh` entry `reconcile` auto-dropped — a PR closed
+     without merging) → the task is moot: carry nothing, and it is **not** an
+     accomplishment.
 4. Entries in `unverifiable` are confirm-only claims: ask the user (skip ones
    marked `parked` — the weekly owns those).
-5. If `verification.enabled` is `false` in context, skip this section.
+5. **User corrections are verdicts.** When the user says an item is "not
+   needed", "don't bother", "moot", "not mine", or "stop mentioning this" —
+   in answer to "confirm or drop?" or unprompted — record it by its stable id:
+   ```bash
+   python3 ~/.valor/verify.py record --type <T> --id "<ID>" --result dropped --reason "<their words, short>"
+   ```
+   `dropped` is terminal: the counter stops, the claim leaves every worklist,
+   and re-registering it later does not reopen it. **Never write a completion
+   evidence row for a dropped item and never list it under Accomplished** —
+   abandoned work is not an achievement. Use `resolved` only when the user says
+   it is actually *done* (or a lookup proves it).
+6. If `verification.enabled` is `false` in context, skip this section.
 
 End the section by printing the gate summary line for the user:
 `Gate: K claims — R resolved · U unresolved · V unverified` (counts from the
-final reconcile output).
+final reconcile output; append `· D dropped` when any were dropped).
 
 Two more rules when writing carry-forward claims:
 
@@ -381,6 +395,8 @@ what tomorrow's briefing should see.
    assert artifact states with no registered claim behind them — register the
    real ones (§1.8 step 1) and re-run, or reword the line if it isn't actually
    a claim. Surface anything you leave unregistered to the user in one line.
+   A dropped claim is written once, under "Dropped", then left out of every
+   later file (listed in `suppressed_dropped`) — don't re-add it as prose.
 
 ## 5. Record Evidence
 
