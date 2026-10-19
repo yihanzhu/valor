@@ -68,7 +68,7 @@ version control. Upgrades overwrite the installer-managed runtime files
 
 The `installed_version` and `installed_at` fields track when the last install
 happened. The `state_schema_version` field enables forward-only migrations
-when the installer adds new fields (currently at version 20). Migrations
+when the installer adds new fields (currently at version 21). Migrations
 add missing keys with safe defaults and prune keys removed in later schema
 versions (e.g. the v16 sync-rescan throttle), never overwriting existing user
 values; they run in `_migrate_state_in_memory` (src/evidence_cli.py). The
@@ -85,6 +85,7 @@ Key fields:
 - `project_focus` -- opt-in project rotation: `enabled`, `mode`, `syncs`, `meeting_catalog` (categorized recurring meetings), `auto_sync_prep`, `parked_projects` (v8–v16; local only). Catalog drift-checked daily — no throttle.
 - `prioritization` -- weekly goal ranking: `week_goals` (this week's ordered goals, extracted silently from the 1:1 doc), `week_start`, `goals_source`; used by the briefing to rank todos before the day plan (v17; local only)
 - `standing_rules` -- durable sequencing/priority corrections, kept separate from `prioritization` so the weekly goal-refresh never drops them (v17; local only)
+- `muted_ids` -- stable ids (`owner/repo#N`, issue keys) the user told the briefing to stop mentioning; filtered out of live sources (review requests, watched tickets) before ranking (v21; local only)
 - `escalate_in_one_on_one` -- chronic items flagged for the next 1:1 (v5)
 - `state_schema_version` -- integer for installer migrations
 - `installed_version`, `installed_at` -- install tracking
