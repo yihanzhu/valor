@@ -44,6 +44,19 @@ STATE_SCHEMA_VERSION = 20
 
 ROUTINE_SLOTS = ("briefing", "wrapup", "weekly", "prep")
 
+# Activities that log a Valor routine having run, not work done. They're kept in
+# the store (and in default list/export output) but excluded from competency
+# counts, where they would otherwise swamp the real signal. Listed explicitly:
+# a `*_completed` wildcard would also drop real work like investigation_completed.
+PROCESS_ACTIVITIES = (
+    "morning_briefing_completed",
+    "wrapup_completed",
+    "weekly_reflection_completed",
+    "one_on_one_prep",
+    "performance_reflection_completed",
+)
+_PROCESS_PLACEHOLDERS = ",".join("?" * len(PROCESS_ACTIVITIES))
+
 # How valor-prep may write this week's 1:1 entry. "off" = paste-ready text in
 # chat only; "staging" = write it into the user's private staging doc (never the
 # shared 1:1 doc); "approve" = write into the shared 1:1 doc only after the user
@@ -365,8 +378,25 @@ def cmd_list(args: argparse.Namespace) -> None:
 
     rows = conn.execute(query, params).fetchall()
     conn.close()
+    if args.limit and len(rows) == args.limit:
+        # Hitting the cap usually means rows were cut off; say so instead of
+        # letting a caller treat a partial window as complete.
+        print(f"[valor] warning: list truncated at {args.limit} rows; "
+              "pass --limit 0 for all", file=sys.stderr)
     entries = [dict(r) for r in rows]
     print(json.dumps(entries, indent=2))
+
+
+def _competency_counts(conn: sqlite3.Connection, start: str, end_exclusive: str) -> dict[str, int]:
+    """Substantive (non-process) entries per competency for start <= date < end."""
+    rows = conn.execute(
+        "SELECT competency, COUNT(*) as cnt FROM evidence "
+        "WHERE date >= ? AND date < ? "
+        f"AND activity NOT IN ({_PROCESS_PLACEHOLDERS}) "
+        "GROUP BY competency ORDER BY cnt DESC",
+        (start, end_exclusive, *PROCESS_ACTIVITIES),
+    ).fetchall()
+    return {r["competency"]: r["cnt"] for r in rows}
 
 
 def cmd_stats(args: argparse.Namespace) -> None:
@@ -375,19 +405,20 @@ def cmd_stats(args: argparse.Namespace) -> None:
     week_start, week_end = iso_week_bounds()
 
     total = conn.execute("SELECT COUNT(*) as c FROM evidence").fetchone()["c"]
+    process_count = conn.execute(
+        f"SELECT COUNT(*) as c FROM evidence WHERE activity IN ({_PROCESS_PLACEHOLDERS})",
+        PROCESS_ACTIVITIES,
+    ).fetchone()["c"]
 
+    # Competency breakdowns count substantive rows only (see PROCESS_ACTIVITIES).
     by_competency = conn.execute(
         "SELECT competency, COUNT(*) as cnt FROM evidence "
-        "GROUP BY competency ORDER BY cnt DESC"
+        f"WHERE activity NOT IN ({_PROCESS_PLACEHOLDERS}) "
+        "GROUP BY competency ORDER BY cnt DESC",
+        PROCESS_ACTIVITIES,
     ).fetchall()
 
-    this_week = conn.execute(
-        "SELECT competency, COUNT(*) as cnt FROM evidence "
-        "WHERE date >= ? AND date < ? "
-        "GROUP BY competency ORDER BY cnt DESC"
-        ,
-        (week_start, week_end),
-    ).fetchall()
+    this_week = _competency_counts(conn, week_start, week_end)
 
     by_agent = conn.execute(
         "SELECT source_agent, COUNT(*) as cnt FROM evidence "
@@ -403,8 +434,9 @@ def cmd_stats(args: argparse.Namespace) -> None:
 
     result = {
         "total_entries": total,
+        "process_count": process_count,
         "by_competency": {r["competency"]: r["cnt"] for r in by_competency},
-        "this_week": {r["competency"]: r["cnt"] for r in this_week},
+        "this_week": this_week,
         "by_agent": {r["source_agent"]: r["cnt"] for r in by_agent},
         "recent": [dict(r) for r in recent],
     }
@@ -469,6 +501,9 @@ def cmd_export(args: argparse.Namespace) -> None:
     if getattr(args, "competency", None):
         conditions.append("competency = ?")
         params.append(args.competency)
+    if getattr(args, "exclude_process", False):
+        conditions.append(f"activity NOT IN ({_PROCESS_PLACEHOLDERS})")
+        params.extend(PROCESS_ACTIVITIES)
 
     query = "SELECT * FROM evidence"
     if conditions:
@@ -596,9 +631,22 @@ def cmd_weekly_summary_save(args: argparse.Namespace) -> None:
     ensure_schema(conn)
     entry_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
+    # Competency counts come from the evidence table, not the caller, so they use
+    # the same substantive-only rule as `stats`. The window is the given week,
+    # capped at 7 days so an exclusive (Monday) --week-end can't leak a day in.
+    start = datetime.strptime(args.week_start, "%Y-%m-%d").date()
+    end = datetime.strptime(args.week_end, "%Y-%m-%d").date()
+    end_exclusive = min(end + timedelta(days=1), start + timedelta(days=7))
+    counts = {c: 0 for c in VALID_COMPETENCIES}
+    counts.update(_competency_counts(conn, start.isoformat(), end_exclusive.isoformat()))
+    summary = args.summary if args.summary is not None else {}
+    if isinstance(summary, dict):
+        # Caller-supplied counts are overridden; any other keys (notes) are kept.
+        summary = {**summary, **counts}
+    # A free-text (non-object) summary from an older caller is stored as given.
     # Always JSON-encode on write to mirror the json.loads on read (get/list);
     # a passthrough for str inputs stored raw text that then crashed the reader.
-    summary_data = json.dumps(args.summary)
+    summary_data = json.dumps(summary)
     gaps_data = json.dumps(args.gaps)
     conn.execute(
         "INSERT INTO weekly_summary "
@@ -1427,7 +1475,8 @@ def main() -> None:
                         help="End date (YYYY-MM-DD, inclusive)")
     p_list.add_argument("--competency", default=None, type=parse_competency)
     p_list.add_argument("--activity", default=None, help="Filter by activity type")
-    p_list.add_argument("--limit", type=int, default=50)
+    p_list.add_argument("--limit", type=int, default=50,
+                        help="Max rows (default 50; 0 = no limit)")
 
     p_search = sub.add_parser("search", help="Full-text search on evidence statements")
     p_search.add_argument("query", help="Text to search for (case-insensitive LIKE)")
@@ -1443,6 +1492,9 @@ def main() -> None:
                           help="End date (YYYY-MM-DD, inclusive)")
     p_export.add_argument("--competency", default=None, type=parse_competency,
                           help="Filter by competency")
+    p_export.add_argument("--exclude-process", dest="exclude_process", action="store_true",
+                          help="Drop routine process rows (briefing/wrap-up/weekly/"
+                               "prep/reflection completion logs)")
 
     sub.add_parser("stats", help="Show evidence statistics")
     sub.add_parser("status", help="Unified Valor status view")
@@ -1464,8 +1516,10 @@ def main() -> None:
                            help="Monday of the reflection week (YYYY-MM-DD)")
     p_ws_save.add_argument("--week-end", required=True, type=parse_ymd_date,
                            help="Sunday of the reflection week (YYYY-MM-DD)")
-    p_ws_save.add_argument("--summary", required=True, type=json.loads,
-                           help="JSON object with competency counts/notes")
+    p_ws_save.add_argument("--summary", type=json.loads, default=None,
+                           help="Optional JSON object of notes. Competency counts "
+                                "are computed from the evidence for the week "
+                                "(process rows excluded) and override any given")
     p_ws_save.add_argument("--gaps", type=json.loads, default=[],
                            help="JSON array of gap descriptions")
     p_ws_save.add_argument("--narrative", default="",
