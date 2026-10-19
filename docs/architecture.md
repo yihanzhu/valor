@@ -60,7 +60,7 @@ version control. Upgrades overwrite the installer-managed runtime files
 | `coaching-ref.md`     | Coaching specs loaded on-demand (see below)   | `install.sh`         |
 | `pr-console/`         | Review-console renderer: `template.html`, `generate.js`, `assemble.py` | `install.sh` |
 | `carry-forward/`      | Wrap-up notes for cross-day continuity        | `wrapup` agent       |
-| `backups/`            | Auto-rotated SQLite backups (max 10)          | `evidence_cli.py`    |
+| `backups/`            | Evidence DB + `state.json` snapshots (last 10 kept). Taken automatically before a DB migration and on a write once the newest is >7 days old; `evidence_cli.py backup` takes one on demand | `evidence_cli.py`    |
 | `repo/`               | Git clone of the Valor source repo            | `install.sh --clone` |
 
 
