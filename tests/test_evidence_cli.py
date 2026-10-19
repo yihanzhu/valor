@@ -540,6 +540,31 @@ def test_cmd_list_limit(cli_db, capsys):
     assert len(entries) <= 2
 
 
+def test_cmd_list_two_week_window_over_50_rows(cli_db, capsys):
+    """The weekly reflection's two-week fetch must not be cut at the default
+    50 rows: `--limit 0` returns the full window, and hitting the cap warns."""
+    today = date.today()
+    window_start = (today - timedelta(days=13)).isoformat()
+    for i in range(60):
+        d = (today - timedelta(days=i % 14)).isoformat()
+        _add_row("code_written", "subject_matter", d, statement=f"Row {i}")
+    capsys.readouterr()
+
+    base = dict(days=None, from_date=window_start, to_date=None,
+                competency=None, activity=None)
+    cmd_list(argparse.Namespace(**base, limit=50))
+    capped = capsys.readouterr()
+    assert len(json.loads(capped.out)) == 50
+    assert "truncated at 50 rows" in capped.err
+
+    cmd_list(argparse.Namespace(**base, limit=0))
+    full = capsys.readouterr()
+    entries = json.loads(full.out)
+    assert len(entries) == 60
+    assert min(e["date"] for e in entries) == window_start
+    assert "truncated" not in full.err
+
+
 def test_cmd_list_combined_filters(cli_db, capsys):
     _add_entry("code_written", "subject_matter", "Wrote code")
     _add_entry("pr_review", "collaboration", "Reviewed PR")
@@ -745,6 +770,20 @@ def test_cmd_export_filters_by_date_range(cli_db, capsys):
     assert "In range" in output
 
 
+def test_cmd_export_exclude_process_is_opt_in(cli_db, capsys):
+    _add_row("wrapup_completed", "autonomy_scope")
+    _add_row("code_written", "subject_matter")
+    capsys.readouterr()
+    base = dict(format="json", days=None, from_date=None, to_date=None, competency=None)
+
+    cmd_export(argparse.Namespace(**base))
+    assert len(json.loads(capsys.readouterr().out)) == 2  # default unchanged
+
+    cmd_export(argparse.Namespace(**base, exclude_process=True))
+    entries = json.loads(capsys.readouterr().out)
+    assert [e["activity"] for e in entries] == ["code_written"]
+
+
 def _add_dated(statement, d):
     cmd_add(argparse.Namespace(
         activity="code_written", competency="subject_matter",
@@ -894,6 +933,43 @@ def test_cmd_stats_this_week_uses_iso_monday_boundary(cli_db, capsys):
     cmd_stats(argparse.Namespace())
     result = json.loads(capsys.readouterr().out)
     assert result["this_week"] == {"subject_matter": 1}
+
+
+def _add_row(activity, competency, d=None, statement=None):
+    cmd_add(argparse.Namespace(
+        activity=activity, competency=competency,
+        statement=statement or f"{activity} {competency} {d}", agent="test-agent",
+        metadata=None, date=d,
+    ))
+
+
+def test_process_activities_are_the_explicit_routine_logs():
+    assert set(cli_module.PROCESS_ACTIVITIES) == {
+        "morning_briefing_completed",
+        "wrapup_completed",
+        "weekly_reflection_completed",
+        "one_on_one_prep",
+        "performance_reflection_completed",
+    }
+    # Explicit list, not a `*_completed` wildcard: real work keeps counting.
+    assert "investigation_completed" not in cli_module.PROCESS_ACTIVITIES
+
+
+def test_cmd_stats_excludes_process_rows_from_competency_counts(cli_db, capsys):
+    today = date.today().isoformat()
+    for activity in cli_module.PROCESS_ACTIVITIES:
+        _add_row(activity, "autonomy_scope", today)
+    _add_row("investigation_completed", "autonomy_scope", today)
+    _add_row("code_written", "subject_matter", today)
+    capsys.readouterr()
+
+    cmd_stats(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+
+    assert result["total_entries"] == 7  # nothing is hidden from the total
+    assert result["process_count"] == 5
+    assert result["by_competency"] == {"autonomy_scope": 1, "subject_matter": 1}
+    assert result["this_week"] == {"autonomy_scope": 1, "subject_matter": 1}
 
 
 # --- cmd_status ---
@@ -1213,7 +1289,8 @@ def test_weekly_summary_save_and_get(cli_db, capsys):
     cmd_weekly_summary_get(argparse.Namespace(week_start="2026-04-06"))
     entry = json.loads(capsys.readouterr().out)
     assert entry["week_start"] == "2026-04-06"
-    assert entry["summary"]["subject_matter"] == 3
+    # Counts are computed from the (empty) evidence table, not taken from the caller.
+    assert entry["summary"]["subject_matter"] == 0
     assert entry["gaps"] == ["leadership"]
     assert entry["narrative"] == "Good week overall."
 
@@ -1254,7 +1331,7 @@ def test_weekly_summary_save_upserts_same_week(cli_db, capsys):
     cmd_weekly_summary_list(argparse.Namespace(limit=10))
     entries = json.loads(capsys.readouterr().out)
     assert len(entries) == 1, "Duplicate rows created for the same week_start"
-    assert entries[0]["summary"]["subject_matter"] == 5
+    assert entries[0]["gaps"] == ["leadership"]
     assert entries[0]["narrative"] == "Revised"
 
 
@@ -1272,6 +1349,34 @@ def test_weekly_summary_list(cli_db, capsys):
     entries = json.loads(capsys.readouterr().out)
     assert len(entries) == 2
     assert entries[0]["week_start"] > entries[1]["week_start"]
+
+
+def test_weekly_summary_save_computes_substantive_counts_for_the_week(cli_db, capsys):
+    _add_row("code_written", "subject_matter", "2026-04-06")
+    _add_row("design_doc_written", "subject_matter", "2026-04-12")
+    _add_row("pr_review_cross_team", "collaboration", "2026-04-08")
+    _add_row("wrapup_completed", "autonomy_scope", "2026-04-08")      # process row
+    _add_row("code_written", "leadership", "2026-04-05")              # week before
+    _add_row("code_written", "leadership", "2026-04-13")              # week after
+    capsys.readouterr()
+
+    # An exclusive (Monday) --week-end must not pull in the next week's Monday.
+    cmd_weekly_summary_save(argparse.Namespace(
+        week_start="2026-04-06", week_end="2026-04-13",
+        summary={"subject_matter": 99, "note": "kept"}, gaps=[], narrative="",
+    ))
+    capsys.readouterr()
+    cmd_weekly_summary_get(argparse.Namespace(week_start="2026-04-06"))
+    stored = json.loads(capsys.readouterr().out)["summary"]
+
+    assert stored == {
+        "note": "kept",
+        "subject_matter": 2,
+        "industry_knowledge": 0,
+        "collaboration": 1,
+        "autonomy_scope": 0,
+        "leadership": 0,
+    }
 
 
 def test_weekly_summary_get_not_found(cli_db, capsys):

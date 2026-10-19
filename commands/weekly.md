@@ -59,15 +59,15 @@ When a source cannot express the exclusive end date directly, fetch from
 ### 1.1 Evidence Store
 
 ```bash
-# Fetch enough evidence to cover both the reflection week and the previous week
-python3 ~/.valor/evidence_cli.py list --days 14
+# Fetch both the reflection week and the previous week, uncapped (the default
+# --limit of 50 would silently cut off the comparison week)
+python3 ~/.valor/evidence_cli.py list --from <previous_week_start> --limit 0
 
 # Overall stats, including the current ISO week's competency breakdown
 python3 ~/.valor/evidence_cli.py stats
 ```
 
-Use the `list --days 14` output as the source of truth for weekly reflection
-data:
+Use the `list` output as the source of truth for weekly reflection data:
 
 - Reflection week entries: `date >= reflection_week_start` and
   `date < reflection_week_end_exclusive`
@@ -77,6 +77,11 @@ data:
 Use `stats` as supplemental context only. If the reflection week is not the
 current ISO week (for example, a Monday catch-up run), derive the counts from
 the filtered `list` output instead of from `stats.this_week`.
+
+When counting entries per competency, skip process rows (`activity` of
+`morning_briefing_completed`, `wrapup_completed`, `weekly_reflection_completed`,
+`one_on_one_prep`, `performance_reflection_completed`): they log that a routine
+ran, not work done. `stats` and `weekly-summary-save` exclude them the same way.
 
 ### 1.2 Jira — Atlassian MCP
 
@@ -268,14 +273,13 @@ command and future reflections can reference past weeks:
 ```bash
 python3 ~/.valor/evidence_cli.py weekly-summary-save \
   --week-start "[reflection_week_start, YYYY-MM-DD]" \
-  --week-end "[reflection_week_end, YYYY-MM-DD]" \
-  --summary '{"subject_matter": N, "industry_knowledge": N, "collaboration": N, "autonomy_scope": N, "leadership": N}' \
+  --week-end "[the Sunday before reflection_week_end_exclusive, YYYY-MM-DD]" \
   --gaps '["gap competency 1", "gap competency 2"]' \
   --narrative "[The 3-4 sentence narrative from the For Your 1:1 section]"
 ```
 
-Fill in the actual competency counts from the reflection, the identified
-gaps, and the narrative text. If the CLI is unavailable, skip silently --
+The CLI computes the week's competency counts from the evidence store
+(process rows excluded); fill in the identified gaps and the narrative text. If the CLI is unavailable, skip silently --
 the reflection itself is the primary output.
 
 ## 9. Update State

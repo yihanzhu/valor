@@ -68,16 +68,16 @@ let the user fix it.
 | `setup-status` | Check what setup steps are complete (framework, levels, integrations) |
 | `framework-validate` | Validate career_framework.md structure: headings, competencies, level matches |
 | `add` | Record evidence (`--activity`, `--competency`, `--statement`, `--agent`, `--date`, `--metadata`) |
-| `list` | List entries (`--days`, `--from`, `--to`, `--competency`, `--activity`, `--limit`) |
+| `list` | List entries (`--days`, `--from`, `--to`, `--competency`, `--activity`, `--limit`; default 50, `0` = all) |
 | `search` | Full-text search on statements (`query`, `--limit`) |
-| `export` | Export entries (`--format json/markdown`, `--days`, `--from`, `--to`, `--competency`) |
-| `stats` | Totals, by-competency, this-week, by-agent, recent entries |
+| `export` | Export entries (`--format json/markdown`, `--days`, `--from`, `--to`, `--competency`, `--exclude-process`) |
+| `stats` | Totals, by-competency + this-week (process rows excluded), `process_count`, by-agent, recent entries |
 | `status` | Valor home, version, levels, coaching mode, integrations, evidence counts |
 | `backup` | Copy DB to `~/.valor/backups/` (keeps last 10) |
 | `schema-version` | Show schema migration history |
 | `feedback-add` | Record feedback (`--agent`, `--type`, `--evidence-id`) |
 | `feedback-stats` | Feedback counts by type (`--agent` filter) |
-| `weekly-summary-save` | Persist weekly reflection (`--week-start`, `--week-end`, `--summary`, `--gaps`, `--narrative`) |
+| `weekly-summary-save` | Persist weekly reflection (`--week-start`, `--week-end`, `--gaps`, `--narrative`, optional `--summary` notes); competency counts are computed from the evidence |
 | `weekly-summary-list` | List recent summaries (`--limit`) |
 | `weekly-summary-get` | Get summary by week (`--week-start`) |
 

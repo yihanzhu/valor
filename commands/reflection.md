@@ -33,7 +33,7 @@ clear from the request:
 ## 2. Pull the period's evidence
 
 ```bash
-python3 ~/.valor/evidence_cli.py export --from <cycle_start> --to <cycle_end> --format json
+python3 ~/.valor/evidence_cli.py export --from <cycle_start> --to <cycle_end> --format json --exclude-process
 ```
 
 Each entry carries `status` (end-state) and `role` (your attribution) when they were
@@ -76,11 +76,11 @@ commit / PR / ticket / meeting); if a signal is ambiguous, ask rather than assum
 
 ## 4. Separate signal from noise
 
-The log is dominated by process entries. **Drop** routine activities that aren't
-deliverables — `morning_briefing_completed`, `wrapup_completed`,
-`weekly_reflection_completed`, and similar — and keep the entries that represent real
-work (features, investigations, designs, cross-team alignment, production fixes,
-drafted communications).
+`--exclude-process` (§2) already drops the routine process logs (briefing, wrap-up,
+weekly, 1:1-prep and reflection completions). **Drop** any other entries that aren't
+deliverables, and keep the entries that represent real work (features,
+investigations, designs, cross-team alignment, production fixes, drafted
+communications).
 
 ## 5. Cluster into impact themes
 
