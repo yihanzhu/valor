@@ -2,7 +2,7 @@
   "generated_by": "examples/demo/build_transcripts.py",
   "captured_from": "examples/demo — a seeded profile with fictional data",
   "captured_on": "2026-08-13",
-  "valor_version": "0.19.0",
+  "valor_version": "0.20.0",
   "acts": [
     "A day",
     "A week",
