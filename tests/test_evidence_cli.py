@@ -1784,6 +1784,28 @@ def test_migrate_state_in_memory_preserves_ooo_dates():
     assert migrated["ooo_dates"] == ["2026-04-17"]
 
 
+def test_migrate_state_in_memory_adds_v21_muted_ids():
+    migrated = _migrate_state_in_memory({"current_level": "L3"})
+    assert migrated["muted_ids"] == []
+    assert migrated["state_schema_version"] == STATE_SCHEMA_VERSION
+    assert _migrate_state_in_memory({"muted_ids": "oops"})["muted_ids"] == []
+    kept = _migrate_state_in_memory({"muted_ids": ["ExampleOrg/repo#7"]})
+    assert kept["muted_ids"] == ["ExampleOrg/repo#7"]
+
+
+def test_context_exposes_muted_ids_cleaned(cli_db, capsys):
+    """context.muted_ids is what the briefing filters live sources against:
+    strings only, trimmed, deduped, order kept."""
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({
+        "muted_ids": ["ExampleOrg/repo#7", " PROJ-42 ", "", 5, "ExampleOrg/repo#7"],
+    }))
+    cmd_context(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["muted_ids"] == ["ExampleOrg/repo#7", "PROJ-42"]
+
+
 def test_migrate_state_in_memory_drops_legacy_meeting_baseline():
     # v11 meeting_baseline (flat titles) -> v14 meeting_catalog (re-seeds categorized).
     state = {"project_focus": {"enabled": True, "meeting_baseline": ["old sync"]}}
