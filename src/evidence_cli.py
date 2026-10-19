@@ -40,7 +40,7 @@ from pathlib import Path
 DB_PATH = Path.home() / ".valor" / "evidence.sqlite"
 BACKUP_DIR = Path.home() / ".valor" / "backups"
 
-STATE_SCHEMA_VERSION = 20
+STATE_SCHEMA_VERSION = 21
 
 ROUTINE_SLOTS = ("briefing", "wrapup", "weekly", "prep")
 
@@ -823,6 +823,13 @@ def _migrate_state_in_memory(state: dict) -> dict:
     # rewrites the list, so it stays small.
     if not isinstance(state.get("ooo_dates"), list):
         state["ooo_dates"] = []
+    # v21: stable ids ("owner/repo#N", "PROJ-42") the user told the briefing to
+    # stop mentioning ("not mine", "stop mentioning this"). Live sources — review
+    # requests, watched tickets — have no claim for verify.py to drop, so without
+    # this a dismissed PR resurfaced through `review-requested=@me` every morning.
+    # The briefing filters these out before ranking.
+    if not isinstance(state.get("muted_ids"), list):
+        state["muted_ids"] = []
     state["state_schema_version"] = STATE_SCHEMA_VERSION
     return state
 
@@ -1103,6 +1110,11 @@ def cmd_context(args: argparse.Namespace) -> None:
         # Durable sequencing/priority corrections (separate top-level key so the
         # goal-refresh can't clobber them). Surfaced for the briefing to apply.
         "standing_rules": state.get("standing_rules", []) or [],
+        # v21: ids the user muted; the briefing drops matching items before ranking.
+        "muted_ids": list(dict.fromkeys(
+            m.strip() for m in (state.get("muted_ids") or [])
+            if isinstance(m, str) and m.strip()
+        )),
         # Open verification claims (verify.py). Delivered here — the one channel
         # loaded at EVERY session start — so the briefing receives its
         # verification worklist instead of having to remember to derive one.

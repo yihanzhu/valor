@@ -1017,3 +1017,18 @@ def test_specs_map_user_dismissals_to_dropped_never_completion():
         assert "not mine" in text, cmd
     wrapup = Path("commands/wrapup.md").read_text()
     assert "Never write a completion\n   evidence row for a dropped item" in wrapup
+
+
+def test_briefing_followup_makes_corrections_stick():
+    """'Done / not mine / stop mentioning X' must change state, not just the
+    order: a verdict for claims, muted_ids for live sources, goal status, the
+    calendar block — and any re-plan starts from a fresh calendar."""
+    text = Path("commands/briefing.md").read_text()
+    followup = text[text.index("## Follow-Up Interaction"):]
+    assert "--result resolved" in followup and "--result dropped" in followup
+    assert "state-set muted_ids" in followup
+    assert "completed_goals" in followup
+    assert "valor:task:" in followup
+    assert "Re-fetch today's calendar first" in followup and "plan.py fit" in followup
+    gathering = text[text.index("## Data Gathering"):text.index("### 1. Jira Tickets")]
+    assert "context.muted_ids" in gathering   # filtered before ranking

@@ -38,6 +38,13 @@ If an enabled source fails at runtime (e.g. `gh` not authenticated), note it
 once and suggest the user either fix the tool or set the integration to `false`
 in state.json.
 
+**Drop muted ids before anything is ranked.** `context.muted_ids` holds the
+stable ids (`owner/repo#N`, issue keys) the user said to stop mentioning (see
+Follow-Up). Remove every gathered item whose id is in that list — review
+requests, watched or assigned tickets, backlog pickups — before focus (§5.5) and ranking, so
+it never reaches Priorities, On your radar, Spare capacity, or the day plan.
+Don't announce the filtering.
+
 ### 1. Jira Tickets
 
 **Preferred: Atlassian MCP**
@@ -922,6 +929,35 @@ After the briefing, the user may ask follow-up questions. Handle them naturally:
   from the briefing data (yesterday, today, blockers)
 - **"Help me review [PR]"** -- Use the
   `/valor-pr-review` command for coached review with career-level annotations
-- **"Prioritize differently"** -- Re-order based on user's input
+- **"Prioritize differently"** -- Re-order based on user's input, then re-plan
+  (below)
+- **"X is done" / "not mine" / "not needed" / "stop mentioning X"** -- a
+  correction, not just a re-order. Resolve X to the stable id the briefing
+  showed (`owner/repo#N`, issue key, doc title), then make it stick:
+  1. **Claim-backed** (it came through the §6 gate): "done" →
+     `verify.py record --type <T> --id "<ID>" --result resolved`; anything else
+     → `verify.py record --type <T> --id "<ID>" --result dropped --reason "<their words>"`.
+     A dropped item never gets a completion evidence row.
+  2. **Live source** (a review request, a watched or assigned ticket — re-fetched
+     every morning, so a claim drop can't hold it): for "not mine" / "stop
+     mentioning", append the id to `muted_ids`. Re-emit the existing list —
+     `state-set` replaces it:
+     ```bash
+     python3 ~/.valor/evidence_cli.py state-set muted_ids \
+       '[<existing ids from context.muted_ids>, "owner/repo#123"]'
+     ```
+     "Unmute X" / "X is mine again" removes it the same way.
+  3. **Week goal**: if X is one of `context.prioritization.week_goals` and it's
+     done, append it to `completed_goals` (same read-modify-write as the
+     wrap-up; carry `week_goals` / `week_start` / `goals_source` verbatim). If
+     it's not the user's or no longer needed, remove it from `week_goals`
+     instead — it must not read "✓ done".
+  4. **Calendar**: delete today's `valor:task:<slug>` block for X if Valor
+     wrote one (never touch blocks Valor didn't create), then re-plan.
+- **Re-plan mid-session** (after a correction or a re-order) -- the morning
+  calendar snapshot is stale by now (meetings move, blocks were written).
+  **Re-fetch today's calendar first**, then re-run
+  `python3 ~/.valor/plan.py fit` (§7) with the updated priorities and render
+  its blocks — never patch the old plan by hand.
 
 These follow-ups are part of the natural conversation -- no special trigger needed.
