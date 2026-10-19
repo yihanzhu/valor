@@ -599,6 +599,57 @@ def test_agent_rule_declares_every_command():
         )
 
 
+# --- Ambient coaching grounding (the always-on rule is all most agents read) ---
+
+AGENT_RULE = Path("rules/valor-agent.md")
+COACHING_REF = Path("src/coaching-ref.md")
+
+
+def test_agent_rule_inlines_valid_competencies_and_activities():
+    """The rule must name every valid competency slug and every ambient activity
+    from coaching-ref's table — a bare placeholder led to invented footer
+    headings and rejected `add` calls."""
+    from src.evidence_cli import VALID_COMPETENCIES
+
+    text = AGENT_RULE.read_text()
+    missing = [c for c in VALID_COMPETENCIES if f"`{c}`" not in text]
+    assert not missing, f"rules/valor-agent.md omits competency slugs {missing}"
+    activities = re.findall(r"^\| `([a-z_]+)`", COACHING_REF.read_text(), re.MULTILINE)
+    assert activities, "coaching-ref.md lost its Activity Classification table"
+    missing = [a for a in activities if a not in text]
+    assert not missing, f"rules/valor-agent.md omits activities {missing}"
+    assert "{primary_competency}" not in text
+
+
+def test_agent_rule_footer_uses_context_target_level():
+    text = AGENT_RULE.read_text()
+    assert "🎯 *{levels.target} would also:*" in text
+    assert "[Target level] would also" not in text
+    assert "re-run" in text and "evidence_cli.py context" in text
+
+
+@pytest.mark.parametrize("path", [AGENT_RULE, COACHING_REF])
+def test_no_ambient_footer_after_valor_command_output(path):
+    """Ambient footers appended to a /valor-* command's or scheduled run's own
+    output double-coach; both coaching surfaces must forbid it."""
+    text = " ".join(path.read_text().split())
+    assert (
+        "No ambient footer, and no suggestions of other Valor commands, after "
+        "the output of a `/valor-*` command or a scheduled Valor run"
+    ) in text.replace("**", "")
+    assert "at most once per deliverable" in text
+    assert "After every completed task" not in text
+
+
+@pytest.mark.parametrize("path", ["commands/briefing.md", "src/utilities.md"])
+def test_credential_hard_rule(path):
+    """Credential discovery must never print secret values into the transcript."""
+    text = " ".join(Path(path).read_text().split())
+    assert "**Credentials (hard rule):**" in text
+    assert "`.env` files or environment variable values" in text
+    assert '`[ -n "$VAR" ] && echo set`' in text
+
+
 def test_website_workflow_count_matches_command_set():
     """The landing page's 'N on-demand workflows' claim must match commands/."""
     n = len(ALL_COMMAND_STEMS)

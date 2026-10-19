@@ -38,6 +38,12 @@ If an enabled source fails at runtime (e.g. `gh` not authenticated), note it
 once and suggest the user either fix the tool or set the integration to `false`
 in state.json.
 
+**Credentials (hard rule):** never `cat`, `grep`, `echo` or `env`/`printenv`-dump
+shell rc files (`~/.zshrc`, `~/.bashrc`, ...), `.env` files or environment
+variable values -- anything printed lands in the transcript. Only check
+presence: `[ -n "$VAR" ] && echo set`. If a credential is missing, say so and
+let the user fix it.
+
 **Drop muted ids before anything is ranked.** `context.muted_ids` holds the
 stable ids (`owner/repo#N`, issue keys) the user said to stop mentioning (see
 Follow-Up). Remove every gathered item whose id is in that list — review

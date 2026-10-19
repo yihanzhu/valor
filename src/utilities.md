@@ -24,7 +24,13 @@ by the user if unavailable.
 
 ## Tool Discovery
 
-When an integration is enabled (`true`), discover the specific tool to use:
+When an integration is enabled (`true`), discover the specific tool to use.
+
+**Credentials (hard rule):** never `cat`, `grep`, `echo` or `env`/`printenv`-dump
+shell rc files (`~/.zshrc`, `~/.bashrc`, ...), `.env` files or environment
+variable values -- anything printed lands in the transcript. Only check
+presence: `[ -n "$VAR" ] && echo set`. If a credential is missing, say so and
+let the user fix it.
 
 **GitHub** (`integrations.github`):
 1. Use `gh` CLI (most common)

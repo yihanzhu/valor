@@ -1270,6 +1270,21 @@ def test_context_ooo_today_suppresses_wrapup(cli_db, capsys, monkeypatch):
     assert json.loads(capsys.readouterr().out)["suggest"]["wrapup"] is False
 
 
+def test_context_suggest_skips_slots_scheduled_as_routines(cli_db, capsys, monkeypatch):
+    """A slot already running as a scheduled routine is not offered in chat too."""
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    _mock_now(monkeypatch, datetime(2026, 4, 17, 9, 0, 0))  # Friday 9am
+    (valor_home / "state.json").write_text(json.dumps({
+        "last_briefing_date": "2020-01-01",
+        "routines": {"briefing": {"enabled": True}, "weekly": {"enabled": False}},
+    }))
+    cmd_context(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["suggest"]["briefing"] is False
+    assert result["suggest"]["weekly"] is True
+
+
 def test_context_ooo_dates_prunes_past(cli_db, capsys, monkeypatch):
     """context.ooo.dates surfaces today+future only; a stale past OOO date neither
     suppresses today nor shows up."""

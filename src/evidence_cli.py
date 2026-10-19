@@ -1026,10 +1026,12 @@ def cmd_context(args: argparse.Namespace) -> None:
     result = {
         "coaching_mode": state.get("coaching_mode", "ambient"),
         "levels": levels,
+        # A slot already scheduled as a routine runs on its own; offering it in
+        # chat as well would only duplicate it.
         "suggest": {
-            "briefing": suggest_briefing,
-            "wrapup": suggest_wrapup,
-            "weekly": suggest_weekly,
+            "briefing": suggest_briefing and "briefing" not in routines_enabled,
+            "wrapup": suggest_wrapup and "wrapup" not in routines_enabled,
+            "weekly": suggest_weekly and "weekly" not in routines_enabled,
         },
         # OOO awareness for the suggest-gate. `today` true -> the briefing/wrapup
         # short-circuit and nothing is auto-suggested. `dates` is the recorded
