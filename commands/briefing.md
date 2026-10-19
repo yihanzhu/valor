@@ -397,6 +397,8 @@ open claim for you. Process it:
    `verify.py record --type <T> --id "<ID>" --result <resolved|unresolved|unverified>`.
    **resolved** → done: drop it from priorities and, if it closes a streak,
    record the completion. **unresolved** → surface with the real `day_count`.
+   **dropped** (an auto-checked PR closed without merging) → moot: leave it out
+   entirely, and record no completion.
 2. `context.claims.unverifiable` — confirm-only claims: ask the user
    ("confirm or drop?"). **Skip entries marked `parked`** — they've gone
    unanswered 3+ mornings; the weekly owns them now.
@@ -404,6 +406,14 @@ open claim for you. Process it:
    carry-forward with no registered claim behind them (a bypassed or hand-edited
    wrap-up). Tell the user in one line, register the real ones
    (`verify.py register`), and treat their assertions as unverified until checked.
+
+**User corrections are verdicts.** An answer of "done" records
+`--result resolved`. "Not needed", "don't bother", "moot", "not mine", or
+"stop mentioning this" records
+`verify.py record --type <T> --id "<ID>" --result dropped --reason "<short>"` —
+terminal: the claim leaves every worklist and is **never** recorded as a
+completion. Items under the carry-forward's "Dropped" section are history;
+never resurface them.
 
 **Default-deny:** an artifact claim may appear in Priorities, On your radar, or
 the coaching line **only with a fresh verdict from this run's gate**
@@ -726,7 +736,7 @@ Write"). In short:
    description, and a `valor:prep:<slug>` token (idempotent like the task token).
    Idempotent via the `valor:task:` token (never duplicate), **skip
    unverified claims**, delete/complete items whose claim has since verified
-   **resolved**, and never touch items Valor didn't create. No writer → present
+   **resolved** or been **dropped**, and never touch items Valor didn't create. No writer → present
    the plan only, note once.
 4. **Auto-schedule sync prep** — only if `context.project_focus.auto_sync_prep`
    is `true` (the default) **and `planning.pre_meeting_prep_minutes` > 0** (0 means

@@ -143,7 +143,10 @@ Cross-cutting behaviors run inside the existing agents — no new commands:
   Unverifiable claims are demoted to "confirm or drop?" with their day-counter
   frozen, so a guess never propagates as fact. Verdicts cache in
   `claim_verifications` with per-type, **verdict-aware** TTLs (a "not yet done"
-  verdict decays fast; a "done" verdict is immutable and caches long).
+  verdict decays fast; a "done" verdict is immutable and caches long). A
+  terminal `dropped` verdict holds the user's "not needed / not mine" (or a PR
+  closed unmerged): the claim leaves every worklist and is never logged as a
+  completion.
   Verification is a **runtime-enumerated lifecycle**, not agent diligence:
   claims are `register`ed at draft time with a search recipe (a Slack claim
   must pin its destination or be confirm-only — askable, never assertable),

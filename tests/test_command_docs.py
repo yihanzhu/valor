@@ -1006,3 +1006,14 @@ def test_skill_setup_delegates_config_and_states_limited_helpers():
         assert helper in text, (
             f"SKILL.md should name {helper} as an install.sh-only helper"
         )
+
+
+def test_specs_map_user_dismissals_to_dropped_never_completion():
+    """'Not needed / not mine / stop mentioning this' must record the terminal
+    `dropped` verdict — `resolved` would log abandoned work as an achievement."""
+    for cmd in ("wrapup", "briefing"):
+        text = Path(f"commands/{cmd}.md").read_text()
+        assert "--result dropped" in text, cmd
+        assert "not mine" in text, cmd
+    wrapup = Path("commands/wrapup.md").read_text()
+    assert "Never write a completion\n   evidence row for a dropped item" in wrapup
