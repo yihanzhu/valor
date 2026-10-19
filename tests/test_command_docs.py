@@ -1057,3 +1057,40 @@ def test_skill_setup_delegates_config_and_states_limited_helpers():
         assert helper in text, (
             f"SKILL.md should name {helper} as an install.sh-only helper"
         )
+
+
+def test_specs_map_user_dismissals_to_dropped_never_completion():
+    """'Not needed / not mine / stop mentioning this' must record the terminal
+    `dropped` verdict — `resolved` would log abandoned work as an achievement."""
+    for cmd in ("wrapup", "briefing"):
+        text = Path(f"commands/{cmd}.md").read_text()
+        assert "--result dropped" in text, cmd
+        assert "not mine" in text, cmd
+    wrapup = Path("commands/wrapup.md").read_text()
+    assert "Never write a completion\n   evidence row for a dropped item" in wrapup
+
+
+def test_weekly_triages_parked_and_long_unresolved_claims():
+    """The specs say the weekly owns parked confirm-only claims; the weekly must
+    actually walk them (and long-unresolved ones) through keep / drop / reframe."""
+    text = Path("commands/weekly.md").read_text()
+    assert "verify.py reconcile" in text
+    assert "parked" in text
+    assert "--result dropped" in text
+    for verb in ("**keep**", "**drop**", "**reframe**"):
+        assert verb in text
+
+
+def test_briefing_followup_makes_corrections_stick():
+    """'Done / not mine / stop mentioning X' must change state, not just the
+    order: a verdict for claims, muted_ids for live sources, goal status, the
+    calendar block — and any re-plan starts from a fresh calendar."""
+    text = Path("commands/briefing.md").read_text()
+    followup = text[text.index("## Follow-Up Interaction"):]
+    assert "--result resolved" in followup and "--result dropped" in followup
+    assert "state-set muted_ids" in followup
+    assert "completed_goals" in followup
+    assert "valor:task:" in followup
+    assert "Re-fetch today's calendar first" in followup and "plan.py fit" in followup
+    gathering = text[text.index("## Data Gathering"):text.index("### 1. Jira Tickets")]
+    assert "context.muted_ids" in gathering   # filtered before ranking

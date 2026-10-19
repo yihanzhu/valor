@@ -86,7 +86,7 @@ let the user fix it.
 | Subcommand | Purpose |
 |------------|---------|
 | `check --type T --id ID [--expect-state S] [--no-auto]` | Cache-first check; auto-resolves GitHub via `gh`; returns an `action` to follow |
-| `record --type T --id ID --result resolved\|unresolved\|unverified` | Record a verdict from an agent lookup; advances/freezes counters |
+| `record --type T --id ID --result resolved\|unresolved\|unverified\|dropped [--reason R]` | Record a verdict from an agent lookup (or a user's "not needed / not mine"); advances/freezes/stops counters |
 | `register --type T --id ID [--recipe JSON] [--assert-state S] [--confirm-only]` | Register a claim at draft/carry time with its search recipe; validates the id and destination |
 | `reconcile [--no-auto]` | Enumerate ALL open claims into a worklist (`fresh` / `stale_needs_check` / `unverifiable`); auto-resolves PRs; heals fragmented ids |
 | `carry-write --date D --items-json J [--narrative-file P]` | Write the carry-forward file with claim statuses stamped from the cache |
@@ -156,7 +156,7 @@ marked `parked` — the daily briefing skips them; the weekly owns them.
    | `action` | meaning | what to do |
    |----------|---------|-----------|
    | `skip` | gate disabled | assert as before |
-   | `trust` | fresh cached verdict | `verdict=resolved` → drop the claim + record completion; `verdict=unresolved` → carry it with the real `day_count` |
+   | `trust` | fresh cached verdict | `verdict=resolved` → drop the claim + record completion; `verdict=unresolved` → carry it with the real `day_count`; `verdict=dropped` → leave it out, record **no** completion |
    | `checked` | verify.py resolved it via `gh` inline | same as `trust`, based on `verdict` |
    | `perform_lookup` | stale / never checked / MCP-backed | run the lookup in the `lookup` field, then record (step 2) |
 
@@ -176,6 +176,11 @@ marked `parked` — the daily briefing skips them; the weekly owns them.
      around to confirm). The claim is **demoted** to "unverified — confirm or
      drop?" and its counter is **frozen**. Surface it exactly that way; never
      re-assert a frozen claim as fact and never advance its day count.
+   - **dropped** — the user said "not needed / not mine / stop mentioning
+     this" (pass `--reason`), or `gh` found the PR closed without merging.
+     Terminal: the counter stops, the claim leaves every worklist, and it is
+     **never** a completion. Only an explicit `record` with another verdict
+     reopens it.
 
 **Identifier conventions** — ONE canonical form per type (offering alternates is
 what forked `1411` and `owner/repo#1411` into separate counters):
