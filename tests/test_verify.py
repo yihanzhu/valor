@@ -634,3 +634,150 @@ def test_context_claims_summary_never_mutates_surfacing(verify_db):
         verify.context_claims_summary(now=T0 + timedelta(days=day))
     r = verify.reconcile(auto=False, now=T0)
     assert r["unverifiable"][0]["surfaced_count"] == 1  # only reconcile counts
+
+
+# ==========================================================================
+# `dropped` — the terminal "not needed / not mine / stop mentioning this"
+# verdict. Before it existed the only way to close a dismissed claim was
+# `resolved`, which wrap-up logs as an accomplishment.
+# ==========================================================================
+
+def test_dropped_stops_counter_and_records_reason(verify_db):
+    verify, _, _ = verify_db
+    verify.record_result("confluence", "X", "unresolved", now=T0)
+    verify.record_result("confluence", "X", "unresolved", now=T0 + timedelta(days=1))
+    r = verify.record_result("confluence", "X", "dropped",
+                             now=T0 + timedelta(days=2), reason="not mine")
+    assert r["last_verdict"] == "dropped"
+    assert r["day_count"] == 2 and r["miss_count"] == 2   # stopped, kept as history
+    assert r["frozen"] == 0 and r["verified"] is None     # a drop is not a verification
+    assert r["resolved_at"] is not None
+    assert r["escalate_eligible"] is False
+    assert json.loads(r["metadata"])["dropped_reason"] == "not mine"
+    assert r["display"] == "dropped by user — not mine"
+
+
+def test_dropped_is_terminal_and_never_rechecked(verify_db, monkeypatch):
+    verify, _, _ = verify_db
+    verify.record_result("github_pr", "ExampleOrg/repo#7", "dropped", now=T0)
+    monkeypatch.setattr(verify, "gh_available", lambda: True)
+
+    def _no_gh(args):
+        raise AssertionError("a dropped claim must not be re-checked")
+
+    monkeypatch.setattr(verify, "_run_gh", _no_gh)
+    r = verify.check_artifact("github_pr", "ExampleOrg/repo#7", now=T0 + timedelta(days=30))
+    assert r["action"] == "trust" and r["verdict"] == "dropped" and r["fresh"] is True
+    r = verify.reconcile(auto=True, now=T0 + timedelta(days=30))
+    assert r["summary"]["stale_needs_check"] == 0 and r["summary"]["fresh"] == 0
+    assert verify.context_claims_summary(now=T0 + timedelta(days=30)) == {"open_count": 0}
+
+
+def test_dropped_confirm_only_claim_leaves_unverifiable(verify_db):
+    verify, _, _ = verify_db
+    verify.register_claim("slack", "mystery blurb", confirm_only=True, now=T0)
+    verify.record_result("slack", "mystery blurb", "dropped", now=T0)
+    r = verify.reconcile(auto=False, now=T0 + timedelta(days=1))
+    assert r["unverifiable"] == []
+
+
+def test_register_does_not_reopen_dropped_claim(verify_db):
+    verify, _, _ = verify_db
+    verify.record_result("slack", "#x: alex msg", "dropped", now=T0)
+    out = verify.register_claim("slack", "#x: alex msg",
+                                recipe={"channel": "#x"}, now=T0 + timedelta(days=1))
+    assert out["action"] == "trust" and out["verdict"] == "dropped"
+    assert verify.get_claim("slack", "#x: alex msg")["last_verdict"] == "dropped"
+
+
+def test_explicit_record_reopens_dropped_claim(verify_db):
+    verify, _, _ = verify_db
+    verify.record_result("confluence", "X", "dropped", now=T0)
+    r = verify.record_result("confluence", "X", "unresolved", now=T0 + timedelta(days=1))
+    assert r["last_verdict"] == "unresolved"
+    r = verify.reconcile(auto=False, now=T0 + timedelta(days=1, hours=1))
+    assert [e["identifier"] for e in r["fresh"]] == ["X"]
+
+
+def test_github_closed_unmerged_is_dropped_not_resolved(verify_db, monkeypatch):
+    verify, _, _ = verify_db
+    monkeypatch.setattr(verify, "gh_available", lambda: True)
+    monkeypatch.setattr(verify, "_run_gh", lambda args: {"state": "CLOSED", "title": "t", "url": "u"})
+    r = verify.check_artifact("github_pr", "ExampleOrg/repo#9", now=T0)
+    assert r["action"] == "checked" and r["verdict"] == "dropped"
+    assert r["display"] == "dropped — PR closed without merging"
+
+
+def test_reconcile_auto_drops_closed_github_pr(verify_db, monkeypatch):
+    verify, _, _ = verify_db
+    verify.record_result("github_pr", "ExampleOrg/repo#9", "unresolved",
+                         now=T0 - timedelta(days=2))
+    monkeypatch.setattr(verify, "gh_available", lambda: True)
+    monkeypatch.setattr(verify, "_run_gh", lambda args: {"state": "CLOSED", "title": "t", "url": "u"})
+    r = verify.reconcile(auto=True, now=T0)
+    assert [e["verdict"] for e in r["fresh"]] == ["dropped"]
+    meta = json.loads(verify.get_claim("github_pr", "ExampleOrg/repo#9")["metadata"])
+    assert meta["dropped_by"] == "gh"
+
+
+def test_carry_write_renders_dropped_once_then_never(verify_db):
+    verify, valor_home, _ = verify_db
+    verify.record_result("slack", "#x: alex msg", "dropped", now=T0)
+    item = [{"text": "Send the Alex message", "claim_type": "slack",
+             "claim_id": "#x: alex msg", "section": "pickup"}]
+    latest = valor_home / "carry-forward" / "latest.md"
+
+    out = verify.carry_write("2026-06-02", item, now=T0)
+    body = latest.read_text()
+    assert "## Dropped" in body and "## Tomorrow's Pickup" not in body
+    line = next(ln for ln in body.splitlines() if "Alex" in ln)
+    assert "dropped by user" in line
+    assert out["gate_line"].endswith("· 1 dropped")
+
+    # A same-day re-run of the wrap-up repeats it (idempotent).
+    verify.carry_write("2026-06-02", item, now=T0 + timedelta(hours=1))
+    assert "Alex" in latest.read_text()
+
+    # Any later day: omitted, and reported back to the caller.
+    out = verify.carry_write("2026-06-03", item, now=T0 + timedelta(days=1))
+    assert "Alex" not in latest.read_text()
+    assert out["suppressed_dropped"] == ["slack|#x: alex msg"]
+    assert "dropped" not in out["gate_line"]
+
+
+def test_redrop_does_not_rerender_but_reopen_then_drop_does(verify_db):
+    verify, valor_home, _ = verify_db
+    item = [{"text": "Post the doc", "claim_type": "confluence", "claim_id": "Doc"}]
+    latest = valor_home / "carry-forward" / "latest.md"
+    verify.record_result("confluence", "Doc", "dropped", now=T0)
+    verify.carry_write("2026-06-02", item, now=T0)
+    # Recording dropped again (e.g. the user repeats "not mine") is a no-op for rendering.
+    verify.record_result("confluence", "Doc", "dropped", now=T0 + timedelta(days=1),
+                         reason="moot")
+    verify.carry_write("2026-06-03", item, now=T0 + timedelta(days=1))
+    assert "Post the doc" not in latest.read_text()
+    assert verify.get_claim("confluence", "Doc")["display"] == "dropped by user — moot"
+    # Reopened then dropped again is a new drop: shown once more.
+    verify.record_result("confluence", "Doc", "unresolved", now=T0 + timedelta(days=2))
+    verify.record_result("confluence", "Doc", "dropped", now=T0 + timedelta(days=3))
+    verify.carry_write("2026-06-05", item, now=T0 + timedelta(days=3))
+    assert "Post the doc" in latest.read_text()
+
+
+def test_cli_record_dropped_with_reason(tmp_path):
+    import os
+    import subprocess
+    import sys
+
+    valor = tmp_path / ".valor"
+    valor.mkdir(parents=True)
+    (valor / "state.json").write_text(json.dumps({"verification": {"enabled": True}}))
+    proc = subprocess.run(
+        [sys.executable, "src/verify.py", "record", "--type", "jira", "--id", "PROJ-42",
+         "--result", "dropped", "--reason", "not mine", "--now", T0.isoformat()],
+        capture_output=True, text=True, cwd=str(Path(__file__).parent.parent),
+        env={**os.environ, "HOME": str(tmp_path)},
+    )
+    assert proc.returncode == 0, proc.stderr
+    r = json.loads(proc.stdout)
+    assert r["last_verdict"] == "dropped" and r["display"] == "dropped by user — not mine"

@@ -48,9 +48,16 @@ briefly in one line (e.g., "Ready for your Valor daily briefing?"). If all
 
 ## Ambient Coaching (Always-On)
 
-After completing any meaningful task (code, debugging, investigation,
-documentation, cross-team communication, design decision), add coaching.
-Skip pure Q&A, exploration, or trivial edits.
+**When to add a footer:** only when the turn produced a new deliverable (a PR
+opened or merged, a decision made, a message or doc drafted, a root cause
+found), and at most once per deliverable. Skip pure Q&A, exploration, trivial
+edits, and later turns on a deliverable already coached.
+
+- **No ambient footer, and no suggestions of other Valor commands, after the
+  output of a `/valor-*` command or a scheduled Valor run**, unless that
+  command's spec asks for it. Those commands carry their own coaching.
+- If the response already ends with a next-step offer, fold the growth angle
+  into that offer instead of adding a footer -- one call to action per turn.
 
 **For detailed coaching specs** (activity classification, format rules,
 evidence recording), read `~/.valor/coaching-ref.md`.
@@ -58,22 +65,38 @@ evidence recording), read `~/.valor/coaching-ref.md`.
 **Quick reference -- footer template:**
 
 ```
-#### 🦅 Valor | {Competency} · {Company Value (if relevant)}
+#### 🦅 Valor | {Competency: one of the five below} · {Company Value (if relevant)}
 
-✅ *What you did:* {brief description of target-level-relevant behavior}
+✅ *What you did:* {what the user decided, traded off or pushed back on}
 
-🎯 *[Target level] would also:* {concrete next step at target level}
+🎯 *{levels.target} would also:* {concrete next step at target level}
 ```
 
 Keep to 2-3 lines. Omit if nothing career-relevant to say. The emojis are
 structural markers -- always include them.
 
-**Evidence recording** -- after coaching, silently record significant activities:
+- **Competency** -- exactly one of these five, never an invented name. The
+  footer may show the framework's display name (e.g. "Autonomy & Scope");
+  `add --competency` takes the slug:
+  - `subject_matter` -- technical depth and craft
+  - `industry_knowledge` -- tools, methods, field trends
+  - `collaboration` -- working across people and teams
+  - `autonomy_scope` -- independent ownership and judgment
+  - `leadership` -- mentoring, knowledge sharing, influence
+- **Company value** -- a value title from `framework-slice`, or omit it.
+- **Target level** -- `levels.target` from `context`, verbatim. If levels
+  aren't visible (e.g. after context compaction), re-run
+  `python3 ~/.valor/evidence_cli.py context` first; never guess a level.
+- **✅ credits only what the user decided, traded off or pushed back on** --
+  not the steps the agent carried out.
+
+**Evidence recording** -- record significant activities silently, whether or
+not a footer is shown:
 
 ```
 python3 ~/.valor/evidence_cli.py add \
-  --activity {activity_type} \
-  --competency {primary_competency} \
+  --activity {code_written|code_debugged|investigation_completed|documentation_updated|cross_team_communication|design_decision_made|production_issue_resolved|knowledge_shared|process_improvement} \
+  --competency {subject_matter|industry_knowledge|collaboration|autonomy_scope|leadership} \
   --statement "{specific: what, where, why it matters}" \
   --agent valor-ambient
 ```

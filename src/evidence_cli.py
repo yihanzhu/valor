@@ -47,7 +47,7 @@ BACKUP_KEEP = 10
 # is older than this, so the store never goes long without a safety copy.
 AUTO_BACKUP_MAX_AGE_DAYS = 7
 
-STATE_SCHEMA_VERSION = 20
+STATE_SCHEMA_VERSION = 21
 
 ROUTINE_SLOTS = ("briefing", "wrapup", "weekly", "prep")
 
@@ -905,6 +905,13 @@ def _migrate_state_in_memory(state: dict) -> dict:
     # rewrites the list, so it stays small.
     if not isinstance(state.get("ooo_dates"), list):
         state["ooo_dates"] = []
+    # v21: stable ids ("owner/repo#N", "PROJ-42") the user told the briefing to
+    # stop mentioning ("not mine", "stop mentioning this"). Live sources — review
+    # requests, watched tickets — have no claim for verify.py to drop, so without
+    # this a dismissed PR resurfaced through `review-requested=@me` every morning.
+    # The briefing filters these out before ranking.
+    if not isinstance(state.get("muted_ids"), list):
+        state["muted_ids"] = []
     state["state_schema_version"] = STATE_SCHEMA_VERSION
     return state
 
@@ -1110,10 +1117,12 @@ def cmd_context(args: argparse.Namespace) -> None:
     result = {
         "coaching_mode": state.get("coaching_mode", "ambient"),
         "levels": levels,
+        # A slot already scheduled as a routine runs on its own; offering it in
+        # chat as well would only duplicate it.
         "suggest": {
-            "briefing": suggest_briefing,
-            "wrapup": suggest_wrapup,
-            "weekly": suggest_weekly,
+            "briefing": suggest_briefing and "briefing" not in routines_enabled,
+            "wrapup": suggest_wrapup and "wrapup" not in routines_enabled,
+            "weekly": suggest_weekly and "weekly" not in routines_enabled,
         },
         # OOO awareness for the suggest-gate. `today` true -> the briefing/wrapup
         # short-circuit and nothing is auto-suggested. `dates` is the recorded
@@ -1194,6 +1203,11 @@ def cmd_context(args: argparse.Namespace) -> None:
         # Durable sequencing/priority corrections (separate top-level key so the
         # goal-refresh can't clobber them). Surfaced for the briefing to apply.
         "standing_rules": state.get("standing_rules", []) or [],
+        # v21: ids the user muted; the briefing drops matching items before ranking.
+        "muted_ids": list(dict.fromkeys(
+            m.strip() for m in (state.get("muted_ids") or [])
+            if isinstance(m, str) and m.strip()
+        )),
         # Open verification claims (verify.py). Delivered here — the one channel
         # loaded at EVERY session start — so the briefing receives its
         # verification worklist instead of having to remember to derive one.

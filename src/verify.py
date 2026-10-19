@@ -29,6 +29,11 @@ Verification answers "has the artifact been produced / task completed?":
   * unverified -> could not check (no tool, error, declined). Demote the claim
                   to "unverified -- confirm or drop?" and FREEZE the counter so
                   a guess never masquerades as a fact.
+  * dropped    -> the task is moot: the user said "not needed / not mine / stop
+                  mentioning this", or the PR was closed without merging.
+                  TERMINAL: the counter stops, the claim leaves every worklist,
+                  and it is never logged as a completion. Only an explicit
+                  `record` with another verdict reopens it.
 
 Claims lifecycle (the mechanical layer added after the 2026-06 phantom-send
 incident — see register_claim/reconcile/carry_write):
@@ -42,7 +47,8 @@ incident — see register_claim/reconcile/carry_write):
 
 CLI:
     verify.py check       --type T --id ID [--expect-state S] [--no-auto] [--now ISO]
-    verify.py record      --type T --id ID --result resolved|unresolved|unverified [--now ISO]
+    verify.py record      --type T --id ID --result resolved|unresolved|unverified|dropped
+                          [--reason TEXT] [--now ISO]
     verify.py get         --type T --id ID
     verify.py list        [--frozen] [--status resolved|unresolved|unverified] [--type T]
     verify.py types       (print supported claim types + TTLs)
@@ -96,7 +102,7 @@ CLAIM_TYPES = tuple(TTL_HOURS.keys())
 # Claim types verify.py can resolve on its own (no agent/MCP round-trip).
 AUTO_TYPES = ("github_pr",)
 
-VERDICTS = ("resolved", "unresolved", "unverified")
+VERDICTS = ("resolved", "unresolved", "unverified", "dropped")
 
 # DDL is mirrored in evidence_cli.MIGRATIONS[3]; both use CREATE TABLE IF NOT
 # EXISTS so whichever runs first wins and the other is a no-op. Keep in sync.
@@ -362,6 +368,12 @@ def make_display(row: dict | None, now: datetime) -> str:
     day_count = row.get("day_count", 0) or 0
     if verdict == "resolved":
         return f"✓ done (verified resolved {_ago(row.get('last_checked'), now)})"
+    if verdict == "dropped":
+        meta = _row_metadata(row)
+        reason = meta.get("dropped_reason")
+        if meta.get("dropped_by", "user") == "user":
+            return "dropped by user" + (f" — {reason}" if reason else "")
+        return f"dropped — {reason}" if reason else "dropped"
     if verdict == "unresolved":
         return f"unresolved — {day_count}d"
     if verdict == "unverified":
@@ -431,9 +443,10 @@ def check_github_pr(identifier: str, expect_state: str | None = None) -> dict:
     """Resolve a GitHub PR claim via `gh`.
 
     Returns {"verdict": ..., "detail": {...}}.
-    Default: resolved when the PR is no longer OPEN (merged or closed) -- a
-    carried "merge #X" / "nudge review on #X" task is done once it's not open.
-    Pass expect_state ('merged'|'closed'|'open') to require a specific state.
+    Default: MERGED -> resolved; CLOSED without merging -> dropped (the carried
+    "merge #X" / "nudge review on #X" task is moot, not accomplished); OPEN ->
+    unresolved. Pass expect_state ('merged'|'closed'|'open') to require a
+    specific state (resolved if it matches, else unresolved).
     """
     owner = _read_state().get("github_owner", "")
     repo_spec, num = _parse_pr_identifier(identifier, owner)
@@ -450,14 +463,17 @@ def check_github_pr(identifier: str, expect_state: str | None = None) -> dict:
         return {"verdict": "unverified", "detail": {"reason": "gh lookup failed", "pr": num}}
 
     state = (data.get("state") or "").upper()  # OPEN | MERGED | CLOSED
+    detail = {"state": state, "title": data.get("title"), "url": data.get("url")}
     if expect_state:
-        resolved = state == expect_state.upper()
+        verdict = "resolved" if state == expect_state.upper() else "unresolved"
+    elif state == "MERGED":
+        verdict = "resolved"
+    elif state == "CLOSED":
+        verdict = "dropped"
+        detail["reason"] = "PR closed without merging"
     else:
-        resolved = state in ("MERGED", "CLOSED")
-    return {
-        "verdict": "resolved" if resolved else "unresolved",
-        "detail": {"state": state, "title": data.get("title"), "url": data.get("url")},
-    }
+        verdict = "unresolved"
+    return {"verdict": verdict, "detail": detail}
 
 
 # --- Lookup directives (MCP-backed types) --------------------------------
@@ -517,7 +533,7 @@ def lookup_directive(claim_type: str, identifier: str, metadata: dict | None = N
             "method": "gh",
             "query": f"gh pr view {identifier} --json state,mergedAt,closedAt",
             "tool_hint": "gh CLI (verify.py checks this automatically when gh is present)",
-            "resolved_if": "the PR is merged or closed",
+            "resolved_if": "the PR is merged (closed unmerged -> dropped)",
         }
     return {"method": "manual", "query": ident, "tool_hint": "no automated path", "resolved_if": "n/a"}
 
@@ -530,6 +546,8 @@ def record_result(
     *,
     now: datetime | None = None,
     increment: int = 1,
+    reason: str | None = None,
+    by: str = "user",
 ) -> dict:
     """Persist a verdict and advance the state machine. Returns the new state.
 
@@ -538,6 +556,10 @@ def record_result(
       unresolved -> verified=0, +1 day_count & miss_count (once per calendar
                     day), unfreeze. The chronic "Nd" is a real signal; keep it.
       unverified -> verified=NULL, counters UNCHANGED (frozen), set frozen=1.
+      dropped    -> verified=NULL, counters STOP where they are (kept as
+                    history), stamp resolved_at, unfreeze; metadata records
+                    `dropped_reason` and `dropped_by` ("user", or "gh" for a PR
+                    closed unmerged). Terminal — see check_artifact.
     """
     if claim_type not in CLAIM_TYPES:
         raise ValueError(f"unknown claim_type '{claim_type}' (valid: {', '.join(CLAIM_TYPES)})")
@@ -578,6 +600,12 @@ def record_result(
         frozen = 0
         day_count = 0
         miss_count = 0
+        if resolved_at is None:
+            resolved_at = now_iso
+        last_checked = now_iso
+    elif result == "dropped":
+        verified = None
+        frozen = 0
         if resolved_at is None:
             resolved_at = now_iso
         last_checked = now_iso
@@ -623,6 +651,16 @@ def record_result(
             resolved_at, first_seen, created_at, now_iso, "{}",
         ),
     )
+    if result == "dropped":
+        if (existing or {}).get("last_verdict") != "dropped":
+            # A fresh drop: carry-write shows it once (dropped_rendered_on unset).
+            _merge_metadata(conn, chash, {
+                "dropped_reason": reason, "dropped_by": by, "dropped_rendered_on": None,
+            })
+        elif reason:
+            # Re-dropping an already-dropped claim only refines the reason; it
+            # must not make carry-write render it again.
+            _merge_metadata(conn, chash, {"dropped_reason": reason})
     conn.commit()
     new_row = dict(_fetch_row(conn, chash))
     conn.close()
@@ -681,6 +719,22 @@ def check_artifact(
     ttl = ttl_hours_for(claim_type, (existing or {}).get("last_verdict"))
     base["ttl_hours"] = ttl
 
+    # A drop is the user's decision (or a PR closed unmerged), not a reading
+    # that goes stale: trust it forever. Re-checking would let `gh` or a lookup
+    # quietly reopen a claim the user already dismissed.
+    if existing and existing.get("last_verdict") == "dropped":
+        return {
+            **base,
+            "status": "dropped",
+            "action": "trust",
+            "verdict": "dropped",
+            "display": make_display(existing, now_dt),
+            "day_count": existing["day_count"],
+            "miss_count": existing["miss_count"],
+            "frozen": False,
+            "fresh": True,
+        }
+
     # Is the cached verdict still fresh?
     fresh = False
     if existing and existing.get("last_verdict") in ("resolved", "unresolved"):
@@ -721,8 +775,9 @@ def check_artifact(
     if claim_type in AUTO_TYPES and auto:
         gh_result = check_github_pr(identifier, expect_state=expect_state)
         verdict = gh_result["verdict"]
-        recorded = record_result(claim_type, identifier, verdict, now=now)
-        # Only a definitive verdict (resolved/unresolved) counts as "checked".
+        recorded = record_result(claim_type, identifier, verdict, now=now,
+                                 reason=gh_result["detail"].get("reason"), by="gh")
+        # Only a definitive verdict (resolved/unresolved/dropped) counts as "checked".
         # An unverified verdict means the lookup couldn't confirm anything (gh
         # missing, lookup error, no PR number); demote to a needs_lookup so the
         # agent confirms instead of trusting a non-check as fact.
@@ -905,7 +960,11 @@ def register_claim(
     existing = dict(_fetch_row(conn, chash))
     conn.close()
 
-    if confirm_only or meta.get("confirm_only"):
+    if existing.get("last_verdict") == "dropped":
+        # Re-registering a dropped claim (e.g. re-noticed in prose) does not
+        # reopen it — only an explicit `record` does.
+        action = "trust"
+    elif confirm_only or meta.get("confirm_only"):
         action = "ask_user"
     else:
         checked = check_artifact(claim_type, canonical, now=now_dt, auto=False)
@@ -916,6 +975,7 @@ def register_claim(
         "claim_hash": chash,
         "claim_type": claim_type,
         "action": action,
+        "verdict": existing.get("last_verdict"),
         "display": make_display(existing, now_dt),
     }
     if action == "perform_lookup":
@@ -929,11 +989,12 @@ def _bucket_open_claims(
     *,
     mutate_surfacing: bool,
 ) -> dict:
-    """Bucket every open (non-resolved) claim. Shared by reconcile (which may
-    record surfacing for confirm-only claims) and the read-only context summary."""
+    """Bucket every open (not resolved or dropped) claim. Shared by reconcile
+    (which may record surfacing for confirm-only claims) and the read-only
+    context summary."""
     rows = [dict(r) for r in conn.execute(
         "SELECT * FROM claim_verifications "
-        "WHERE last_verdict IS NULL OR last_verdict != 'resolved'"
+        "WHERE last_verdict IS NULL OR last_verdict NOT IN ('resolved', 'dropped')"
     ).fetchall()]
     today = now_dt.astimezone().date().isoformat()
     fresh, stale, unverifiable = [], [], []
@@ -1003,7 +1064,8 @@ def reconcile(*, auto: bool = True, now: datetime | None = None) -> dict:
                 entry["auto_check"] = gh_result.get("detail", {})
                 still_stale.append(entry)
                 continue
-            recorded = record_result("github_pr", entry["identifier"], verdict, now=now_dt)
+            recorded = record_result("github_pr", entry["identifier"], verdict, now=now_dt,
+                                     reason=gh_result["detail"].get("reason"), by="gh")
             buckets["fresh"].append({
                 "claim_type": "github_pr",
                 "identifier": entry["identifier"],
@@ -1055,6 +1117,11 @@ def carry_write(
              "section": "pickup"|"done"|"held" (default "pickup")}]
     narrative: freeform markdown appended verbatim under "## Notes" — the
     human-readable context (rationale, decisions, week framing) stays yours.
+
+    A dropped claim is moved to its own "Dropped" section on the first day it
+    is written (same-day re-runs repeat it), then omitted from every later
+    file whatever section the caller asks for — reported back under
+    `suppressed_dropped` so the caller knows it was left out.
     """
     if not re.match(r"^\d{4}-\d{2}-\d{2}$", date_str):
         raise ValueError("date must be YYYY-MM-DD")
@@ -1062,9 +1129,11 @@ def carry_write(
     conn = get_conn()
     ensure_table(conn)
 
-    sections: dict[str, list[str]] = {"pickup": [], "done": [], "held": []}
+    sections: dict[str, list[str]] = {"pickup": [], "done": [], "held": [], "dropped": []}
     suspects: list[dict] = []
-    verdict_counts = {"resolved": 0, "unresolved": 0, "unchecked": 0}
+    verdict_counts = {"resolved": 0, "unresolved": 0, "unchecked": 0, "dropped": 0}
+    newly_dropped: list[str] = []
+    suppressed_dropped: list[str] = []
 
     for item in items:
         text = str(item.get("text", "")).strip()
@@ -1077,6 +1146,18 @@ def carry_write(
             row_d = dict(row) if row else None
             display = make_display(row_d, now_dt)
             verdict = (row_d or {}).get("last_verdict")
+            canonical = canonical_identifier(ctype, cid)
+            if verdict == "dropped":
+                rendered_on = _row_metadata(row_d).get("dropped_rendered_on")
+                if rendered_on and rendered_on != date_str:
+                    suppressed_dropped.append(f"{ctype}|{canonical}")
+                    continue
+                newly_dropped.append(row_d["claim_hash"])
+                verdict_counts["dropped"] += 1
+                sections["dropped"].append(
+                    f"{text} — **{display}** *(claim: {ctype}|{canonical})*"
+                )
+                continue
             if verdict in ("resolved", "unresolved"):
                 # Stamp only a FRESH verdict as that verdict; a stale one is
                 # demoted in print so it cannot ride the file as fact.
@@ -1095,7 +1176,6 @@ def carry_write(
                 elif verdict is None and not _row_metadata(row_d).get("confirm_only"):
                     display = "unverified — confirm or drop? (never checked)"
                 verdict_counts["unchecked"] += 1
-            canonical = canonical_identifier(ctype, cid)
             sections[section].append(
                 f"{text} — **{display}** *(claim: {ctype}|{canonical})*"
             )
@@ -1104,7 +1184,6 @@ def carry_write(
             suspects.extend(
                 {"line": 0, "excerpt": s["excerpt"]} for s in _suspect_lines(text)
             )
-    conn.close()
 
     if narrative:
         suspects.extend(_suspect_lines(narrative))
@@ -1115,6 +1194,8 @@ def carry_write(
         f"{verdict_counts['unresolved']} unresolved · "
         f"{verdict_counts['unchecked']} unverified/unchecked"
     )
+    if verdict_counts["dropped"]:
+        gate_line += f" · {verdict_counts['dropped']} dropped"
 
     lines = [
         "---",
@@ -1141,6 +1222,10 @@ def carry_write(
         lines += ["## Held (intentionally parked — do not surface)", ""]
         lines += [f"- {t}" for t in sections["held"]]
         lines.append("")
+    if sections["dropped"]:
+        lines += ["## Dropped (no longer tracked — do not surface)", ""]
+        lines += [f"- {t}" for t in sections["dropped"]]
+        lines.append("")
     if narrative:
         lines += ["## Notes", "", narrative.rstrip(), ""]
     content = "\n".join(lines)
@@ -1154,12 +1239,19 @@ def carry_write(
         tmp.write_text(content)
         tmp.replace(target)
 
+    # Mark drops as shown only once the file holding them is on disk.
+    for chash in newly_dropped:
+        _merge_metadata(conn, chash, {"dropped_rendered_on": date_str})
+    conn.commit()
+    conn.close()
+
     return {
         "path": str(dated),
         "latest": str(latest),
         "items": sum(len(v) for v in sections.values()),
         "gate_line": gate_line,
         "unregistered_suspects": suspects,
+        "suppressed_dropped": suppressed_dropped,
     }
 
 
@@ -1239,7 +1331,7 @@ def cmd_check(args: argparse.Namespace) -> None:
 
 def cmd_record(args: argparse.Namespace) -> None:
     print(json.dumps(record_result(
-        args.type, args.id, args.result, now=_cli_now(args.now),
+        args.type, args.id, args.result, now=_cli_now(args.now), reason=args.reason,
     ), indent=2, default=str))
 
 
@@ -1335,6 +1427,8 @@ def main() -> None:
     p_record.add_argument("--type", required=True, choices=CLAIM_TYPES)
     p_record.add_argument("--id", required=True)
     p_record.add_argument("--result", required=True, choices=VERDICTS)
+    p_record.add_argument("--reason", default=None,
+                          help="dropped only: why, e.g. 'not mine' or 'no longer needed'")
     p_record.add_argument("--now", default=None, help="ISO timestamp override (testing)")
 
     p_get = sub.add_parser("get", help="Show a single claim's cached state")

@@ -599,6 +599,57 @@ def test_agent_rule_declares_every_command():
         )
 
 
+# --- Ambient coaching grounding (the always-on rule is all most agents read) ---
+
+AGENT_RULE = Path("rules/valor-agent.md")
+COACHING_REF = Path("src/coaching-ref.md")
+
+
+def test_agent_rule_inlines_valid_competencies_and_activities():
+    """The rule must name every valid competency slug and every ambient activity
+    from coaching-ref's table — a bare placeholder led to invented footer
+    headings and rejected `add` calls."""
+    from src.evidence_cli import VALID_COMPETENCIES
+
+    text = AGENT_RULE.read_text()
+    missing = [c for c in VALID_COMPETENCIES if f"`{c}`" not in text]
+    assert not missing, f"rules/valor-agent.md omits competency slugs {missing}"
+    activities = re.findall(r"^\| `([a-z_]+)`", COACHING_REF.read_text(), re.MULTILINE)
+    assert activities, "coaching-ref.md lost its Activity Classification table"
+    missing = [a for a in activities if a not in text]
+    assert not missing, f"rules/valor-agent.md omits activities {missing}"
+    assert "{primary_competency}" not in text
+
+
+def test_agent_rule_footer_uses_context_target_level():
+    text = AGENT_RULE.read_text()
+    assert "🎯 *{levels.target} would also:*" in text
+    assert "[Target level] would also" not in text
+    assert "re-run" in text and "evidence_cli.py context" in text
+
+
+@pytest.mark.parametrize("path", [AGENT_RULE, COACHING_REF])
+def test_no_ambient_footer_after_valor_command_output(path):
+    """Ambient footers appended to a /valor-* command's or scheduled run's own
+    output double-coach; both coaching surfaces must forbid it."""
+    text = " ".join(path.read_text().split())
+    assert (
+        "No ambient footer, and no suggestions of other Valor commands, after "
+        "the output of a `/valor-*` command or a scheduled Valor run"
+    ) in text.replace("**", "")
+    assert "at most once per deliverable" in text
+    assert "After every completed task" not in text
+
+
+@pytest.mark.parametrize("path", ["commands/briefing.md", "src/utilities.md"])
+def test_credential_hard_rule(path):
+    """Credential discovery must never print secret values into the transcript."""
+    text = " ".join(Path(path).read_text().split())
+    assert "**Credentials (hard rule):**" in text
+    assert "`.env` files or environment variable values" in text
+    assert '`[ -n "$VAR" ] && echo set`' in text
+
+
 def test_website_workflow_count_matches_command_set():
     """The landing page's 'N on-demand workflows' claim must match commands/."""
     n = len(ALL_COMMAND_STEMS)
@@ -1006,3 +1057,40 @@ def test_skill_setup_delegates_config_and_states_limited_helpers():
         assert helper in text, (
             f"SKILL.md should name {helper} as an install.sh-only helper"
         )
+
+
+def test_specs_map_user_dismissals_to_dropped_never_completion():
+    """'Not needed / not mine / stop mentioning this' must record the terminal
+    `dropped` verdict — `resolved` would log abandoned work as an achievement."""
+    for cmd in ("wrapup", "briefing"):
+        text = Path(f"commands/{cmd}.md").read_text()
+        assert "--result dropped" in text, cmd
+        assert "not mine" in text, cmd
+    wrapup = Path("commands/wrapup.md").read_text()
+    assert "Never write a completion\n   evidence row for a dropped item" in wrapup
+
+
+def test_weekly_triages_parked_and_long_unresolved_claims():
+    """The specs say the weekly owns parked confirm-only claims; the weekly must
+    actually walk them (and long-unresolved ones) through keep / drop / reframe."""
+    text = Path("commands/weekly.md").read_text()
+    assert "verify.py reconcile" in text
+    assert "parked" in text
+    assert "--result dropped" in text
+    for verb in ("**keep**", "**drop**", "**reframe**"):
+        assert verb in text
+
+
+def test_briefing_followup_makes_corrections_stick():
+    """'Done / not mine / stop mentioning X' must change state, not just the
+    order: a verdict for claims, muted_ids for live sources, goal status, the
+    calendar block — and any re-plan starts from a fresh calendar."""
+    text = Path("commands/briefing.md").read_text()
+    followup = text[text.index("## Follow-Up Interaction"):]
+    assert "--result resolved" in followup and "--result dropped" in followup
+    assert "state-set muted_ids" in followup
+    assert "completed_goals" in followup
+    assert "valor:task:" in followup
+    assert "Re-fetch today's calendar first" in followup and "plan.py fit" in followup
+    gathering = text[text.index("## Data Gathering"):text.index("### 1. Jira Tickets")]
+    assert "context.muted_ids" in gathering   # filtered before ranking

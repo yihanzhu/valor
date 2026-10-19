@@ -1405,6 +1405,21 @@ def test_context_ooo_today_suppresses_wrapup(cli_db, capsys, monkeypatch):
     assert json.loads(capsys.readouterr().out)["suggest"]["wrapup"] is False
 
 
+def test_context_suggest_skips_slots_scheduled_as_routines(cli_db, capsys, monkeypatch):
+    """A slot already running as a scheduled routine is not offered in chat too."""
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    _mock_now(monkeypatch, datetime(2026, 4, 17, 9, 0, 0))  # Friday 9am
+    (valor_home / "state.json").write_text(json.dumps({
+        "last_briefing_date": "2020-01-01",
+        "routines": {"briefing": {"enabled": True}, "weekly": {"enabled": False}},
+    }))
+    cmd_context(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["suggest"]["briefing"] is False
+    assert result["suggest"]["weekly"] is True
+
+
 def test_context_ooo_dates_prunes_past(cli_db, capsys, monkeypatch):
     """context.ooo.dates surfaces today+future only; a stale past OOO date neither
     suppresses today nor shows up."""
@@ -1917,6 +1932,28 @@ def test_migrate_state_in_memory_repairs_non_list_ooo_dates():
 def test_migrate_state_in_memory_preserves_ooo_dates():
     migrated = _migrate_state_in_memory({"ooo_dates": ["2026-04-17"]})
     assert migrated["ooo_dates"] == ["2026-04-17"]
+
+
+def test_migrate_state_in_memory_adds_v21_muted_ids():
+    migrated = _migrate_state_in_memory({"current_level": "L3"})
+    assert migrated["muted_ids"] == []
+    assert migrated["state_schema_version"] == STATE_SCHEMA_VERSION
+    assert _migrate_state_in_memory({"muted_ids": "oops"})["muted_ids"] == []
+    kept = _migrate_state_in_memory({"muted_ids": ["ExampleOrg/repo#7"]})
+    assert kept["muted_ids"] == ["ExampleOrg/repo#7"]
+
+
+def test_context_exposes_muted_ids_cleaned(cli_db, capsys):
+    """context.muted_ids is what the briefing filters live sources against:
+    strings only, trimmed, deduped, order kept."""
+    db_path, _ = cli_db
+    valor_home = db_path.parent / ".valor"
+    (valor_home / "state.json").write_text(json.dumps({
+        "muted_ids": ["ExampleOrg/repo#7", " PROJ-42 ", "", 5, "ExampleOrg/repo#7"],
+    }))
+    cmd_context(argparse.Namespace())
+    result = json.loads(capsys.readouterr().out)
+    assert result["muted_ids"] == ["ExampleOrg/repo#7", "PROJ-42"]
 
 
 def test_migrate_state_in_memory_drops_legacy_meeting_baseline():
