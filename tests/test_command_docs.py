@@ -1019,6 +1019,17 @@ def test_specs_map_user_dismissals_to_dropped_never_completion():
     assert "Never write a completion\n   evidence row for a dropped item" in wrapup
 
 
+def test_weekly_triages_parked_and_long_unresolved_claims():
+    """The specs say the weekly owns parked confirm-only claims; the weekly must
+    actually walk them (and long-unresolved ones) through keep / drop / reframe."""
+    text = Path("commands/weekly.md").read_text()
+    assert "verify.py reconcile" in text
+    assert "parked" in text
+    assert "--result dropped" in text
+    for verb in ("**keep**", "**drop**", "**reframe**"):
+        assert verb in text
+
+
 def test_briefing_followup_makes_corrections_stick():
     """'Done / not mine / stop mentioning X' must change state, not just the
     order: a verdict for claims, muted_ids for live sources, goal status, the

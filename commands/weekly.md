@@ -171,7 +171,36 @@ Which competencies have 0 or low entries this week? For each gap, suggest **spec
 If gaps suggest the user needs help finding work, note that the morning briefing
 surfaces high-impact backlog pickups (filling gaps like these) when the day is light.
 
-## 5. Generate 1:1 Narrative
+## 4.5 Triage Stale Claims (keep / drop / reframe)
+
+The daily flows hand two kinds of claim to the weekly: confirm-only claims
+**parked** after going unanswered for 3+ mornings, and claims carried
+unresolved so long that the day counter has stopped meaning anything. Unless
+this step clears them, they pile up. Skip it if `context.verification.enabled`
+is `false`.
+
+```bash
+python3 ~/.valor/verify.py reconcile
+```
+
+Triage candidates are the `unverifiable` entries marked `parked`, plus any
+entry with `day_count` ≥ 5 (carried a working week or more). Don't list
+anything else. If nothing qualifies, omit the section. Show each candidate on
+one line with its `display` and ask once for the whole list:
+
+- **keep**: still real and still yours. Change nothing; it returns next week.
+- **drop**: no longer needed or not yours.
+  `verify.py record --type <T> --id "<ID>" --result dropped --reason "weekly triage: <why>"`.
+  It leaves every worklist, and dropped work is **never** a completion.
+- **reframe**: the work is real but the claim is wrong (wrong id, no
+  destination, too broad). Register the restated claim
+  (`verify.py register --type <T> --id "<canonical id>"` with a recipe, so it
+  can be checked), then drop the old one with
+  `--reason "reframed as <new id>"`.
+
+If the user says an item is actually done, record `--result resolved` (the
+normal completion path).
+
 
 Write 3–4 sentences the user can tell their manager, highlighting senior-level behaviors:
 - Lead with impact: what shipped, what was unblocked
@@ -205,6 +234,10 @@ Present the reflection in this structure:
 
 ### For Your 1:1
 "[3–4 sentence narrative paragraph the user can say to their manager]"
+
+### Stale Claims — keep, drop, or reframe?
+- [claim display] *(claim: type|id)*
+[Only if §4.5 found candidates.]
 ```
 
 ## 7. Record Evidence
@@ -268,3 +301,4 @@ Replace `YYYY-WNN` with the actual ISO week string (e.g. `2026-W15`).
 | All integrations disabled | Build reflection from evidence store only. This is a valid workflow. |
 | Evidence CLI add fails | Continue; note: "Evidence recording unavailable." |
 | State update fails | Continue; reflection is still valid. |
+| `verify.py` unavailable or verification disabled | Skip §4.5 (claim triage). |
