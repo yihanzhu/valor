@@ -2152,6 +2152,47 @@ def test_state_migrate_is_idempotent(cli_db, capsys):
     assert on_disk["host"] == "claude-code"
 
 
+def test_state_migrate_backs_up_pre_migration_state(cli_db, capsys):
+    """A state.json behind the current schema is snapshotted BEFORE the
+    migration is written: the backup holds the old file verbatim."""
+    db_path, backup_dir = cli_db
+    state_path = db_path.parent / ".valor" / "state.json"
+    old = {
+        "current_level": "L3",
+        "standing_rules": [{"rule": "Keep standups short"}],
+        "state_schema_version": STATE_SCHEMA_VERSION - 1,
+    }
+    state_path.write_text(json.dumps(old))
+    backup_dir.mkdir()
+
+    cmd_state_migrate(argparse.Namespace())
+
+    captured = capsys.readouterr()
+    assert json.loads(captured.out)["status"] == "ok"  # stdout stays the command's JSON
+    assert f"before migrating state from v{STATE_SCHEMA_VERSION - 1}" in captured.err
+    [backup] = backup_dir.glob("state_*.json")
+    assert json.loads(backup.read_text()) == old
+    assert json.loads(state_path.read_text())["state_schema_version"] == STATE_SCHEMA_VERSION
+
+
+def test_state_backup_only_when_migration_pending(cli_db, capsys):
+    """`context` only migrates in memory, and a current state.json has nothing
+    to migrate: neither takes a backup. Only the write that persists one does."""
+    db_path, backup_dir = cli_db
+    state_path = db_path.parent / ".valor" / "state.json"
+    state_path.write_text(json.dumps({"state_schema_version": STATE_SCHEMA_VERSION - 1}))
+
+    cmd_context(argparse.Namespace())
+    assert not list(backup_dir.glob("state_*.json"))
+
+    cmd_state_migrate(argparse.Namespace())
+    cmd_state_migrate(argparse.Namespace())
+    cmd_state_set(argparse.Namespace(pairs=["current_level", "L4"]))
+    cmd_context(argparse.Namespace())
+    capsys.readouterr()
+    assert len(list(backup_dir.glob("state_*.json"))) == 1
+
+
 def test_state_migrate_handles_missing_state_file(cli_db, capsys):
     """If no state.json exists yet, migrate should create one with defaults."""
     db_path, _ = cli_db

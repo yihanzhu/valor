@@ -1007,9 +1007,28 @@ def _read_state() -> dict:
     return _migrate_state_in_memory(state)
 
 
+def _on_disk_state_version(state_path: Path) -> int | None:
+    """state_schema_version of the state.json on disk (0 when the file predates
+    the key), or None when there is no readable file to migrate."""
+    try:
+        on_disk = json.loads(state_path.read_text())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(on_disk, dict):
+        return None
+    version = on_disk.get("state_schema_version", 0)
+    return version if isinstance(version, int) else 0
+
+
 def _write_state(state: dict) -> None:
     state_path = VALOR_HOME / "state.json"
     state_path.parent.mkdir(parents=True, exist_ok=True)
+    # _read_state migrates in memory; this write is what persists a pending
+    # migration over the user's standing rules, goals and meeting catalog.
+    # Snapshot the old file first, as ensure_schema does for the DB.
+    on_disk_version = _on_disk_state_version(state_path)
+    if on_disk_version is not None and on_disk_version < STATE_SCHEMA_VERSION:
+        _auto_backup(reason=f"before migrating state from v{on_disk_version}")
     # Atomic write: a killed process must not leave a half-written (corrupt)
     # state.json that the next read would choke on.
     tmp = state_path.with_name(state_path.name + ".tmp")
