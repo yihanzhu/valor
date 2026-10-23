@@ -878,8 +878,9 @@ def _migrate_state_in_memory(state: dict) -> dict:
     # meeting_catalog (categorized entries: project_sync, 1:1, social, ...). v16
     # drops the periodic-rescan throttle (sync_scan_interval_days, last_sync_scan)
     # — the briefing drift-checks the catalog DAILY — and adds auto_sync_prep
-    # (default true; auto-schedules /valor-sync-prep before a sync) + parked_projects
-    # (declined "new project?" syncs, so they're never re-prompted).
+    # (opt-in, default false; schedules /valor-sync-prep before a sync in
+    # interactive briefings) + parked_projects (declined "new project?" syncs,
+    # so they're never re-prompted). An explicit stored value is never changed.
     if "project_focus" not in state or not isinstance(state.get("project_focus"), dict):
         state["project_focus"] = {
             "enabled": False,
@@ -887,7 +888,7 @@ def _migrate_state_in_memory(state: dict) -> dict:
             "current": "",
             "flip": "after_sync",
             "syncs": [],
-            "auto_sync_prep": True,
+            "auto_sync_prep": False,
             "parked_projects": [],
             "meeting_catalog": [],
         }
@@ -898,7 +899,7 @@ def _migrate_state_in_memory(state: dict) -> dict:
         pf.setdefault("current", "")
         pf.setdefault("flip", "after_sync")
         pf.setdefault("syncs", [])
-        pf.setdefault("auto_sync_prep", True)
+        pf.setdefault("auto_sync_prep", False)
         pf.setdefault("parked_projects", [])
         # v16: drop the periodic-rescan throttle (drift-check now runs daily).
         pf.pop("sync_scan_interval_days", None)
@@ -1244,7 +1245,7 @@ def cmd_context(args: argparse.Namespace) -> None:
             "enabled": bool((state.get("project_focus") or {}).get("enabled", False)),
             "mode": (state.get("project_focus") or {}).get("mode", "meeting_derived"),
             "syncs_configured": len((state.get("project_focus") or {}).get("syncs", []) or []),
-            "auto_sync_prep": bool((state.get("project_focus") or {}).get("auto_sync_prep", True)),
+            "auto_sync_prep": bool((state.get("project_focus") or {}).get("auto_sync_prep", False)),
             "parked_projects": (state.get("project_focus") or {}).get("parked_projects", []) or [],
         },
         "prioritization": {

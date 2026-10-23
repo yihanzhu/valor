@@ -53,9 +53,10 @@ DEFAULTS = {
     "current": "",              # used by manual mode
     "flip": "after_sync",       # when focus changes relative to a sync
     "syncs": [],                # [{"project","match"}] — agent matches titles
-    # Auto-schedule /valor-sync-prep before each project_sync (default on). The
-    # briefing now drift-checks the catalog DAILY (no periodic re-scan throttle).
-    "auto_sync_prep": True,
+    # Auto-schedule /valor-sync-prep before each project_sync (opt-in, default
+    # off; interactive briefings only). The briefing drift-checks the catalog
+    # DAILY (no periodic re-scan throttle).
+    "auto_sync_prep": False,
     # Projects the user saw flagged as "new" and chose NOT to add to the rotation
     # (a parked project). A project_sync for one of these is never re-prompted.
     "parked_projects": [],

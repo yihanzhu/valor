@@ -151,7 +151,7 @@ def test_config_defaults_include_new_keys(tmp_path, monkeypatch):
     # schema-16: throttle fields gone; auto_sync_prep + parked_projects added.
     monkeypatch.setattr(focus, "VALOR_HOME", tmp_path / "empty")
     cfg = focus.focus_config()
-    assert cfg["auto_sync_prep"] is True
+    assert cfg["auto_sync_prep"] is False  # opt-in: off for new installs
     assert cfg["parked_projects"] == []
     assert "sync_scan_interval_days" not in cfg
     assert "last_sync_scan" not in cfg

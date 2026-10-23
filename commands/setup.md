@@ -371,8 +371,10 @@ schedules:
 3. Save it (enabled, meeting-derived, flips the day after each sync):
    ```bash
    python3 ~/.valor/evidence_cli.py state-set project_focus \
-     '{"enabled": true, "mode": "meeting_derived", "flip": "after_sync", "current": "", "syncs": [{"project": "Project A", "match": "Project A Sync"}, {"project": "Project B", "match": "Project B Sync"}], "auto_sync_prep": true, "parked_projects": [], "meeting_catalog": []}'
+     '{"enabled": true, "mode": "meeting_derived", "flip": "after_sync", "current": "", "syncs": [{"project": "Project A", "match": "Project A Sync"}, {"project": "Project B", "match": "Project B Sync"}], "auto_sync_prep": false, "parked_projects": [], "meeting_catalog": []}'
    ```
+   If the user already has `project_focus.auto_sync_prep` set, carry that value
+   over instead of `false`.
    `match` is a case-insensitive substring of the meeting title; `project` is the
    user's label. If the user would rather just set the active project by hand,
    use `"mode": "manual", "current": "Project A"` instead.
@@ -387,8 +389,9 @@ schedules:
 The briefing drift-checks the catalog **every day** (no periodic throttle) — a
 known meeting stays silent, only a genuinely new one surfaces; a project you
 decline to add is remembered in `parked_projects` so it's never re-prompted. When
-`auto_sync_prep` is on (default), the briefing also auto-schedules a
-`/valor-sync-prep` run before each `project_sync`. The sync labels and project
+`auto_sync_prep` is on (opt-in; off by default), an interactive briefing also
+schedules a `/valor-sync-prep` run before each `project_sync`; otherwise the
+day plan's prep block says to run it. The sync labels and project
 names are **local only** — never committed.
 
 Skip silently if `calendar` is `false` or the user doesn't rotate.

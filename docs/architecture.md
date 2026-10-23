@@ -179,8 +179,9 @@ Cross-cutting behaviors run inside the existing agents — no new commands:
   drift-checks the recurring meetings (over a ~3–4 week window) against the
   categorized catalog: known meetings stay silent, an unknown one is categorized
   and added (asked about once), and an unmapped, non-parked project_sync surfaces
-  a "new project?" alert. When `auto_sync_prep` is on, it also schedules a
-  `/valor-sync-prep` run before each project_sync.
+  a "new project?" alert. When `auto_sync_prep` is on (opt-in), an interactive
+  briefing also schedules a `/valor-sync-prep` run before each project_sync;
+  scheduled runs only add the prep block to the day plan.
 - **Chronic escalation**: items verified-unresolved past
   `verification.escalation_threshold` surface in `/valor-prep`, which also drafts
   the entry in the user's own 1:1-doc format when `one_on_one.doc` is set. Opt-in

@@ -11,9 +11,10 @@ project). Run it ~30 min before the meeting, in the prep block Valor reserves.
 ## When to Use
 
 Two ways in: (1) **manually** by the user (the triggers below), or (2)
-**automatically** — when `project_focus.auto_sync_prep` is on (default), the
-briefing schedules a one-off run of this command ~`pre_meeting_prep_minutes`
-(default 30) before a `project_sync`.
+**automatically** — when `project_focus.auto_sync_prep` is on (opt-in; off by
+default), an interactive briefing schedules a one-off run of this command
+~`pre_meeting_prep_minutes` (default 30) before a `project_sync`. Scheduled
+briefings never schedule it; the prep block in the day plan prompts you instead.
 
 - User says: "sync prep", "prep for my project sync", "prep my sync talk
   points", "prep for the [project] sync", or runs `/valor-sync-prep`
@@ -89,8 +90,8 @@ section or reframe a point?"
 
 - **Pairs with the prep block, and can auto-run.** The day plan reserves a 30-min
   block before each `project_sync` (`planning.pre_meeting_prep_minutes`), and —
-  when `project_focus.auto_sync_prep` is true (default) — the briefing
-  auto-schedules this command to run at the start of that block. Manual
+  when `project_focus.auto_sync_prep` is true (opt-in) — an interactive briefing
+  schedules this command to run at the start of that block. Manual
   invocation still works any time.
 - **Stay project-scoped.** Only the current project, only since its last sync.
   Don't fold in off-focus projects or career framing — that's `/valor-prep`.

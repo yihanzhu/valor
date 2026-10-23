@@ -1094,3 +1094,55 @@ def test_briefing_followup_makes_corrections_stick():
     assert "Re-fetch today's calendar first" in followup and "plan.py fit" in followup
     gathering = text[text.index("## Data Gathering"):text.index("### 1. Jira Tickets")]
     assert "context.muted_ids" in gathering   # filtered before ranking
+
+
+# `gh pr list` needs a repo checkout, so it fails in scheduled runs started
+# from anywhere else; CHANGED takes DURING/AFTER/BEFORE, never a comparison.
+GH_SEARCH_PRS_JSON_FIELDS = {
+    "assignees", "author", "authorAssociation", "body", "closedAt",
+    "commentsCount", "createdAt", "id", "isDraft", "isLocked", "isPullRequest",
+    "labels", "number", "repository", "state", "title", "updatedAt", "url",
+}
+
+
+def _fenced_blocks(text):
+    return re.findall(r"```[^\n]*\n(.*?)```", text, re.DOTALL)
+
+
+@pytest.mark.parametrize("path", sorted(COMMANDS_DIR.glob("*.md")) + [Path("src/utilities.md")],
+                         ids=lambda p: p.name)
+def test_spec_queries_work_from_any_directory(path):
+    for block in _fenced_blocks(path.read_text()):
+        assert not re.search(r"^\s*gh pr list\b", block, re.MULTILINE), path
+        assert not re.search(r"\bchanged\s*[<>=]", block, re.IGNORECASE), path
+        for fields in re.findall(r"gh search prs .*--json[ =](\S+)", block):
+            assert set(fields.split(",")) <= GH_SEARCH_PRS_JSON_FIELDS, (path, fields)
+
+
+def test_specs_use_gh_search_prs_for_merged_and_reviewed():
+    for cmd in ("weekly", "briefing", "prep"):
+        text = (COMMANDS_DIR / f"{cmd}.md").read_text()
+        assert "gh search prs --author=@me --merged --merged-at=" in text, cmd
+        assert "gh search prs --reviewed-by=@me --merged --merged-at=" in text, cmd
+    weekly = (COMMANDS_DIR / "weekly.md").read_text()
+    assert 'status CHANGED DURING ("REFLECTION_WEEK_START", "REFLECTION_WEEK_END_EXCLUSIVE")' in weekly
+
+
+def test_briefing_sync_prep_never_schedules_in_unattended_runs():
+    text = (COMMANDS_DIR / "briefing.md").read_text()
+    step = text[text.index("**Sync prep**"):text.index("## Monday / Return-from-Absence Mode")]
+    step = " ".join(step.split())
+    assert "Scheduled or unattended run" in step
+    assert "never call `create_scheduled_task`" in step
+    assert "opt-in; off by default" in step
+    # One-off tasks leave their folders behind; cleanup is prefix- and date-bound.
+    assert "self-delete" not in text
+    assert "do **not** delete themselves" in step
+    assert "starts with `valor-sync-prep-` and whose date is before today" in step
+
+
+def test_installer_defaults_auto_sync_prep_off():
+    text = Path("install.sh").read_text()
+    block = text[text.index('"project_focus": {'):]
+    block = block[:block.index("}")]
+    assert '"auto_sync_prep": false' in block

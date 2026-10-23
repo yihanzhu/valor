@@ -751,18 +751,32 @@ Write"). In short:
    unverified claims**, delete/complete items whose claim has since verified
    **resolved** or been **dropped**, and never touch items Valor didn't create. No writer → present
    the plan only, note once.
-4. **Auto-schedule sync prep** — only if `context.project_focus.auto_sync_prep`
-   is `true` (the default) **and `planning.pre_meeting_prep_minutes` > 0** (0 means
-   prep is disabled — skip). For each **`project_sync` occurring today**, schedule a
-   one-off run of `/valor-sync-prep` at **(sync start − `planning.pre_meeting_prep_minutes`,
-   default 30 min)** via the scheduled-tasks tool, so your talk points are
-   generated right as the prep block opens. Rules: **idempotent** — first list
-   existing scheduled tasks and skip any sync already scheduled for today (one-off
-   tasks self-delete after firing); **multiple syncs** → one scheduled run each;
-   **past lead time** — if (sync − prep minutes) is already past, run
-   `/valor-sync-prep` now when the sync is still upcoming (within ~the hour), else
-   skip. The run keeps its own no-op safeguard (does nothing if no `project_sync`
-   is imminent), so a stale trigger is harmless.
+4. **Sync prep** — skip if `planning.pre_meeting_prep_minutes` is 0 (prep is
+   disabled). For each **`project_sync` occurring today**, the day plan's prep
+   block before it (from `prep_blocks`) carries "run `/valor-sync-prep`" as its
+   next action. That prep block is the default, and the only output in a
+   scheduled run.
+   - **Scheduled or unattended run** (e.g. the `valor-morning-briefing`
+     routine, or any run with no one there to answer): **never call
+     `create_scheduled_task`** or any other scheduled-tasks tool, whatever
+     `auto_sync_prep` says. Put the prep block in the day plan and move on.
+   - **Interactive run, and `context.project_focus.auto_sync_prep` is `true`**
+     (opt-in; off by default): also schedule a one-off run of `/valor-sync-prep`
+     at **(sync start − `planning.pre_meeting_prep_minutes`, default 30 min)**
+     with taskId `valor-sync-prep-YYYY-MM-DD-<project-slug>`, so your talk
+     points are generated right as the prep block opens. Rules: **idempotent** —
+     first list existing scheduled tasks and skip any sync already scheduled for
+     today; **multiple syncs** → one scheduled run each; **past lead time** — if
+     (sync − prep minutes) is already past, run `/valor-sync-prep` now when the
+     sync is still upcoming (within ~the hour), else skip. If scheduling fails,
+     keep the prep block and don't retry. The run keeps its own no-op safeguard
+     (does nothing if no `project_sync` is imminent), so a stale trigger is
+     harmless.
+   - **Cleanup:** one-off tasks do **not** delete themselves after they fire;
+     their dated task folders pile up. While you have the task list open in an
+     interactive run, delete (if a delete tool exists) only tasks whose taskId
+     starts with `valor-sync-prep-` and whose date is before today. Never
+     delete any other task.
 
 ## Monday / Return-from-Absence Mode
 
@@ -780,9 +794,9 @@ Never re-list an item already shown elsewhere in the briefing.
 
 Run additional queries:
 ```bash
-# PRs merged since last briefing
-gh pr list --state merged --search "updated:>LAST_DATE" --author @me --json number,title,mergedAt --limit 10
-gh pr list --state merged --search "updated:>LAST_DATE review-requested:@me" --json number,title,mergedAt --limit 10
+# PRs you merged, and PRs you reviewed that merged, since the last briefing
+gh search prs --author=@me --merged --merged-at=">LAST_DATE" --json number,title,closedAt,repository,url --limit 10
+gh search prs --reviewed-by=@me --merged --merged-at=">LAST_DATE" --json number,title,author,closedAt,repository,url --limit 10
 ```
 
 ## Evidence Recording

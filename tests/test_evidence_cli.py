@@ -1971,7 +1971,7 @@ def test_migrate_state_in_memory_adds_v8_project_focus_fields():
     assert migrated["project_focus"]["mode"] == "meeting_derived"
     assert migrated["project_focus"]["flip"] == "after_sync"
     assert migrated["project_focus"]["syncs"] == []
-    assert migrated["project_focus"]["auto_sync_prep"] is True         # v16
+    assert migrated["project_focus"]["auto_sync_prep"] is False        # v16 (opt-in)
     assert migrated["project_focus"]["parked_projects"] == []          # v16
     assert "sync_scan_interval_days" not in migrated["project_focus"]  # v16: throttle dropped
     assert "last_sync_scan" not in migrated["project_focus"]           # v16: throttle dropped
@@ -1987,9 +1987,16 @@ def test_migrate_state_in_memory_preserves_project_focus():
     assert migrated["project_focus"]["current"] == "platform"
     assert migrated["project_focus"]["flip"] == "after_sync"  # missing sub-key filled
     assert migrated["project_focus"]["syncs"] == []  # missing sub-key filled
-    assert migrated["project_focus"]["auto_sync_prep"] is True         # v16 sub-key filled
+    assert migrated["project_focus"]["auto_sync_prep"] is False        # v16 sub-key filled
     assert migrated["project_focus"]["parked_projects"] == []          # v16 sub-key filled
     assert migrated["project_focus"]["meeting_catalog"] == []          # v14 sub-key filled
+
+
+def test_migrate_state_in_memory_keeps_explicit_auto_sync_prep():
+    # The default is off for new installs; a stored value is never rewritten.
+    for value in (True, False):
+        state = {"project_focus": {"enabled": True, "auto_sync_prep": value}}
+        assert _migrate_state_in_memory(state)["project_focus"]["auto_sync_prep"] is value
 
 
 def test_migrate_state_in_memory_adds_v17_prioritization_fields():
@@ -2076,7 +2083,7 @@ def test_migrate_state_in_memory_drops_v16_scan_throttle():
     migrated = _migrate_state_in_memory(state)
     assert "sync_scan_interval_days" not in migrated["project_focus"]  # dropped
     assert "last_sync_scan" not in migrated["project_focus"]           # dropped
-    assert migrated["project_focus"]["auto_sync_prep"] is True         # added
+    assert migrated["project_focus"]["auto_sync_prep"] is False        # added
     assert migrated["project_focus"]["parked_projects"] == []          # added
 
 

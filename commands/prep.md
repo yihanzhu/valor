@@ -67,13 +67,19 @@ for the configured levels.
 
 If `integrations.github` is true:
 ```bash
-gh pr list --state merged --author @me --limit 10
-gh search prs --review-requested=@me --state=closed --limit 5
+# PRs you merged, and PRs you reviewed, in the last 2 weeks (DATE_14D_AGO = YYYY-MM-DD)
+gh search prs --author=@me --merged --merged-at=">=DATE_14D_AGO" --json number,title,closedAt,repository,url --limit 10
+gh search prs --reviewed-by=@me --merged --merged-at=">=DATE_14D_AGO" --json number,title,author,closedAt,repository,url --limit 5
 ```
 
 If `integrations.jira` is true and `jira_projects` is set:
-Use Atlassian MCP or Jira slash commands to find tickets transitioned to
-Done/Closed in the last 2 weeks.
+Use Atlassian MCP or Jira slash commands to find tickets completed in the last
+2 weeks:
+```
+assignee = currentUser() AND statusCategory = Done AND updated >= -14d ORDER BY updated DESC
+```
+`statusCategory = Done` works on every Jira site; status names like
+"Done"/"Closed" differ per site, and JQL errors on a name the site doesn't have.
 
 These are supplementary -- evidence entries are the primary source.
 

@@ -538,7 +538,7 @@ install_shared() {
     "current": "",
     "flip": "after_sync",
     "syncs": [],
-    "auto_sync_prep": true,
+    "auto_sync_prep": false,
     "parked_projects": [],
     "meeting_catalog": []
   },
