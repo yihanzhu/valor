@@ -91,8 +91,11 @@ ran, not work done. `stats` and `weekly-summary-save` exclude them the same way.
 
 **JQL for tickets completed or moved during the reflection week:**
 ```
-assignee = currentUser() AND status changed >= "REFLECTION_WEEK_START" AND status changed < "REFLECTION_WEEK_END_EXCLUSIVE"
+assignee = currentUser() AND status CHANGED DURING ("REFLECTION_WEEK_START", "REFLECTION_WEEK_END_EXCLUSIVE")
 ```
+
+`CHANGED` takes `DURING`/`AFTER`/`BEFORE` predicates; `status changed >= "..."`
+is not valid JQL and fails.
 
 Use `maxResults: 50` and include fields: `summary`, `status`, `issuetype`, `updated`, `resolution`.
 
@@ -104,17 +107,21 @@ Atlassian/Jira plugin, or set `integrations.jira` to `false` in state.json."
 
 Reuse `reflection_week_start` and `reflection_week_end_exclusive`.
 
-```bash
-# PRs merged by the user during or after the reflection week start
-gh pr list --author @me --state merged --search "merged:>=REFLECTION_WEEK_START" --json number,title,mergedAt,repository --limit 20
+`REFLECTION_WEEK_LAST_DAY` is the Sunday before `reflection_week_end_exclusive`
+(the `A..B` range is inclusive on both ends).
 
-# PRs the user reviewed during or after the reflection week start
-gh pr list --search "reviewed-by:@me merged:>=REFLECTION_WEEK_START" --state merged --json number,title,author,mergedAt --limit 15
+```bash
+# PRs merged by the user during the reflection week
+gh search prs --author=@me --merged --merged-at="REFLECTION_WEEK_START..REFLECTION_WEEK_LAST_DAY" --json number,title,closedAt,repository,url --limit 20
+
+# PRs the user reviewed that merged during the reflection week
+gh search prs --reviewed-by=@me --merged --merged-at="REFLECTION_WEEK_START..REFLECTION_WEEK_LAST_DAY" --json number,title,author,closedAt,repository,url --limit 15
 ```
 
-After fetching, discard any PR whose `mergedAt` is on or after
-`reflection_week_end_exclusive`. This keeps Friday runs and Monday catch-up
-runs aligned to the same reflected week.
+Use `gh search prs`, not `gh pr list`: it works from any directory, while
+`gh pr list` needs a repo checkout. `gh search prs` has no `mergedAt` field; for
+a merged PR `closedAt` is the merge time. The fixed range keeps Friday runs and
+Monday catch-up runs aligned to the same reflected week.
 
 If `gh` is not authenticated, skip and note: "GitHub: `gh auth login`
 needed, or set `integrations.github` to `false` in state.json."
