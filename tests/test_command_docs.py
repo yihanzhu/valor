@@ -114,6 +114,17 @@ def test_commands_invoke_verification_gate(cmd):
     assert "confirm or drop" in text, f"{cmd} omits the demote-to-unverified behavior"
 
 
+def test_briefing_backstops_missed_wrapup_notes():
+    """If the wrap-up never captured the previous working day's meeting notes,
+    the briefing must read them itself and let their decisions override the
+    cached goals/carry-forward, without double-recording what the wrap-up has."""
+    text = (COMMANDS_DIR / "briefing.md").read_text()
+    assert "Previous-Day Meeting Notes" in text
+    assert "meeting_notes" in text
+    assert "--agent valor-morning-briefing --date" in text
+    assert "wins" in text and "week_goals" in text
+
+
 def test_utilities_documents_verification_gate():
     text = Path("src/utilities.md").read_text()
     assert "Verification Gate" in text

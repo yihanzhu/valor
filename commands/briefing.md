@@ -130,6 +130,45 @@ whole list; reconcile against `context.ooo.dates`). If you discover here that
 honor the OOO check above — stop with the one-line skip rather than finishing the
 briefing.
 
+### 3.5 Previous-Day Meeting Notes (backstop for a missed wrap-up)
+
+Meeting decisions normally reach the briefing through the wrap-up, which reads
+each meeting's notes doc and records a `meeting_notes` evidence entry (wrap-up
+§1.7). If the wrap-up didn't run, or ran late in another session, those decisions
+never land, and the briefing ranks against yesterday's assumptions. That's how
+a task a 1:1 had just taken off the user's plate came back as priority #1. Skip
+this step if `integrations.calendar` is `false`.
+
+1. **Find the previous working day.** Go back one day at a time, skipping
+   weekends and the dates in `context.ooo.dates`.
+2. **List that day's substantive meetings.** Fetch its calendar events and apply
+   the same filter as wrap-up §1.7: only events with a notes-doc attachment
+   (e.g. Gemini "Notes by Gemini"), skipping short recurring standups.
+3. **Find what's already captured.** Run
+   `python3 ~/.valor/evidence_cli.py list --from <that day> --limit 0` and keep
+   the `meeting_notes` entries dated that day. A meeting that already has one is
+   covered.
+4. **Read each uncovered meeting's notes doc.** Use the same docs reader as
+   wrap-up §1.7. Pull out only the user's action items and the decisions that
+   were agreed. Record each one exactly as wrap-up §1.7 does, but with
+   `--agent valor-morning-briefing --date <that day>`, so a late wrap-up skips it.
+5. **Apply what you find in this run.** A meeting decision is newer than the
+   cached `week_goals`, the carry-forward and the focus rotation, and it wins
+   over all of them:
+   - work the meeting removed (descoped, reassigned, paused) leaves Priorities
+     and the day plan;
+   - an action item the user took becomes a candidate todo for §6.5;
+   - a moved sync date goes into the §5.5 focus resolve.
+
+   Name the source in the priority line (e.g. "per yesterday's 1:1"), so the
+   user can see why the order changed.
+
+The check runs every morning, not only when `last_wrapup_date` is stale, so it
+also catches a wrap-up that ran but missed a meeting. If every meeting is already
+covered, the cost is one calendar read and one evidence list. Without a docs
+reader, record the meeting with its notes link (as wrap-up does) and add one
+"Needs confirmation" line: *"[meeting] notes unread — check for decisions."*
+
 ### 4. News
 
 Use the WebSearch tool to search for **general** current news. Always
