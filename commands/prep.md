@@ -140,27 +140,38 @@ not stored, so skip silently.
    and note lines the user **added** that the draft lacked. Also note
    uncertainty markers (`[confirm]`) that were deleted rather than resolved, and
    sections the user emptied or replaced wholesale.
-3. **Turn the diff into rules, not content.** Write short, general rules about
-   *what kind* of line survives -- e.g. "user empties Discussion topics: leave
-   it heading-only and suggest topics in chat", "status lines and root-cause
-   findings are cut; PR lines and one-clause handoffs are kept", "trailing status
-   parentheticals are removed", "the goals section is written by the user". Never
-   store entry text, names, or ticket/PR ids in a rule -- rules are about shape.
-   A pattern seen once is tentative; keep it when it repeats, and drop a stored
-   rule the latest diff contradicts (the user kept what the rule says they cut).
-4. **Store the merged list** (at most ~10 rules, newest evidence wins) by
+3. **Read a cut as a quality signal, not a structural one.** A line the user
+   deleted means *that content* was wrong, badly written, or not worth the
+   manager's time. It does **not** mean the section should be left empty, that
+   a kind of line is unwanted, or that the user wants to write the section
+   themselves. Work out *what was wrong* by comparing with lines the user kept
+   or wrote in that section (their own lines are the model): too long, internal
+   process instead of outcome, jargon, a topic the user could resolve alone. If
+   the diff alone doesn't show why, **ask the user once in chat** rather than
+   guessing, and don't store a rule until you know.
+4. **Turn the diff into rules, not content.** Write short, general rules about
+   *what makes a line right* -- e.g. "Discussion topics only for items that
+   need the manager's judgment (priority or timeline trade-offs, direction),
+   never self-serve chases", "status lines: one outcome per line in the user's
+   plain words, no process detail", "drop trailing status parentheticals",
+   "PR lines in the doc's format are kept as drafted". Never store entry text,
+   names, or ticket/PR ids in a rule -- rules are about shape. A pattern seen
+   once is tentative; keep it when it repeats, and drop a stored rule the
+   latest diff or the user contradicts.
+5. **Store the merged list** (at most ~10 rules, newest evidence wins) by
    rewriting `one_on_one.edit_lessons`, carrying the other `one_on_one` fields
    over unchanged:
    ```bash
    python3 ~/.valor/evidence_cli.py state-set one_on_one '{"doc":"<unchanged>","format_notes":"<unchanged>","write_mode":"<unchanged>","staging_doc":"<unchanged>","edit_lessons":["...","..."]}'
    ```
-5. **Report one line** on what the diff taught ("Learned: you cut status lines
-   again; dropped them from this draft"), or that nothing changed.
+6. **Report one line** on what the diff taught ("Learned: status lines were too
+   long again; wrote them as one outcome each"), or that nothing changed.
 
 Then draft (§4.1) with `edit_lessons` applied. They **override the generic
-drafting defaults** below wherever the two conflict: if the user always empties
-a section, write only its heading and put the suggestions in chat (§4.3); if they
-always cut a kind of line, leave it out of the entry and keep it in chat.
+drafting defaults** below wherever the two conflict. Keep drafting every section
+the doc has; the lessons change *how* each is written, not *whether*. Only when
+nothing meets a section's bar (e.g. no topic needs the manager this week) leave
+it light, as the user's own entries do, and say why in chat.
 
 **While the doc is open, capture this week's goals** (silently — don't ask). Extract
 the short list of what the user said they're driving this week (by meaning; format
