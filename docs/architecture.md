@@ -68,7 +68,7 @@ version control. Upgrades overwrite the installer-managed runtime files
 
 The `installed_version` and `installed_at` fields track when the last install
 happened. The `state_schema_version` field enables forward-only migrations
-when the installer adds new fields (currently at version 21). Migrations
+when the installer adds new fields (currently at version 22). Migrations
 add missing keys with safe defaults and prune keys removed in later schema
 versions (e.g. the v16 sync-rescan throttle), never overwriting existing user
 values; they run in `_migrate_state_in_memory` (src/evidence_cli.py). The
@@ -81,7 +81,7 @@ Key fields:
 - `integrations` -- boolean flags for github, jira, calendar, news
 - `verification` -- gate config: `enabled`, `escalation_threshold`, `ttl_overrides` (v5)
 - `planning` -- day-plan config: `calendar_auto_write`, `workday_start`/`workday_end`, `deep_min_hours`, `post_meeting_break_minutes`, `block_granularity_minutes`, `morning_buffer_minutes`, `pre_meeting_prep_minutes` (v6, v9, v12, v13, v15)
-- `one_on_one` -- 1:1 doc reference + `format_notes` for `/valor-prep` (v7; local only), plus `write_mode` (`off` | `staging` | `approve`, default `off`) and `staging_doc` (v20) -- opt-in write-back: unattended runs write only to a private staging doc; the shared doc is written only after live approval
+- `one_on_one` -- 1:1 doc reference + `format_notes` for `/valor-prep` (v7; local only), plus `write_mode` (`off` | `staging` | `approve`, default `off`) and `staging_doc` (v20) -- opt-in write-back: unattended runs write only to a private staging doc; the shared doc is written only after live approval; and `edit_lessons` (v22) -- short shape rules prep learns by diffing its last draft against the entry the user kept, applied before drafting
 - `project_focus` -- opt-in project rotation: `enabled`, `mode`, `syncs`, `meeting_catalog` (categorized recurring meetings), `auto_sync_prep`, `parked_projects` (v8–v16; local only). Catalog drift-checked daily — no throttle.
 - `prioritization` -- weekly goal ranking: `week_goals` (this week's ordered goals, extracted silently from the 1:1 doc), `week_start`, `goals_source`; used by the briefing to rank todos before the day plan (v17; local only)
 - `standing_rules` -- durable sequencing/priority corrections, kept separate from `prioritization` so the weekly goal-refresh never drops them (v17; local only)

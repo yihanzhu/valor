@@ -297,13 +297,13 @@ un-share anything. Offer:
 Save the answers in one call (the references are local-only, never committed):
 
 ```bash
-python3 ~/.valor/evidence_cli.py state-set one_on_one '{"doc":"<link or name>","format_notes":"","write_mode":"off","staging_doc":""}'
+python3 ~/.valor/evidence_cli.py state-set one_on_one '{"doc":"<link or name>","format_notes":"","write_mode":"off","staging_doc":"","edit_lessons":[]}'
 ```
 
 If they skip the doc, leave it empty and don't ask about write-back -- prep
 falls back to the generic layout and can be pointed at the doc later. On a
 re-run where a doc is already set, show the current `write_mode` and offer to
-flip it, carrying `doc`/`format_notes`/`staging_doc` over unchanged.
+flip it, carrying `doc`/`format_notes`/`staging_doc`/`edit_lessons` over unchanged.
 
 ### Applying integration changes
 
