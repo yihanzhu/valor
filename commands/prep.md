@@ -111,12 +111,18 @@ drafted **in the format the user already uses** -- not Valor's generic layout.
    `write_mode`/`staging_doc`/`edit_lessons` instead of resetting them).
 2. Discover a docs-read capability (a Drive/Docs MCP that reads file content, or
    a docs-related slash command). If none, use the §4.4 fallback.
-3. Read the doc and study the **most recent 1-2 entries** to infer the format:
-   section labels (verbatim), their order, bullet vs numbered convention and
-   nesting, the tone/length of each section, whether new entries go at the top
-   or bottom, and how entries are dated/titled. If the doc has **tabs**, note
-   which tab holds the dated weekly entries (others are often pinned notes or
-   archives) -- §4.2 writes only there.
+3. Read the **whole doc** -- every entry back to the first, and every tab --
+   not just the latest few. The most recent 1-2 entries set the current
+   **format**: section labels (verbatim), their order, bullet vs numbered
+   convention and nesting, the tone/length of each section, whether new entries
+   go at the top or bottom, and how entries are dated/titled. The full history
+   sets the **content bar**: what kinds of topics the user raises with their
+   manager, how they phrase status lines, and how they have laid out planning
+   sections before (an older "overview of projects" or "next weeks" block is
+   the model for a planning section the current format adds). If the doc has
+   **tabs**, note which tab holds the dated weekly entries (others are often
+   pinned notes, project lists, or archives that also inform the content) --
+   §4.2 writes only there.
 4. If the doc can't be read but `state.one_on_one.format_notes` is set, use that
    as the format spec.
 
@@ -130,10 +136,12 @@ Run this when a previous Valor draft exists -- in `staging` mode that is the
 newest entry in the staging doc; otherwise the §4.1 text from the last run is
 not stored, so skip silently.
 
-1. **Pair the drafts.** Take the newest staging-doc entry *before* this week's
-   1:1 and find the entry with the same 1:1 date in the 1:1 doc (the doc of
-   record, read in §2.6). No matching entry yet (1:1 skipped, or the user hasn't
-   copied it over) → skip and say so in one line in the report.
+1. **Pair the drafts.** Pair every staging-doc entry with the entry for the
+   same 1:1 date in the 1:1 doc (the doc of record, read in §2.6), not only last
+   week's -- one week is too little evidence. When `edit_lessons` already holds
+   rules, the newest pair is the one that can change them, but re-check the
+   rules against all pairs. A draft with no matching entry (1:1 skipped, or not
+   copied over yet) is skipped; say so in one line in the report.
 2. **Diff by meaning, section by section.** Sort every draft line into: **kept**
    (as is), **rewritten** (note how: shortened, tail clause or status
    parenthetical removed, moved to another section or sub-heading), or **cut**;
