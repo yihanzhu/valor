@@ -47,7 +47,7 @@ BACKUP_KEEP = 10
 # is older than this, so the store never goes long without a safety copy.
 AUTO_BACKUP_MAX_AGE_DAYS = 7
 
-STATE_SCHEMA_VERSION = 21
+STATE_SCHEMA_VERSION = 22
 
 ROUTINE_SLOTS = ("briefing", "wrapup", "weekly", "prep")
 
@@ -857,15 +857,22 @@ def _migrate_state_in_memory(state: dict) -> dict:
     # `staging_doc`, the user's private doc that "staging" writes into. Off
     # unless the user opts in; an unknown value resets to "off" so a bad value
     # can never widen write access.
+    # v22 adds `edit_lessons`: short, content-free rules valor-prep learned by
+    # diffing its last draft against the entry the user actually kept (e.g.
+    # "user empties Discussion topics; suggest topics in chat"). Prep reads them
+    # before drafting and rewrites the list after each comparison.
     if "one_on_one" not in state or not isinstance(state.get("one_on_one"), dict):
         state["one_on_one"] = {
             "doc": "", "format_notes": "", "write_mode": "off", "staging_doc": "",
+            "edit_lessons": [],
         }
     else:
         oo = state["one_on_one"]
         oo.setdefault("doc", "")
         oo.setdefault("format_notes", "")
         oo.setdefault("staging_doc", "")
+        if not isinstance(oo.get("edit_lessons"), list):
+            oo["edit_lessons"] = []
         if oo.get("write_mode") not in ONE_ON_ONE_WRITE_MODES:
             oo["write_mode"] = "off"
     # v8: project-focus customization (focus.py). Opt-in: when `enabled`, the

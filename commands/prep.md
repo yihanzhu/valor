@@ -106,9 +106,9 @@ drafted **in the format the user already uses** -- not Valor's generic layout.
 
 1. Read the doc reference from `state.one_on_one.doc` (a Google Doc link/id or
    name). If unset, ask once ("What's your 1:1 doc? paste the link") and store:
-   `python3 ~/.valor/evidence_cli.py state-set one_on_one '{"doc":"<ref>","format_notes":"","write_mode":"off","staging_doc":""}'`
+   `python3 ~/.valor/evidence_cli.py state-set one_on_one '{"doc":"<ref>","format_notes":"","write_mode":"off","staging_doc":"","edit_lessons":[]}'`
    (`state-set` replaces the whole object, so carry over any existing
-   `write_mode`/`staging_doc` instead of resetting them).
+   `write_mode`/`staging_doc`/`edit_lessons` instead of resetting them).
 2. Discover a docs-read capability (a Drive/Docs MCP that reads file content, or
    a docs-related slash command). If none, use the §4.4 fallback.
 3. Read the doc and study the **most recent 1-2 entries** to infer the format:
@@ -121,6 +121,46 @@ drafted **in the format the user already uses** -- not Valor's generic layout.
    as the format spec.
 
 Do not impose a structure -- mirror theirs exactly. Formats are personal.
+
+#### 2.6.1 Learn from what the user kept
+
+Prep drafts; the user trims. The trimmed entry in the 1:1 doc is the real
+signal for what the user keeps, so each run learns from it **before** drafting.
+Run this when a previous Valor draft exists -- in `staging` mode that is the
+newest entry in the staging doc; otherwise the §4.1 text from the last run is
+not stored, so skip silently.
+
+1. **Pair the drafts.** Take the newest staging-doc entry *before* this week's
+   1:1 and find the entry with the same 1:1 date in the 1:1 doc (the doc of
+   record, read in §2.6). No matching entry yet (1:1 skipped, or the user hasn't
+   copied it over) → skip and say so in one line in the report.
+2. **Diff by meaning, section by section.** Sort every draft line into: **kept**
+   (as is), **rewritten** (note how: shortened, tail clause or status
+   parenthetical removed, moved to another section or sub-heading), or **cut**;
+   and note lines the user **added** that the draft lacked. Also note
+   uncertainty markers (`[confirm]`) that were deleted rather than resolved, and
+   sections the user emptied or replaced wholesale.
+3. **Turn the diff into rules, not content.** Write short, general rules about
+   *what kind* of line survives -- e.g. "user empties Discussion topics: leave
+   it heading-only and suggest topics in chat", "status lines and root-cause
+   findings are cut; PR lines and one-clause handoffs are kept", "trailing status
+   parentheticals are removed", "the goals section is written by the user". Never
+   store entry text, names, or ticket/PR ids in a rule -- rules are about shape.
+   A pattern seen once is tentative; keep it when it repeats, and drop a stored
+   rule the latest diff contradicts (the user kept what the rule says they cut).
+4. **Store the merged list** (at most ~10 rules, newest evidence wins) by
+   rewriting `one_on_one.edit_lessons`, carrying the other `one_on_one` fields
+   over unchanged:
+   ```bash
+   python3 ~/.valor/evidence_cli.py state-set one_on_one '{"doc":"<unchanged>","format_notes":"<unchanged>","write_mode":"<unchanged>","staging_doc":"<unchanged>","edit_lessons":["...","..."]}'
+   ```
+5. **Report one line** on what the diff taught ("Learned: you cut status lines
+   again; dropped them from this draft"), or that nothing changed.
+
+Then draft (§4.1) with `edit_lessons` applied. They **override the generic
+drafting defaults** below wherever the two conflict: if the user always empties
+a section, write only its heading and put the suggestions in chat (§4.3); if they
+always cut a kind of line, leave it out of the entry and keep it in chat.
 
 **While the doc is open, capture this week's goals** (silently — don't ask). Extract
 the short list of what the user said they're driving this week (by meaning; format
@@ -220,6 +260,8 @@ must reformat afterward.
   of the entry — test counts, row/record counts, step-by-step fixes, per-person
   support lists; that is evidence, and it belongs in §4.3, not in the doc. If
   the user would have to cherry-pick lines, the draft is too long.
+- **Apply `edit_lessons` (§2.6.1)** before any default in this list: a learned
+  rule about what the user keeps or cuts wins over the generic guidance here.
 - **Concrete and honest:** reference specific PRs/tickets; keep the user's
   voice. The user reviews before pasting — do not fabricate; if a section has
   nothing real, leave it light/empty as their doc does.

@@ -385,6 +385,18 @@ def test_prep_captures_week_goals():
     assert "prioritization" in text
 
 
+def test_prep_learns_from_what_the_user_kept():
+    """Before drafting, prep diffs its last draft against the entry the user
+    kept, stores content-free shape rules, and lets them override defaults."""
+    text = Path("commands/prep.md").read_text()
+    assert "2.6.1 Learn from what the user kept" in text
+    assert "edit_lessons" in text
+    assert "rules are about shape" in text  # never store entry text or ids
+    assert "override the generic" in text
+    setup = Path("commands/setup.md").read_text()
+    assert '"edit_lessons":[]' in setup  # state-set carries the field over
+
+
 # --- Install script tests ---
 
 def test_install_script_syntax():

@@ -1920,6 +1920,7 @@ def test_migrate_state_in_memory_adds_v7_one_on_one_fields():
     migrated = _migrate_state_in_memory({"current_level": "L3"})
     assert migrated["one_on_one"] == {
         "doc": "", "format_notes": "", "write_mode": "off", "staging_doc": "",
+        "edit_lessons": [],
     }
     assert migrated["state_schema_version"] == STATE_SCHEMA_VERSION
 
@@ -1942,8 +1943,24 @@ def test_migrate_state_in_memory_adds_v20_write_mode_preserving_doc():
         "format_notes": "dated H2s",
         "write_mode": "off",
         "staging_doc": "",
+        "edit_lessons": [],
     }
     assert migrated["state_schema_version"] == STATE_SCHEMA_VERSION
+
+
+def test_migrate_state_in_memory_adds_v22_edit_lessons_preserving_existing():
+    state = {
+        "state_schema_version": 21,
+        "one_on_one": {"doc": "d", "format_notes": "", "write_mode": "staging",
+                       "staging_doc": "s"},
+    }
+    assert _migrate_state_in_memory(state)["one_on_one"]["edit_lessons"] == []
+    kept = {"one_on_one": {"doc": "d", "edit_lessons": ["leave the goals section to the user"]}}
+    assert _migrate_state_in_memory(kept)["one_on_one"]["edit_lessons"] == [
+        "leave the goals section to the user"
+    ]
+    broken = {"one_on_one": {"doc": "d", "edit_lessons": "not a list"}}
+    assert _migrate_state_in_memory(broken)["one_on_one"]["edit_lessons"] == []
 
 
 def test_migrate_state_in_memory_preserves_valid_write_modes():
