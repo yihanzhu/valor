@@ -393,6 +393,13 @@ def test_prep_learns_from_what_the_user_kept():
     assert "edit_lessons" in text
     assert "rules are about shape" in text  # never store entry text or ids
     assert "override the generic" in text
+    # A cut is a quality signal: never infer "leave it empty" or "user writes it".
+    assert "quality signal, not a structural one" in text
+    assert "ask the user once in chat" in text
+    assert "not *whether*" in text
+    # Learn from the whole doc and every draft pair, not just the latest entry.
+    assert "Read the **whole doc**" in text
+    assert "Pair every staging-doc entry" in text
     setup = Path("commands/setup.md").read_text()
     assert '"edit_lessons":[]' in setup  # state-set carries the field over
 
